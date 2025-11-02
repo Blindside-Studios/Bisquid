@@ -36,7 +36,9 @@ struct MessageModel: View {
                 
                 Spacer()
             }
-            .padding(.leading, 12)
+            .padding(.leading, 15)
+            .opacity(0.6)
+            .padding(.top, -10)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal)
