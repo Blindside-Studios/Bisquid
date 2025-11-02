@@ -15,23 +15,15 @@ struct ChatWindow: View {
     
     var body: some View {
         ZStack{
-            ScrollView(.vertical){
-                ForEach(messageList){ message in
-                    if(message.role == .assistant){
-                        HStack{
-                            Text(message.text)
-                            Spacer()
-                                .frame(minWidth: 50)
+            GeometryReader { geo in
+                ScrollView(.vertical){
+                    ForEach(messageList){ message in
+                        if(message.role == .assistant){
+                            MessageModel(messageText: message.text)
                         }
-                        .padding()
-                    }
-                    else if (message.role == .user){
-                        HStack{
-                            Spacer()
-                                .frame(minWidth: 50)
-                            Text(message.text)
+                        else if (message.role == .user){
+                            MessageUser(messageText: message.text, availableWidth: geo.size.width)
                         }
-                        .padding()
                     }
                 }
             }
@@ -73,8 +65,7 @@ struct ChatWindow: View {
                         Button("Send message", systemImage: "arrow.up"){
                             let input = inputMessage
                             messageList.append(Message(id: messageList.count, text: input, role: .user))
-                            inputMessage = "" //clear input
-                            // make the magic happen
+                            inputMessage = ""
                             Task {
                                 do {
                                     let service = MistralService(apiKey: apiKey)
@@ -93,8 +84,8 @@ struct ChatWindow: View {
                     }
                 }
             }
+            .padding()
         }
-        .padding()
     }
 }
 
