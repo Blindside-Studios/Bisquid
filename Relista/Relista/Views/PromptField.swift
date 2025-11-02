@@ -28,8 +28,10 @@ struct PromptField: View {
     var desktopPromptField: some View {
         // version for larger screens, aka iPad and Mac devices
         VStack {
-            TextField("Message to the model", text: $inputMessage)
+            TextField("Message to the model", text: $inputMessage, axis: .vertical)
+                .lineLimit(1...10)
                 .textFieldStyle(.plain)
+                .onSubmit(sendMessage)
             
             HStack {
                 Button("Simulate message flow", systemImage: "ant") {
@@ -56,8 +58,10 @@ struct PromptField: View {
     func sendMessage(){
         let input = inputMessage
         inputMessage = ""
+        DispatchQueue.main.async {
+            // force render refresh to prevent a bug where the placeholder text isn't showing up and the blinking cursor disappears
+        }
         
-        // Add user message
         let userMsg = Message(id: messageList.count, text: input, role: .user)
         messageList.append(userMsg)
                 

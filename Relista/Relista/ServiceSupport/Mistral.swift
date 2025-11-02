@@ -40,9 +40,7 @@ struct MistralService {
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        print("DEBUG: Converting \(messages.count) messages")
-        
+                
         // Convert Message array to API format
         let apiMessages = messages.map { message in
             [
@@ -50,9 +48,7 @@ struct MistralService {
                 "content": message.text
             ]
         }
-        
-        print("DEBUG: API messages: \(apiMessages)")
-        
+                
         let body: [String: Any] = [
             "model": "mistral-small-latest",
             "messages": apiMessages,
@@ -61,8 +57,7 @@ struct MistralService {
         
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
-        let (bytes, response) = try await URLSession.shared.bytes(for: request)
-        print("DEBUG: Got response: \(response)")
+        let (bytes, _) = try await URLSession.shared.bytes(for: request)
         
         return AsyncThrowingStream { continuation in
             Task {
