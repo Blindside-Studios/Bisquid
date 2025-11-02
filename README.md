@@ -1,0 +1,2 @@
+# Relista
+Rechnergestützte Linguistik-Statistikmodelle
