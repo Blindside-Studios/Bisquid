@@ -33,4 +33,51 @@ struct MistralService {
         let messageObj = firstChoice["message"] as! [String: Any]
         return messageObj["content"] as! String
     }
+    
+    func streamMessage(_ message: String) async throws -> AsyncThrowingStream<String, Error> {
+        let url = URL(string: "https://api.mistral.ai/v1/chat/completions")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any] = [
+            "model": "mistral-small-latest",
+            "messages": [
+                ["role": "user", "content": message]
+            ],
+            "stream": true 
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (bytes, _) = try await URLSession.shared.bytes(for: request)
+        
+        return AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    for try await line in bytes.lines {
+                        if line.hasPrefix("data: ") {
+                            let data = line.dropFirst(6)
+                            if data == "[DONE]" {
+                                continuation.finish()
+                                return
+                            }
+                            
+                            if let jsonData = data.data(using: .utf8),
+                               let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                               let choices = json["choices"] as? [[String: Any]],
+                               let delta = choices.first?["delta"] as? [String: Any],
+                               let content = delta["content"] as? String {
+                                continuation.yield(content)
+                            }
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
 }

@@ -8,9 +8,9 @@
 import Foundation
 
 struct Message: Identifiable{
-    var id: Int
+    let id: Int
     var text: String
-    var role: MessageRole
+    let role: MessageRole
 }
 
 enum MessageRole{

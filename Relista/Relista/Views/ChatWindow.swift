@@ -63,12 +63,19 @@ struct ChatWindow: View {
                                 let input = inputMessage
                                 messageList.append(Message(id: messageList.count, text: input, role: .user))
                                 inputMessage = ""
+                                
+                                let assistantMsg = Message(id: messageList.count, text: "", role: .assistant)
+                                messageList.append(assistantMsg)
+                                let assistantIndex = messageList.count - 1
+                                
                                 Task {
                                     do {
                                         let service = MistralService(apiKey: apiKey)
-                                        let outputMessage = try await service.sendMessage(input)
-                                        let completion = Message(id: messageList.count, text: outputMessage, role: .assistant)
-                                        messageList.append(completion)
+                                        let stream = try await service.streamMessage(input)
+                                        
+                                        for try await chunk in stream {
+                                            messageList[assistantIndex].text += chunk
+                                        }
                                     } catch {
                                         debugPrint("Error: \(error)")
                                     }
