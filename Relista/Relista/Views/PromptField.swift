@@ -12,13 +12,14 @@ struct PromptField: View {
     @Binding var inputMessage: String
     @AppStorage("APIKeyMistral") private var apiKey: String = ""
     var onConversationChanged: () -> Void
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     var body: some View {
-        #if os(iOS)
-        return iPhonePromptField
-        #else
-        return desktopPromptField
-        #endif
+        if horizontalSizeClass == .compact {
+            iPhonePromptField
+        } else {
+            desktopPromptField
+        }
     }
     
     var iPhonePromptField: some View {

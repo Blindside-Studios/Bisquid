@@ -134,6 +134,7 @@ struct ContentView: View {
                 // Find highest existing id and add 1 to never assign an id twice
                 let maxId = conversations.map { $0.id }.max() ?? -1
                 selectedConversation.id = maxId + 1
+                if selectedConversation.messages.count > 0 { selectedConversation.title = selectedConversation.messages[0].text }
                 conversations.append(selectedConversation)
             }
 
