@@ -131,7 +131,9 @@ struct ContentView: View {
                 }
             } else {
                 // New conversation - add to list
-                selectedConversation.id = conversations.count
+                // Find highest existing id and add 1 to never assign an id twice
+                let maxId = conversations.map { $0.id }.max() ?? -1
+                selectedConversation.id = maxId + 1
                 conversations.append(selectedConversation)
             }
 
@@ -148,6 +150,10 @@ struct ContentView: View {
         guard let conv = conversationToRename, !renameText.isEmpty else { return }
 
         conv.title = renameText
+        
+        if selectedConversation === conv {
+            selectedConversation.title = renameText
+        }
 
         // Save index with updated title
         do {
