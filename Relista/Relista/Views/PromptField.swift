@@ -8,10 +8,11 @@
 import SwiftUI
 
 struct PromptField: View {
-    @Binding var conversation: Conversation
+    @Bindable var conversation: Conversation
     @Binding var inputMessage: String
     @AppStorage("APIKeyMistral") private var apiKey: String = ""
-    
+    var onConversationChanged: () -> Void
+
     var body: some View {
         #if os(iOS)
         return iPhonePromptField
@@ -61,28 +62,34 @@ struct PromptField: View {
         DispatchQueue.main.async {
             // force render refresh to prevent a bug where the placeholder text isn't showing up and the blinking cursor disappears
         }
-        
+
         let userMsg = Message(id: conversation.messages.count, text: input, role: .user, attachmentLinks: [], timeStamp: .now)
         conversation.messages.append(userMsg)
-                
+
         Task {
             do {
                 let service = MistralService(apiKey: apiKey)
                 let stream = try await service.streamMessage(messages: conversation.messages)
-                
+
                 // create a blank assistant message to stream to
                 let assistantMsg = Message(id: conversation.messages.count, text: "", role: .assistant, attachmentLinks: [], timeStamp: .now)
                 conversation.messages.append(assistantMsg)
                 let assistantIndex = conversation.messages.count - 1
-                
+
                 for try await chunk in stream {
-                    conversation.messages[assistantIndex].text += chunk
+                    // Reassign to trigger Observable updates
+                    var updatedMessage = conversation.messages[assistantIndex]
+                    updatedMessage.text += chunk
+                    conversation.messages[assistantIndex] = updatedMessage
                 }
-                
+
                 // ADDED: Save after streaming completes
                 conversation.lastInteracted = Date.now
                 try ConversationManager.saveMessages(for: conversation)
-                
+
+                // Notify parent to sync conversation to index
+                onConversationChanged()
+
             } catch {
                 debugPrint("Error: \(error)")
                 print("Full error: \(error.localizedDescription)")

@@ -8,9 +8,10 @@
 import SwiftUI
 
 struct ChatWindow: View {
-    @Binding var conversation: Conversation
+    @Bindable var conversation: Conversation
     @State var inputMessage: String = ""
-    
+    var onConversationChanged: () -> Void
+
     var body: some View {
         ZStack{
             GeometryReader { geo in
@@ -25,7 +26,7 @@ struct ChatWindow: View {
                     }
                 }
                 .safeAreaInset(edge: .bottom, spacing: 0){
-                    PromptField(conversation: $conversation, inputMessage: $inputMessage)
+                    PromptField(conversation: conversation, inputMessage: $inputMessage, onConversationChanged: onConversationChanged)
                 }
             }
         }

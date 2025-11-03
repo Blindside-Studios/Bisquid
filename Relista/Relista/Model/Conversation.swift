@@ -6,8 +6,10 @@
 //
 
 import Foundation
+import Observation
 
-struct Conversation: Identifiable, Codable, Equatable{
+@Observable
+class Conversation: Identifiable, Codable, Equatable {
     var id: Int
     var title: String
     var uuid: UUID
@@ -27,7 +29,7 @@ struct Conversation: Identifiable, Codable, Equatable{
         // messages must not be listed here as they are saved separately
     }
     
-    init(from decoder: Decoder) throws {
+    required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(Int.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)

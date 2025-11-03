@@ -50,7 +50,7 @@ struct MistralService {
         }
                 
         let body: [String: Any] = [
-            "model": "mistral-small-latest",
+            "model": "ministral-3b-latest",
             "messages": apiMessages,
             "stream": true
         ]
