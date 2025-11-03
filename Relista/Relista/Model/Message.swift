@@ -7,13 +7,15 @@
 
 import Foundation
 
-struct Message: Identifiable{
+struct Message: Identifiable, Codable{
     let id: Int
     var text: String
     let role: MessageRole
+    let attachmentLinks: [String]
+    var timeStamp: Date
 }
 
-enum MessageRole{
+enum MessageRole: String, Codable{
     case system, assistant, user
     
     func toAPIString() -> String {

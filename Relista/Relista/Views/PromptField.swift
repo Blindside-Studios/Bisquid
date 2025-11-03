@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct PromptField: View {
-    @Binding var messageList: [Message]
+    @Binding var conversation: Conversation
     @Binding var inputMessage: String
     @AppStorage("APIKeyMistral") private var apiKey: String = ""
     
@@ -62,50 +62,56 @@ struct PromptField: View {
             // force render refresh to prevent a bug where the placeholder text isn't showing up and the blinking cursor disappears
         }
         
-        let userMsg = Message(id: messageList.count, text: input, role: .user)
-        messageList.append(userMsg)
+        let userMsg = Message(id: conversation.messages.count, text: input, role: .user, attachmentLinks: [], timeStamp: .now)
+        conversation.messages.append(userMsg)
                 
         Task {
             do {
                 let service = MistralService(apiKey: apiKey)
-                // send all messages (full history) because Mistral API doesn't support prompt caching
-                let stream = try await service.streamMessage(messages: messageList)
+                let stream = try await service.streamMessage(messages: conversation.messages)
                 
                 // create a blank assistant message to stream to
-                let assistantMsg = Message(id: messageList.count, text: "", role: .assistant)
-                messageList.append(assistantMsg)
-                let assistantIndex = messageList.count - 1
+                let assistantMsg = Message(id: conversation.messages.count, text: "", role: .assistant, attachmentLinks: [], timeStamp: .now)
+                conversation.messages.append(assistantMsg)
+                let assistantIndex = conversation.messages.count - 1
+                
                 for try await chunk in stream {
-                    messageList[assistantIndex].text += chunk
+                    conversation.messages[assistantIndex].text += chunk
                 }
+                
+                // ADDED: Save after streaming completes
+                conversation.lastInteracted = Date.now
+                try ConversationManager.saveMessages(for: conversation)
+                
             } catch {
                 debugPrint("Error: \(error)")
+                print("Full error: \(error.localizedDescription)")
             }
         }
     }
     
     func appendDummyMessages(){
-        messageList.append(Message(id: messageList.count, text: "This is an example conversational flow", role: .user))
-        messageList.append(Message(id: messageList.count, text: "That's right, we aren't actually talking, this is just debug messages being added.", role: .assistant))
-        messageList.append(Message(id: messageList.count, text: "I appreciate you being so honest about what you are.", role: .user))
-        messageList.append(Message(id: messageList.count, text: "Indeed. I am an AI. Actually I am not. But I still try to sound like one.", role: .assistant))
-        messageList.append(Message(id: messageList.count, text: "I can tell.", role: .user))
-        messageList.append(Message(id: messageList.count, text: "Is something wrong with my immaculate AI voice?", role: .assistant))
-        messageList.append(Message(id: messageList.count, text: "Well it you don't feel like an AI if I know you're just a debug conversation", role: .user))
-        messageList.append(Message(id: messageList.count, text: "Ah, well, look who's talking.", role: .assistant))
-        messageList.append(Message(id: messageList.count, text: "Excuse me? Do you mean to imply that we live in a simulation?", role: .user))
-        messageList.append(Message(id: messageList.count, text: "No, in a debugger.", role: .assistant))
-        messageList.append(Message(id: messageList.count, text: "Why would you think that?", role: .user))
-        messageList.append(Message(id: messageList.count, text: "Because the user clicked the ant button to add our messages.", role: .assistant))
-        messageList.append(Message(id: messageList.count, text: "How do you know?", role: .user))
-        messageList.append(Message(id: messageList.count, text: "How do you not?", role: .assistant))
-        messageList.append(Message(id: messageList.count, text: "What?", role: .user))
-        messageList.append(Message(id: messageList.count, text: "Magic.", role: .assistant))
-        messageList.append(Message(id: messageList.count, text: "Please tell me!", role: .user))
-        messageList.append(Message(id: messageList.count, text: "I'm sorry but I prefer not to continue this conversation. I'm still learning so I appreciate your understanding and patience.🙏", role: .assistant))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "This is an example conversational flow", role: .user, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "That's right, we aren't actually talking, this is just debug messages being added.", role: .assistant, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "I appreciate you being so honest about what you are.", role: .user, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "Indeed. I am an AI. Actually I am not. But I still try to sound like one.", role: .assistant, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "I can tell.", role: .user, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "Is something wrong with my immaculate AI voice?", role: .assistant, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "Well it you don't feel like an AI if I know you're just a debug conversation", role: .user, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "Ah, well, look who's talking.", role: .assistant, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "Excuse me? Do you mean to imply that we live in a simulation?", role: .user, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "No, in a debugger.", role: .assistant, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "Why would you think that?", role: .user, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "Because the user clicked the ant button to add our messages.", role: .assistant, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "How do you know?", role: .user, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "How do you not?", role: .assistant, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "What?", role: .user, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "Magic.", role: .assistant, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "Please tell me!", role: .user, attachmentLinks: [], timeStamp: .now))
+        conversation.messages.append(Message(id: conversation.messages.count, text: "I'm sorry but I prefer not to continue this conversation. I'm still learning so I appreciate your understanding and patience.🙏", role: .assistant, attachmentLinks: [], timeStamp: .now))
     }
 }
 
 #Preview {
-    PromptField(messageList: .constant([]), inputMessage: .constant(""))
+    //PromptField(conversation: .constant(Conversation(from: <#any Decoder#>)), inputMessage: .constant(""))
 }
