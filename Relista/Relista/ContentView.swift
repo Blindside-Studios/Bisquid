@@ -23,40 +23,58 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            ScrollView{
-                ForEach (chatCache.conversations) { conv in
-                    HStack{
-                        Text(conv.title)
-                        Spacer()
-                    }
-                    .padding(8)
-                    .background(selectedConversationUUID == conv.uuid ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, -4)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        loadConversation(conv.uuid)
-                    }
-                    .contextMenu {
-                        Button {
-                            conversationToRename = conv
-                            renameText = conv.title
-                            showingRenameDialog = true
-                        } label: {
-                            Label("Rename", systemImage: "pencil")
-                        }
+            VStack{
+                HStack{
+                    Text("🐙 New chat")
+                    Spacer()
+                }
+                .padding(8)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .padding(.horizontal, 4)
+                .padding(.vertical, -4)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    createNewConversation()
+                }
+                
+                Divider()
+                    .padding()
 
-                        Button(role: .destructive) {
-                            conversationToDelete = conv
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+                ScrollView{
+                    ForEach (chatCache.conversations.filter { $0.hasMessages && !$0.isArchived }) { conv in
+                        HStack{
+                            Text(conv.title)
+                            Spacer()
+                        }
+                        .padding(8)
+                        .background(selectedConversationUUID == conv.uuid ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, -4)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            loadConversation(conv.uuid)
+                        }
+                        .contextMenu {
+                            Button {
+                                conversationToRename = conv
+                                renameText = conv.title
+                                showingRenameDialog = true
+                            } label: {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                            
+                            Button(role: .destructive) {
+                                conversationToDelete = conv
+                                showingDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                     }
                 }
+                .navigationTitle("Chats")
             }
-            .navigationTitle("Chats")
         } detail: {
             if let uuid = selectedConversationUUID {
                 ChatWindow(conversationUUID: uuid)
@@ -130,6 +148,13 @@ struct ContentView: View {
     }
 
     func loadConversation(_ uuid: UUID) {
+        // If switching away from a conversation without messages, delete it
+        if let previousUUID = selectedConversationUUID,
+           let previousConv = chatCache.getConversation(for: previousUUID),
+           !previousConv.hasMessages {
+            chatCache.deleteConversation(uuid: previousUUID)
+        }
+
         // Unmark previous conversation as being viewed
         if let previousUUID = selectedConversationUUID {
             chatCache.setViewing(uuid: previousUUID, isViewing: false)

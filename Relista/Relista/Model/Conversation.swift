@@ -16,6 +16,7 @@ class Conversation: Identifiable, Codable, Equatable {
     var lastInteracted: Date
     var modelUsed: String
     var isArchived: Bool
+    var hasMessages: Bool
 
     // Note: messages are now managed separately in ChatCache
 
@@ -26,6 +27,7 @@ class Conversation: Identifiable, Codable, Equatable {
         case lastInteracted
         case modelUsed
         case isArchived
+        case hasMessages
     }
 
     required init(from decoder: Decoder) throws {
@@ -36,6 +38,7 @@ class Conversation: Identifiable, Codable, Equatable {
         lastInteracted = try container.decode(Date.self, forKey: .lastInteracted)
         modelUsed = try container.decode(String.self, forKey: .modelUsed)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
+        hasMessages = try container.decodeIfPresent(Bool.self, forKey: .hasMessages) ?? true // Default to true for backward compatibility
     }
 
     func encode(to encoder: Encoder) throws {
@@ -46,16 +49,18 @@ class Conversation: Identifiable, Codable, Equatable {
         try container.encode(lastInteracted, forKey: .lastInteracted)
         try container.encode(modelUsed, forKey: .modelUsed)
         try container.encode(isArchived, forKey: .isArchived)
+        try container.encode(hasMessages, forKey: .hasMessages)
     }
 
     // regular initializer for creating new conversations
-    init(id: Int, title: String, uuid: UUID = UUID(), lastInteracted: Date = Date(), modelUsed: String, isArchived: Bool = false) {
+    init(id: Int, title: String, uuid: UUID = UUID(), lastInteracted: Date = Date(), modelUsed: String, isArchived: Bool = false, hasMessages: Bool = false) {
         self.id = id
         self.title = title
         self.uuid = uuid
         self.lastInteracted = lastInteracted
         self.modelUsed = modelUsed
         self.isArchived = isArchived
+        self.hasMessages = hasMessages
     }
 
     static func == (lhs: Conversation, rhs: Conversation) -> Bool {
@@ -63,6 +68,7 @@ class Conversation: Identifiable, Codable, Equatable {
                lhs.uuid == rhs.uuid &&
                lhs.lastInteracted == rhs.lastInteracted &&
                lhs.modelUsed == rhs.modelUsed &&
-               lhs.isArchived == rhs.isArchived
+               lhs.isArchived == rhs.isArchived &&
+               lhs.hasMessages == rhs.hasMessages
     }
 }

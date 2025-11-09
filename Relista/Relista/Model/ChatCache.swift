@@ -56,7 +56,7 @@ class ChatCache {
         return conversations.first(where: { $0.uuid == uuid })
     }
 
-    /// Creates a new conversation
+    /// Creates a new conversation (not shown in sidebar until first message is sent)
     func createConversation(modelUsed: String = "ministral-3b-latest") -> Conversation {
         let maxId = conversations.map { $0.id }.max() ?? -1
         let newConversation = Conversation(
@@ -65,8 +65,10 @@ class ChatCache {
             uuid: UUID(),
             lastInteracted: Date.now,
             modelUsed: modelUsed,
-            isArchived: false
+            isArchived: false,
+            hasMessages: false
         )
+
         conversations.append(newConversation)
         return newConversation
     }
@@ -190,6 +192,18 @@ class ChatCache {
         onCompletion: (() -> Void)? = nil
     ) {
         let chat = getChat(for: conversationUUID)
+        guard let conversation = getConversation(for: conversationUUID) else { return }
+
+        // If this is the first message, mark conversation as having messages
+        if chat.messages.isEmpty {
+            conversation.hasMessages = true
+            // Save index immediately so it appears in sidebar
+            do {
+                try ConversationManager.saveIndex(conversations: conversations)
+            } catch {
+                print("Error saving conversation index: \(error)")
+            }
+        }
 
         // Add user message
         let userMsg = Message(

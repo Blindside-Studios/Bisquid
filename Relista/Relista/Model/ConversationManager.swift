@@ -43,12 +43,22 @@ class ConversationManager {
     }
     
     // save index.json (without messages)
+    // Only saves conversations that have messages - filters out empty conversations
     static func saveIndex(conversations: [Conversation]) throws {
+        // Filter to only include conversations with messages
+        let conversationsToSave = conversations.filter { $0.hasMessages }
+
+        // Clean up folders for conversations that don't have messages
+        let conversationsToRemove = conversations.filter { !$0.hasMessages }
+        for conversation in conversationsToRemove {
+            try? deleteConversation(uuid: conversation.uuid)
+        }
+
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .prettyPrinted  // Makes it readable
-        
-        let data = try encoder.encode(conversations)
+
+        let data = try encoder.encode(conversationsToSave)
         try data.write(to: indexURL)
     }
     
