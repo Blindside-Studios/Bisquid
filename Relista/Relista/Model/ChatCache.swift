@@ -184,6 +184,7 @@ class ChatCache {
     /// Sends a message and generates a response in the background
     /// Returns immediately, updates happen asynchronously via Observable updates
     func sendMessage(
+        modelName: String,
         _ text: String,
         to conversationID: UUID,
         apiKey: String,
@@ -222,7 +223,7 @@ class ChatCache {
         Task {
             do {
                 let service = MistralService(apiKey: apiKey)
-                let stream = try await service.streamMessage(messages: chat.messages)
+                let stream = try await service.streamMessage(messages: chat.messages, modelName: modelName)
 
                 // Create blank assistant message
                 let assistantMsg = Message(

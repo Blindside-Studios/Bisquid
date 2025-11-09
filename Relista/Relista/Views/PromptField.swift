@@ -8,28 +8,19 @@
 import SwiftUI
 
 struct PromptField: View {
+    @State var modelName = "ministral-3b-latest"
+    @State var modelDisplayName = "Mistral 3B"
+    @State var showModelPickerSheet = false
+    @State var showModelPickerPopOver = false
     let conversationID: UUID
     @Binding var inputMessage: String
     @AppStorage("APIKeyMistral") private var apiKey: String = ""
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var chatCache = ChatCache.shared
+    
+    @Namespace private var MessageOptionsTransition
 
     var body: some View {
-        if horizontalSizeClass == .compact {
-            //iPhonePromptField
-            desktopPromptField // use this until we have something better
-        } else {
-            desktopPromptField
-        }
-    }
-    
-    var iPhonePromptField: some View {
-        // iPhone version
-        Text("Hello world")
-    }
-
-    var desktopPromptField: some View {
-        // version for larger screens, aka iPad and Mac devices
         VStack {
             TextField("Message to the model", text: $inputMessage, axis: .vertical)
                 .lineLimit(1...10)
@@ -41,6 +32,18 @@ struct PromptField: View {
                     appendDummyMessages()
                 }
                 .buttonBorderShape(.circle)
+                
+                Button(modelDisplayName, systemImage: "theatermask.and.paintbrush") {
+                    if horizontalSizeClass == .compact { showModelPickerSheet = true }
+                    else { showModelPickerPopOver.toggle() }
+                }
+                .buttonBorderShape(.roundedRectangle)
+                .popover(isPresented: $showModelPickerPopOver) {
+                    ModelPicker(selectedModel: $modelName, selectedModelDisplay: $modelDisplayName)
+                }
+                .matchedTransitionSource(
+                    id: "model", in: MessageOptionsTransition
+                )
                 
                 Spacer()
                 
@@ -55,6 +58,23 @@ struct PromptField: View {
         .padding()
         .glassEffect(in: .rect(cornerRadius: 16))
         .padding()
+        
+        #if os(iOS) // only show this on iOS because the other platforms use a popover
+        .sheet(isPresented: $showModelPickerSheet) {
+            ModelPicker(selectedModel: $modelName, selectedModelDisplay: $modelDisplayName)
+                .presentationDetents([.medium, .large])
+            
+                .navigationTransition(
+                    .zoom(sourceID: "model", in: MessageOptionsTransition)
+                )
+        }
+        #endif
+        /*if horizontalSizeClass == .compact {
+            //iPhonePromptField
+            desktopPromptField // use this until we have something better
+        } else {
+            desktopPromptField
+        }*/
     }
     
     
@@ -67,6 +87,7 @@ struct PromptField: View {
 
         // Use ChatCache to send message and handle generation
         chatCache.sendMessage(
+            modelName: modelName,
             input,
             to: conversationID,
             apiKey: apiKey

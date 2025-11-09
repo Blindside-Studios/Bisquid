@@ -34,7 +34,7 @@ struct MistralService {
         return messageObj["content"] as! String
     }
     
-    func streamMessage(messages: [Message]) async throws -> AsyncThrowingStream<String, Error> {
+    func streamMessage(messages: [Message], modelName: String) async throws -> AsyncThrowingStream<String, Error> {
         let url = URL(string: "https://api.mistral.ai/v1/chat/completions")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -50,7 +50,7 @@ struct MistralService {
         }
                 
         let body: [String: Any] = [
-            "model": "ministral-3b-latest",
+            "model": modelName,
             "messages": apiMessages,
             "stream": true
         ]

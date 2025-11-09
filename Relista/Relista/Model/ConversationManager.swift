@@ -120,4 +120,20 @@ class ConversationManager {
             try FileManager.default.removeItem(at: conversationFolder)
         }
     }
+    
+    static func createNewConversation(fromID: UUID?) -> UUID {
+        // Unmark previous conversation as being viewed
+        if let previousID = fromID {
+            ChatCache.shared.setViewing(id: previousID, isViewing: false)
+        }
+
+        // Create new conversation
+        let newConversation = ChatCache.shared.createConversation()
+        let newConvID = newConversation.id
+
+        // Mark new conversation as being viewed
+        ChatCache.shared.setViewing(id: newConvID, isViewing: true)
+        
+        return newConvID
+    }
 }
