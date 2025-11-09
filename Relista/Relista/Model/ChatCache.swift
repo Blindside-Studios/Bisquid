@@ -11,13 +11,13 @@ import Observation
 /// Represents a loaded chat in memory with its messages and metadata
 @Observable
 class LoadedChat: Identifiable {
-    let uuid: UUID
+    let id: UUID
     var messages: [Message]
     var isGenerating: Bool
     var isBeingViewed: Bool
 
-    init(uuid: UUID, messages: [Message] = [], isGenerating: Bool = false, isBeingViewed: Bool = false) {
-        self.uuid = uuid
+    init(id: UUID, messages: [Message] = [], isGenerating: Bool = false, isBeingViewed: Bool = false) {
+        self.id = id
         self.messages = messages
         self.isGenerating = isGenerating
         self.isBeingViewed = isBeingViewed
@@ -33,11 +33,11 @@ class ChatCache {
     /// All conversations (metadata only)
     var conversations: [Conversation] = []
 
-    /// Dictionary mapping conversation UUIDs to their loaded chat data
+    /// Dictionary mapping conversation IDs to their loaded chat data
     private(set) var loadedChats: [UUID: LoadedChat] = [:]
 
-    /// Currently active/viewed conversation UUID
-    var activeConversationUUID: UUID?
+    /// Currently active/viewed conversation ID
+    var activeConversationID: UUID?
 
     private init() {
         // Load conversations from disk on init
@@ -51,18 +51,16 @@ class ChatCache {
 
     // MARK: - Conversation Management
 
-    /// Gets a conversation by UUID
-    func getConversation(for uuid: UUID) -> Conversation? {
-        return conversations.first(where: { $0.uuid == uuid })
+    /// Gets a conversation by ID
+    func getConversation(for id: UUID) -> Conversation? {
+        return conversations.first(where: { $0.id == id })
     }
 
     /// Creates a new conversation (not shown in sidebar until first message is sent)
     func createConversation(modelUsed: String = "ministral-3b-latest") -> Conversation {
-        let maxId = conversations.map { $0.id }.max() ?? -1
         let newConversation = Conversation(
-            id: maxId + 1,
+            id: UUID(),
             title: "New Conversation",
-            uuid: UUID(),
             lastInteracted: Date.now,
             modelUsed: modelUsed,
             isArchived: false,
@@ -74,9 +72,9 @@ class ChatCache {
     }
 
     /// Syncs a conversation (saves index and updates metadata)
-    func syncConversation(uuid: UUID) {
-        guard let conversation = getConversation(for: uuid) else { return }
-        let chat = getChat(for: uuid)
+    func syncConversation(id: UUID) {
+        guard let conversation = getConversation(for: id) else { return }
+        let chat = getChat(for: id)
 
         // Update title from first message if conversation is new
         if chat.messages.count > 0 && conversation.title == "New Conversation" {
@@ -92,8 +90,8 @@ class ChatCache {
     }
 
     /// Renames a conversation
-    func renameConversation(uuid: UUID, to newTitle: String) {
-        guard let conversation = getConversation(for: uuid) else { return }
+    func renameConversation(id: UUID, to newTitle: String) {
+        guard let conversation = getConversation(for: id) else { return }
         conversation.title = newTitle
 
         do {
@@ -104,18 +102,18 @@ class ChatCache {
     }
 
     /// Deletes a conversation
-    func deleteConversation(uuid: UUID) {
+    func deleteConversation(id: UUID) {
         // Unload from cache
-        unloadChat(uuid: uuid)
+        unloadChat(id: id)
 
         // Remove from array
-        if let index = conversations.firstIndex(where: { $0.uuid == uuid }) {
+        if let index = conversations.firstIndex(where: { $0.id == id }) {
             conversations.remove(at: index)
         }
 
         // Delete from disk
         do {
-            try ConversationManager.deleteConversation(uuid: uuid)
+            try ConversationManager.deleteConversation(id: id)
             try ConversationManager.saveIndex(conversations: conversations)
         } catch {
             print("Error deleting conversation: \(error)")
@@ -125,35 +123,35 @@ class ChatCache {
     // MARK: - Chat Loading/Unloading
 
     /// Loads or retrieves a chat from cache
-    func getChat(for uuid: UUID) -> LoadedChat {
-        if let existing = loadedChats[uuid] {
+    func getChat(for id: UUID) -> LoadedChat {
+        if let existing = loadedChats[id] {
             return existing
         }
 
         // Load from disk if not in memory
         do {
-            let messages = try ConversationManager.loadMessages(for: uuid)
-            let chat = LoadedChat(uuid: uuid, messages: messages)
-            loadedChats[uuid] = chat
+            let messages = try ConversationManager.loadMessages(for: id)
+            let chat = LoadedChat(id: id, messages: messages)
+            loadedChats[id] = chat
             return chat
         } catch {
-            print("Error loading chat \(uuid): \(error)")
+            print("Error loading chat \(id): \(error)")
             // Return empty chat if load fails
-            let chat = LoadedChat(uuid: uuid)
-            loadedChats[uuid] = chat
+            let chat = LoadedChat(id: id)
+            loadedChats[id] = chat
             return chat
         }
     }
 
     /// Marks a chat as being actively viewed
-    func setViewing(uuid: UUID, isViewing: Bool) {
-        let chat = getChat(for: uuid)
+    func setViewing(id: UUID, isViewing: Bool) {
+        let chat = getChat(for: id)
         chat.isBeingViewed = isViewing
 
         if isViewing {
-            activeConversationUUID = uuid
-        } else if activeConversationUUID == uuid {
-            activeConversationUUID = nil
+            activeConversationID = id
+        } else if activeConversationID == id {
+            activeConversationID = nil
         }
 
         // Unload chats that are no longer needed
@@ -162,22 +160,22 @@ class ChatCache {
 
     /// Removes chats from memory that aren't being viewed or generating
     private func cleanupUnusedChats() {
-        let uuidsToRemove = loadedChats.filter { uuid, chat in
+        let idsToRemove = loadedChats.filter { id, chat in
             !chat.isBeingViewed && !chat.isGenerating
         }.map { $0.key }
 
-        for uuid in uuidsToRemove {
-            loadedChats.removeValue(forKey: uuid)
+        for id in idsToRemove {
+            loadedChats.removeValue(forKey: id)
         }
     }
 
     /// Forces a chat to be unloaded from memory
-    func unloadChat(uuid: UUID) {
-        guard let chat = loadedChats[uuid] else { return }
+    func unloadChat(id: UUID) {
+        guard let chat = loadedChats[id] else { return }
 
         // Only unload if not being viewed or generating
         if !chat.isBeingViewed && !chat.isGenerating {
-            loadedChats.removeValue(forKey: uuid)
+            loadedChats.removeValue(forKey: id)
         }
     }
 
@@ -187,12 +185,12 @@ class ChatCache {
     /// Returns immediately, updates happen asynchronously via Observable updates
     func sendMessage(
         _ text: String,
-        to conversationUUID: UUID,
+        to conversationID: UUID,
         apiKey: String,
         onCompletion: (() -> Void)? = nil
     ) {
-        let chat = getChat(for: conversationUUID)
-        guard let conversation = getConversation(for: conversationUUID) else { return }
+        let chat = getChat(for: conversationID)
+        guard let conversation = getConversation(for: conversationID) else { return }
 
         // If this is the first message, mark conversation as having messages
         if chat.messages.isEmpty {
@@ -207,7 +205,7 @@ class ChatCache {
 
         // Add user message
         let userMsg = Message(
-            id: chat.messages.count,
+            id: UUID(),
             text: text,
             role: .user,
             attachmentLinks: [],
@@ -216,7 +214,7 @@ class ChatCache {
         chat.messages.append(userMsg)
 
         // Save user message immediately
-        saveMessages(for: conversationUUID)
+        saveMessages(for: conversationID)
 
         // Start generation
         chat.isGenerating = true
@@ -228,7 +226,7 @@ class ChatCache {
 
                 // Create blank assistant message
                 let assistantMsg = Message(
-                    id: chat.messages.count,
+                    id: UUID(),
                     text: "",
                     role: .assistant,
                     attachmentLinks: [],
@@ -256,12 +254,12 @@ class ChatCache {
                     chat.isGenerating = false
 
                     // Update conversation metadata
-                    if let conversation = getConversation(for: conversationUUID) {
+                    if let conversation = getConversation(for: conversationID) {
                         conversation.lastInteracted = Date.now
                     }
 
-                    saveMessages(for: conversationUUID)
-                    syncConversation(uuid: conversationUUID)
+                    saveMessages(for: conversationID)
+                    syncConversation(id: conversationID)
                     onCompletion?()
 
                     // Clean up if chat is no longer needed
@@ -280,13 +278,13 @@ class ChatCache {
 
     // MARK: - Persistence
 
-    func saveMessages(for uuid: UUID) {
-        guard let chat = loadedChats[uuid] else { return }
+    func saveMessages(for id: UUID) {
+        guard let chat = loadedChats[id] else { return }
 
         do {
-            try ConversationManager.saveMessages(for: uuid, messages: chat.messages)
+            try ConversationManager.saveMessages(for: id, messages: chat.messages)
         } catch {
-            print("Error saving messages for \(uuid): \(error)")
+            print("Error saving messages for \(id): \(error)")
         }
     }
 }

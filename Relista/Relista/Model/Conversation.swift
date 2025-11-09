@@ -10,9 +10,8 @@ import Observation
 
 @Observable
 class Conversation: Identifiable, Codable, Equatable {
-    var id: Int
+    var id: UUID
     var title: String
-    var uuid: UUID
     var lastInteracted: Date
     var modelUsed: String
     var isArchived: Bool
@@ -23,7 +22,6 @@ class Conversation: Identifiable, Codable, Equatable {
     enum CodingKeys: String, CodingKey {
         case id
         case title
-        case uuid
         case lastInteracted
         case modelUsed
         case isArchived
@@ -32,9 +30,10 @@ class Conversation: Identifiable, Codable, Equatable {
 
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(Int.self, forKey: .id)
+
+        
+        id = try container.decode(UUID.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)
-        uuid = try container.decode(UUID.self, forKey: .uuid)
         lastInteracted = try container.decode(Date.self, forKey: .lastInteracted)
         modelUsed = try container.decode(String.self, forKey: .modelUsed)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
@@ -45,7 +44,6 @@ class Conversation: Identifiable, Codable, Equatable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(title, forKey: .title)
-        try container.encode(uuid, forKey: .uuid)
         try container.encode(lastInteracted, forKey: .lastInteracted)
         try container.encode(modelUsed, forKey: .modelUsed)
         try container.encode(isArchived, forKey: .isArchived)
@@ -53,10 +51,9 @@ class Conversation: Identifiable, Codable, Equatable {
     }
 
     // regular initializer for creating new conversations
-    init(id: Int, title: String, uuid: UUID = UUID(), lastInteracted: Date = Date(), modelUsed: String, isArchived: Bool = false, hasMessages: Bool = false) {
+    init(id: UUID = UUID(), title: String, lastInteracted: Date = Date(), modelUsed: String, isArchived: Bool = false, hasMessages: Bool = false) {
         self.id = id
         self.title = title
-        self.uuid = uuid
         self.lastInteracted = lastInteracted
         self.modelUsed = modelUsed
         self.isArchived = isArchived
@@ -65,7 +62,6 @@ class Conversation: Identifiable, Codable, Equatable {
 
     static func == (lhs: Conversation, rhs: Conversation) -> Bool {
         return lhs.id == rhs.id &&
-               lhs.uuid == rhs.uuid &&
                lhs.lastInteracted == rhs.lastInteracted &&
                lhs.modelUsed == rhs.modelUsed &&
                lhs.isArchived == rhs.isArchived &&

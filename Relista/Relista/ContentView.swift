@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @State var showingSettings: Bool = false
     @State var chatCache = ChatCache.shared
-    @State var selectedConversationUUID: UUID?
+    @State var selectedConversationID: UUID?
 
     // Rename dialog state
     @State var showingRenameDialog: Bool = false
@@ -47,13 +47,13 @@ struct ContentView: View {
                             Spacer()
                         }
                         .padding(8)
-                        .background(selectedConversationUUID == conv.uuid ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
+                        .background(selectedConversationID == conv.id ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                         .padding(.horizontal, 4)
                         .padding(.vertical, -4)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            loadConversation(conv.uuid)
+                            loadConversation(conv.id)
                         }
                         .contextMenu {
                             Button {
@@ -76,8 +76,8 @@ struct ContentView: View {
                 .navigationTitle("Chats")
             }
         } detail: {
-            if let uuid = selectedConversationUUID {
-                ChatWindow(conversationUUID: uuid)
+            if let id = selectedConversationID {
+                ChatWindow(conversationID: id)
                     .toolbar(){
                         ToolbarItemGroup() {
                             Button("New chat", systemImage: "square.and.pencil"){
@@ -135,42 +135,42 @@ struct ContentView: View {
     
     func createNewConversation() {
         // Unmark previous conversation as being viewed
-        if let previousUUID = selectedConversationUUID {
-            chatCache.setViewing(uuid: previousUUID, isViewing: false)
+        if let previousID = selectedConversationID {
+            chatCache.setViewing(id: previousID, isViewing: false)
         }
 
         // Create new conversation
         let newConversation = chatCache.createConversation()
-        selectedConversationUUID = newConversation.uuid
+        selectedConversationID = newConversation.id
 
         // Mark new conversation as being viewed
-        chatCache.setViewing(uuid: newConversation.uuid, isViewing: true)
+        chatCache.setViewing(id: newConversation.id, isViewing: true)
     }
 
-    func loadConversation(_ uuid: UUID) {
+    func loadConversation(_ id: UUID) {
         // If switching away from a conversation without messages, delete it
-        if let previousUUID = selectedConversationUUID,
-           let previousConv = chatCache.getConversation(for: previousUUID),
+        if let previousID = selectedConversationID,
+           let previousConv = chatCache.getConversation(for: previousID),
            !previousConv.hasMessages {
-            chatCache.deleteConversation(uuid: previousUUID)
+            chatCache.deleteConversation(id: previousID)
         }
 
         // Unmark previous conversation as being viewed
-        if let previousUUID = selectedConversationUUID {
-            chatCache.setViewing(uuid: previousUUID, isViewing: false)
+        if let previousID = selectedConversationID {
+            chatCache.setViewing(id: previousID, isViewing: false)
         }
 
         // Switch to new conversation
-        selectedConversationUUID = uuid
+        selectedConversationID = id
 
         // Mark new conversation as being viewed (this loads it into cache)
-        chatCache.setViewing(uuid: uuid, isViewing: true)
+        chatCache.setViewing(id: id, isViewing: true)
     }
 
     func renameConversation() {
         guard let conv = conversationToRename, !renameText.isEmpty else { return }
 
-        chatCache.renameConversation(uuid: conv.uuid, to: renameText)
+        chatCache.renameConversation(id: conv.id, to: renameText)
 
         // Clean up state
         conversationToRename = nil
@@ -181,12 +181,12 @@ struct ContentView: View {
         guard let conv = conversationToDelete else { return }
 
         // If we're deleting the currently selected conversation, clear selection
-        if selectedConversationUUID == conv.uuid {
-            selectedConversationUUID = nil
+        if selectedConversationID == conv.id {
+            selectedConversationID = nil
         }
 
         // Delete from cache and disk
-        chatCache.deleteConversation(uuid: conv.uuid)
+        chatCache.deleteConversation(id: conv.id)
 
         // Clean up state
         conversationToDelete = nil

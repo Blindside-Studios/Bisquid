@@ -8,7 +8,7 @@
 import Foundation
 
 struct Message: Identifiable, Codable{
-    let id: Int
+    let id: UUID
     var text: String
     let role: MessageRole
     let attachmentLinks: [String]

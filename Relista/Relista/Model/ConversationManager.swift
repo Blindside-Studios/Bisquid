@@ -51,7 +51,7 @@ class ConversationManager {
         // Clean up folders for conversations that don't have messages
         let conversationsToRemove = conversations.filter { !$0.hasMessages }
         for conversation in conversationsToRemove {
-            try? deleteConversation(uuid: conversation.uuid)
+            try? deleteConversation(id: conversation.id)
         }
 
         let encoder = JSONEncoder()
@@ -76,9 +76,9 @@ class ConversationManager {
     }
     
     // save messages for a specific conversation
-    static func saveMessages(for conversationUUID: UUID, messages: [Message]) throws {
+    static func saveMessages(for conversationID: UUID, messages: [Message]) throws {
         // create conversation folder if needed
-        let conversationFolder = conversationsURL.appendingPathComponent(conversationUUID.uuidString)
+        let conversationFolder = conversationsURL.appendingPathComponent(conversationID.uuidString)
 
         if !FileManager.default.fileExists(atPath: conversationFolder.path) {
             try FileManager.default.createDirectory(at: conversationFolder, withIntermediateDirectories: true)
@@ -93,11 +93,11 @@ class ConversationManager {
         let data = try encoder.encode(messages)
         try data.write(to: messagesURL)
     }
-    
+
     // load messages for a specific conversation
-    static func loadMessages(for conversationUUID: UUID) throws -> [Message] {
+    static func loadMessages(for conversationID: UUID) throws -> [Message] {
         let messagesURL = conversationsURL
-            .appendingPathComponent(conversationUUID.uuidString)
+            .appendingPathComponent(conversationID.uuidString)
             .appendingPathComponent("messages.json")
 
         guard FileManager.default.fileExists(atPath: messagesURL.path) else {
@@ -112,8 +112,8 @@ class ConversationManager {
     }
 
     // delete a conversation and all its messages
-    static func deleteConversation(uuid: UUID) throws {
-        let conversationFolder = conversationsURL.appendingPathComponent(uuid.uuidString)
+    static func deleteConversation(id: UUID) throws {
+        let conversationFolder = conversationsURL.appendingPathComponent(id.uuidString)
 
         // Remove the entire conversation folder if it exists
         if FileManager.default.fileExists(atPath: conversationFolder.path) {

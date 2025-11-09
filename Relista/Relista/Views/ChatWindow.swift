@@ -8,14 +8,14 @@
 import SwiftUI
 
 struct ChatWindow: View {
-    let conversationUUID: UUID
+    let conversationID: UUID
     @State var inputMessage: String = ""
     @State private var chatCache = ChatCache.shared
 
     var body: some View {
         ZStack{
             GeometryReader { geo in
-                let chat = chatCache.getChat(for: conversationUUID)
+                let chat = chatCache.getChat(for: conversationID)
 
                 ScrollView(.vertical){
                     ForEach(chat.messages){ message in
@@ -28,7 +28,7 @@ struct ChatWindow: View {
                     }
                 }
                 .safeAreaInset(edge: .bottom, spacing: 0){
-                    PromptField(conversationUUID: conversationUUID, inputMessage: $inputMessage)
+                    PromptField(conversationID: conversationID, inputMessage: $inputMessage)
                 }
             }
         }
