@@ -38,7 +38,7 @@ struct PromptField: View {
                 }
                 .buttonBorderShape(.roundedRectangle)
                 .popover(isPresented: $showModelPickerPopOver) {
-                    ModelPicker(selectedModel: $selectedModel)
+                    ModelPicker(selectedModel: $selectedModel, isOpen: $showModelPickerPopOver)
                         .frame(minWidth: 250, maxHeight: 450)
                 }
                 .matchedTransitionSource(
@@ -61,7 +61,7 @@ struct PromptField: View {
         
         #if os(iOS) // only show this on iOS because the other platforms use a popover
         .sheet(isPresented: $showModelPickerSheet) {
-            ModelPicker(selectedModel: $modelName, selectedModelDisplay: $modelDisplayName)
+            ModelPicker(selectedModel: $selectedModel, isOpen: $showModelPickerSheet)
                 .presentationDetents([.medium, .large])
             
                 .navigationTransition(

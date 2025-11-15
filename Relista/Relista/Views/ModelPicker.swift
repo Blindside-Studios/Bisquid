@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ModelPicker: View {
     @Binding var selectedModel: AIModel
+    @Binding var isOpen: Bool
     
     var body: some View {
         ScrollView(.vertical){
@@ -31,6 +32,7 @@ struct ModelPicker: View {
                 .contentShape(Rectangle())
                 .onTapGesture {
                     selectedModel = model
+                    isOpen = false
                 }
             }
             .padding(8)
@@ -39,5 +41,5 @@ struct ModelPicker: View {
 }
 
 #Preview {
-    ModelPicker(selectedModel: .constant(AIModel(name: "Mistral Medium", modelID: "mistral-medium-latest", provider: .mistral)))
+    ModelPicker(selectedModel: .constant(AIModel(name: "Mistral Medium", modelID: "mistral-medium-latest", provider: .mistral)), isOpen: .constant(true))
 }
