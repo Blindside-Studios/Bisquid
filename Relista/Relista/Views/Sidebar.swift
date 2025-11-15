@@ -46,7 +46,7 @@ struct Sidebar: View {
                         Spacer()
                     }
                     .padding(8)
-                    .background(selectedConversationID == conv.id ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(.clear))
+                    .background(selectedConversationID == conv.id ? AnyShapeStyle(.thickMaterial) : AnyShapeStyle(.clear))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .padding(.horizontal, 4)
                     .padding(.vertical, -4)

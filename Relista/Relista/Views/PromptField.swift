@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct PromptField: View {
-    @State var modelName = "ministral-3b-latest"
-    @State var modelDisplayName = "Mistral 3B"
+    @State var selectedModel = ModelList.Models.first!
     @State var showModelPickerSheet = false
     @State var showModelPickerPopOver = false
     let conversationID: UUID
@@ -33,13 +32,14 @@ struct PromptField: View {
                 }
                 .buttonBorderShape(.circle)
                 
-                Button(modelDisplayName, systemImage: "theatermask.and.paintbrush") {
+                Button(selectedModel.name, systemImage: "theatermask.and.paintbrush") {
                     if horizontalSizeClass == .compact { showModelPickerSheet = true }
                     else { showModelPickerPopOver.toggle() }
                 }
                 .buttonBorderShape(.roundedRectangle)
                 .popover(isPresented: $showModelPickerPopOver) {
-                    ModelPicker(selectedModel: $modelName, selectedModelDisplay: $modelDisplayName)
+                    ModelPicker(selectedModel: $selectedModel)
+                        .frame(minWidth: 250, maxHeight: 450)
                 }
                 .matchedTransitionSource(
                     id: "model", in: MessageOptionsTransition
@@ -86,8 +86,9 @@ struct PromptField: View {
         }
 
         // Use ChatCache to send message and handle generation
+        inputMessage = "Sending message to \(selectedModel.modelID)"
         chatCache.sendMessage(
-            modelName: modelName,
+            modelName: selectedModel.modelID,
             input,
             to: conversationID,
             apiKey: apiKey
