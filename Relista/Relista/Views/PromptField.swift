@@ -20,30 +20,52 @@ struct PromptField: View {
     @Namespace private var MessageOptionsTransition
 
     var body: some View {
-        VStack {
+        VStack(spacing: 12) {
             TextField("Message to the model", text: $inputMessage, axis: .vertical)
                 .lineLimit(1...10)
                 .textFieldStyle(.plain)
                 .onSubmit(sendMessage)
             
-            HStack {
-                Button("Simulate message flow", systemImage: "ant") {
-                    appendDummyMessages()
+            HStack(spacing: 12) {
+                Group{
+                    Button("Simulate message flow", systemImage: "ant") {
+                        appendDummyMessages()
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+                    
+                    Button{
+                        if horizontalSizeClass == .compact { showModelPickerSheet = true }
+                        else { showModelPickerPopOver.toggle() }
+                    } label: {
+                        VStack(alignment: .center, spacing: -2) {
+                            if let family = selectedModel.family,
+                               let spec = selectedModel.specifier {
+                                
+                                Text(family)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                
+                                Text(spec)
+                                    .font(.caption)
+                            } else {
+                                Text(selectedModel.name)
+                                    .font(.caption)
+                            }
+                        }
+                        .bold()
+                    }
+                    .buttonStyle(.plain)
+                    .labelStyle(.titleOnly)
+                    .matchedTransitionSource(
+                        id: "model", in: MessageOptionsTransition
+                    )
+                    .popover(isPresented: $showModelPickerPopOver) {
+                        ModelPicker(selectedModel: $selectedModel, isOpen: $showModelPickerPopOver)
+                            .frame(minWidth: 250, maxHeight: 450)
+                    }
                 }
-                .buttonBorderShape(.circle)
-                
-                Button(selectedModel.name, systemImage: "theatermask.and.paintbrush") {
-                    if horizontalSizeClass == .compact { showModelPickerSheet = true }
-                    else { showModelPickerPopOver.toggle() }
-                }
-                .buttonBorderShape(.roundedRectangle)
-                .popover(isPresented: $showModelPickerPopOver) {
-                    ModelPicker(selectedModel: $selectedModel, isOpen: $showModelPickerPopOver)
-                        .frame(minWidth: 250, maxHeight: 450)
-                }
-                .matchedTransitionSource(
-                    id: "model", in: MessageOptionsTransition
-                )
+                .opacity(0.75)
                 
                 Spacer()
                 

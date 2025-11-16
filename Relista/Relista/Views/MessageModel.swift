@@ -29,13 +29,13 @@ struct MessageModel: View {
                     UIPasteboard.general.string = messageText
                     #endif
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.plain)
                 .labelStyle(.iconOnly)
                 
                 Button("Regenerate", systemImage: "arrow.clockwise") {
                     // regrenerate
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.plain)
                 .labelStyle(.iconOnly)
                 
                 Spacer()
