@@ -10,7 +10,7 @@ import Foundation
 struct MistralService {
     let apiKey: String
     
-    func sendMessage(_ message: String) async throws -> String {
+    /*func sendMessage(_ message: String) async throws -> String {
         let url = URL(string: "https://api.mistral.ai/v1/chat/completions")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -32,7 +32,7 @@ struct MistralService {
         let firstChoice = choices[0]
         let messageObj = firstChoice["message"] as! [String: Any]
         return messageObj["content"] as! String
-    }
+    }*/
     
     func streamMessage(messages: [Message], modelName: String) async throws -> AsyncThrowingStream<String, Error> {
         let url = URL(string: "https://api.mistral.ai/v1/chat/completions")!
@@ -41,8 +41,18 @@ struct MistralService {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 
-        // Convert Message array to API format
-        let apiMessages = messages.map { message in
+        var prePrompt = ""
+        if ChatCache.shared.selectedAgent != nil {
+            let agent = AgentManager.getAgent(fromUUID: ChatCache.shared.selectedAgent!)
+            if agent != nil {prePrompt = agent!.systemPrompt }
+        }
+        
+        let systemMessage: [String: String] = [
+            "role": "system",
+            "content": prePrompt
+        ]
+        
+        let apiMessages = [systemMessage] + messages.map { message in
             [
                 "role": message.role.toAPIString(),
                 "content": message.text

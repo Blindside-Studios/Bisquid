@@ -22,42 +22,93 @@ struct Sidebar: View {
     @State var conversationToDelete: Conversation? = nil
     
     var body: some View {
-        ScrollView{
-            VStack(spacing: 0){
-                Group
-                {
-                    let convo = chatCache.conversations.first(where: { $0.id == selectedConversationID })
-                    let isEmpty = convo?.hasMessages == false
-                    HStack{
-                        Text("🐙 New chat")
+        let currentConversation = chatCache.conversations.first { $0.id == selectedConversationID }
+        let isCurrentEmpty = currentConversation?.hasMessages == false
+
+        return ScrollView {
+            VStack(spacing: 0) {
+
+                HStack {
+                    Text("🐙 New chat")
+                    Spacer()
+                }
+                .padding(8)
+                .background {
+                    if isCurrentEmpty && ChatCache.shared.selectedAgent == nil {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.thickMaterial)
+                    } else {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.clear)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    selectedConversationID = ConversationManager.createNewConversation(
+                        fromID: selectedConversationID
+                    )
+                    ChatCache.shared.selectedAgent = nil
+                }
+                
+                ForEach(AgentManager.shared.customAgents.filter { $0.shownInSidebar }) { agent in
+                    let isCurrentAgent = ChatCache.shared.selectedAgent == agent.id
+
+                    HStack {
+                        Text(agent.icon + " " + agent.name)
                         Spacer()
                     }
                     .padding(8)
-                    .background(isEmpty
-                                ? AnyShapeStyle(.thickMaterial)
-                                : AnyShapeStyle(.clear)
-                    )
+                    .background {
+                        if isCurrentEmpty && isCurrentAgent {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(.thickMaterial)
+                        } else {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(.clear)
+                        }
+                    }
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        selectedConversationID = ConversationManager.createNewConversation(fromID: selectedConversationID)
+                        selectedConversationID = ConversationManager.createNewConversation(
+                            fromID: selectedConversationID,
+                            withAgent: agent.id
+                        )
+                        ChatCache.shared.selectedAgent = agent.id
+                        if agent.model != nil { ChatCache.shared.selectedModel = ModelList.Models.filter {$0.modelID == agent.model! }.first! }
                     }
                 }
-                
+                                
                 Divider()
                     .padding(8)
                 
-                ForEach (chatCache.conversations.filter { $0.hasMessages && !$0.isArchived }) { conv in
-                    HStack{
+                ForEach(chatCache.conversations.filter { $0.hasMessages && !$0.isArchived }) { conv in
+                    HStack {
                         Text(conv.title)
                         Spacer()
                     }
                     .padding(8)
-                    .background(selectedConversationID == conv.id ? AnyShapeStyle(.thickMaterial) : AnyShapeStyle(.clear))
+                    .background {
+                        if selectedConversationID == conv.id {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(.thickMaterial)
+                        } else {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(.clear)
+                        }
+                    }
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .contentShape(Rectangle())
                     .onTapGesture {
                         loadConversation(conv.id)
+                        if (conv.agentUsed != nil){
+                            let agent = AgentManager.getAgent(fromUUID: conv.agentUsed!)
+                            if agent != nil { ChatCache.shared.selectedAgent = agent!.id }
+                        }
+                        let possibleModels = ModelList.Models.filter { $0.modelID == conv.modelUsed }
+                        if (possibleModels.count > 0){
+                            ChatCache.shared.selectedModel = possibleModels.first!
+                        }
                     }
                     .contextMenu {
                         Button {
@@ -132,44 +183,31 @@ struct Sidebar: View {
     }
 
     func loadConversation(_ id: UUID) {
-        // If switching away from a conversation without messages, delete it
         if let previousID = selectedConversationID {
             chatCache.setViewing(id: previousID, isViewing: false)
-            if let previousConv = chatCache.getConversation(for: selectedConversationID!),
+            if let previousConv = chatCache.getConversation(for: previousID),
                !previousConv.hasMessages {
-                chatCache.deleteConversation(id: selectedConversationID!)
+                chatCache.deleteConversation(id: previousID)
             }
         }
 
-        // Switch to new conversation
         selectedConversationID = id
-
-        // Mark new conversation as being viewed (this loads it into cache)
         chatCache.setViewing(id: id, isViewing: true)
     }
 
     func renameConversation() {
         guard let conv = conversationToRename, !renameText.isEmpty else { return }
-
         chatCache.renameConversation(id: conv.id, to: renameText)
-
-        // Clean up state
         conversationToRename = nil
         renameText = ""
     }
 
     func deleteConversation() {
         guard let conv = conversationToDelete else { return }
-
-        // If we're deleting the currently selected conversation, clear selection
         if selectedConversationID == conv.id {
             selectedConversationID = nil
         }
-
-        // Delete from cache and disk
         chatCache.deleteConversation(id: conv.id)
-
-        // Clean up state
         conversationToDelete = nil
     }
 }

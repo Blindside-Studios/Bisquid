@@ -121,14 +121,14 @@ class ConversationManager {
         }
     }
     
-    static func createNewConversation(fromID: UUID?) -> UUID {
+    static func createNewConversation(fromID: UUID?, usingAgent: Bool = false, withAgent: UUID? = nil) -> UUID {
         // Unmark previous conversation as being viewed
         if let previousID = fromID {
             ChatCache.shared.setViewing(id: previousID, isViewing: false)
         }
 
         // Create new conversation
-        let newConversation = ChatCache.shared.createConversation()
+        let newConversation = ChatCache.shared.createConversation(agentUsed: withAgent)
         let newConvID = newConversation.id
 
         // Mark new conversation as being viewed

@@ -14,6 +14,7 @@ class Conversation: Identifiable, Codable, Equatable {
     var title: String
     var lastInteracted: Date
     var modelUsed: String
+    var agentUsed: UUID?
     var isArchived: Bool
     var hasMessages: Bool
 
@@ -24,6 +25,7 @@ class Conversation: Identifiable, Codable, Equatable {
         case title
         case lastInteracted
         case modelUsed
+        case agentUsed
         case isArchived
         case hasMessages
     }
@@ -36,6 +38,7 @@ class Conversation: Identifiable, Codable, Equatable {
         title = try container.decode(String.self, forKey: .title)
         lastInteracted = try container.decode(Date.self, forKey: .lastInteracted)
         modelUsed = try container.decode(String.self, forKey: .modelUsed)
+        agentUsed = try container.decode(UUID?.self, forKey: .agentUsed)
         isArchived = try container.decode(Bool.self, forKey: .isArchived)
         hasMessages = try container.decodeIfPresent(Bool.self, forKey: .hasMessages) ?? true // Default to true for backward compatibility
     }
@@ -46,16 +49,18 @@ class Conversation: Identifiable, Codable, Equatable {
         try container.encode(title, forKey: .title)
         try container.encode(lastInteracted, forKey: .lastInteracted)
         try container.encode(modelUsed, forKey: .modelUsed)
+        try container.encode(agentUsed, forKey: .agentUsed)
         try container.encode(isArchived, forKey: .isArchived)
         try container.encode(hasMessages, forKey: .hasMessages)
     }
 
     // regular initializer for creating new conversations
-    init(id: UUID = UUID(), title: String, lastInteracted: Date = Date(), modelUsed: String, isArchived: Bool = false, hasMessages: Bool = false) {
+    init(id: UUID = UUID(), title: String, lastInteracted: Date = Date(), modelUsed: String, agentUsed: UUID?, isArchived: Bool = false, hasMessages: Bool = false) {
         self.id = id
         self.title = title
         self.lastInteracted = lastInteracted
         self.modelUsed = modelUsed
+        self.agentUsed = agentUsed
         self.isArchived = isArchived
         self.hasMessages = hasMessages
     }
@@ -64,6 +69,7 @@ class Conversation: Identifiable, Codable, Equatable {
         return lhs.id == rhs.id &&
                lhs.lastInteracted == rhs.lastInteracted &&
                lhs.modelUsed == rhs.modelUsed &&
+               lhs.agentUsed == rhs.agentUsed &&
                lhs.isArchived == rhs.isArchived &&
                lhs.hasMessages == rhs.hasMessages
     }

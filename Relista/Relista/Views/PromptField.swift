@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct PromptField: View {
-    @State var selectedModel = ModelList.Models.first!
     @State var showModelPickerSheet = false
     @State var showModelPickerPopOver = false
     let conversationID: UUID
@@ -39,8 +38,8 @@ struct PromptField: View {
                         else { showModelPickerPopOver.toggle() }
                     } label: {
                         VStack(alignment: .center, spacing: -2) {
-                            if let family = selectedModel.family,
-                               let spec = selectedModel.specifier {
+                            if let family = ChatCache.shared.selectedModel.family,
+                               let spec = ChatCache.shared.selectedModel.specifier {
                                 
                                 Text(family)
                                     .font(.caption2)
@@ -49,7 +48,7 @@ struct PromptField: View {
                                 Text(spec)
                                     .font(.caption)
                             } else {
-                                Text(selectedModel.name)
+                                Text(ChatCache.shared.selectedModel.name)
                                     .font(.caption)
                             }
                         }
@@ -61,8 +60,14 @@ struct PromptField: View {
                         id: "model", in: MessageOptionsTransition
                     )
                     .popover(isPresented: $showModelPickerPopOver) {
-                        ModelPicker(selectedModel: $selectedModel, isOpen: $showModelPickerPopOver)
-                            .frame(minWidth: 250, maxHeight: 450)
+                        ModelPicker(
+                            selectedModel: Binding(
+                                get: { ChatCache.shared.selectedModel },
+                                set: { ChatCache.shared.selectedModel = $0 }
+                            ),
+                            isOpen: $showModelPickerPopOver
+                        )
+                        .frame(minWidth: 250, maxHeight: 450)
                     }
                 }
                 .opacity(0.75)
@@ -113,8 +118,8 @@ struct PromptField: View {
 
         // Use ChatCache to send message and handle generation
         chatCache.sendMessage(
-            modelName: selectedModel.modelID,
-            input,
+            modelName: ChatCache.shared.selectedModel.modelID,
+            inputText: input,
             to: conversationID,
             apiKey: apiKey
         )

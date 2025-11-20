@@ -32,6 +32,8 @@ class ChatCache {
 
     /// All conversations (metadata only)
     var conversations: [Conversation] = []
+    var selectedAgent: UUID? = nil
+    var selectedModel: AIModel = ModelList.Models.first!
 
     /// Dictionary mapping conversation IDs to their loaded chat data
     private(set) var loadedChats: [UUID: LoadedChat] = [:]
@@ -57,12 +59,19 @@ class ChatCache {
     }
 
     /// Creates a new conversation (not shown in sidebar until first message is sent)
-    func createConversation(modelUsed: String = "ministral-3b-latest") -> Conversation {
+    func createConversation(modelUsed: String = "ministral-3b-latest", agentUsed: UUID?) -> Conversation {
+        var model = modelUsed
+        if (agentUsed != nil){
+            let newModel = AgentManager.getAgent(fromUUID: agentUsed!)!.model
+            if newModel != nil { model = newModel! }
+        }
+        
         let newConversation = Conversation(
             id: UUID(),
             title: "New Conversation",
             lastInteracted: Date.now,
-            modelUsed: modelUsed,
+            modelUsed: model,
+            agentUsed: agentUsed,
             isArchived: false,
             hasMessages: false
         )
@@ -185,7 +194,7 @@ class ChatCache {
     /// Returns immediately, updates happen asynchronously via Observable updates
     func sendMessage(
         modelName: String,
-        _ text: String,
+        inputText: String,
         to conversationID: UUID,
         apiKey: String,
         onCompletion: (() -> Void)? = nil
@@ -207,7 +216,7 @@ class ChatCache {
         // Add user message
         let userMsg = Message(
             id: UUID(),
-            text: text,
+            text: inputText,
             role: .user,
             attachmentLinks: [],
             timeStamp: .now
