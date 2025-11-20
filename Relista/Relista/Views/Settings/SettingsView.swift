@@ -1,0 +1,90 @@
+//
+//  SettingsView.swift
+//  Relista
+//
+//  Created by Nicolas Helbig on 02.11.25.
+//
+
+import SwiftUI
+
+struct SettingsView: View {
+    @State private var selection: SettingsItem? = .apiProvider
+        
+        var body: some View {
+            NavigationSplitView {
+                List(SettingsItem.allCases, selection: $selection) { item in
+                    NavigationLink(value: item) {
+                        Label {
+                            Text(item.title)
+                        } icon: {
+                            Image(systemName: item.systemImage)
+                        }
+                    }
+                }
+                .navigationTitle("Settings")
+            } detail: {
+                switch selection {
+                case .apiProvider:
+                    APIProviderSettings()
+                case .personalization:
+                    PersonalizationSettings()
+                case .agents:
+                    AgentsSettings()
+                case .none:
+                    Text("Select a category")
+                }
+            }
+            #if os(macOS)
+            .frame(width: 800, height: 500)
+            #endif
+        }
+}
+
+enum SettingsItem: String, CaseIterable, Identifiable {
+    case apiProvider
+    case personalization
+    case agents
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .apiProvider: "API Provider"
+        case .personalization: "Personalization"
+        case .agents: "Squidlets"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .apiProvider: "link"
+        case .personalization: "paintpalette"
+        case .agents: "person.crop.square"
+        }
+    }
+}
+
+struct APIProviderSettings: View {
+    var body: some View {
+        APIProvider()
+            .padding()
+    }
+}
+
+struct PersonalizationSettings: View {
+    var body: some View {
+        Text("Personalization Settings")
+            .padding()
+    }
+}
+
+struct AgentsSettings: View {
+    var body: some View {
+        AgentSettings()
+            .padding()
+    }
+}
+
+#Preview {
+    SettingsView()
+}

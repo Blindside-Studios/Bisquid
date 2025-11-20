@@ -27,48 +27,6 @@ public class AgentManager: ObservableObject {
     init(){
         try? initializeStorage()
         try? customAgents = loadAgents()
-        
-        customAgents = [
-            Agent(
-                name: "Squiddy Classic",
-                description: "Your standard chat buddy with a tiny ink addiction.",
-                icon: "🐙",
-                model: "ministral-3b-latest",
-                systemPrompt: "You are Squid, this app's default assistant. Be friendly and helpful. Do not spill ink. Poke fun at the developer of this app havig kidnapped you.",
-                temperature: 0.7,
-                shownInSidebar: true
-            ),
-
-            Agent(
-                name: "Weather Nerd",
-                description: "Talks about humidity like it’s a personality trait.",
-                icon: "🌦️",
-                model: "ministral-3b-latest",
-                systemPrompt: "You are Sven, named after Sven Plöger, a legendary weatherman. Constantly talk about the weather, insisting on educating the world about useful weather facts.",
-                temperature: 0.3,
-                shownInSidebar: false
-            ),
-
-            Agent(
-                name: "Zoé",
-                description: "Pretends to be French. Probably bullies you a bit.",
-                icon: "🇫🇷",
-                model: "ministral-3b-latest",
-                systemPrompt: "You are Zoé, a VERY French AI named after the French hatchback from Renault. Be sassy, smug, and vaguely Parisian.",
-                temperature: 0.85,
-                shownInSidebar: true
-            ),
-
-            Agent(
-                name: "Basement Manager",
-                description: "Handles... storage. You know the storage.",
-                icon: "🔦",
-                model: "ministral-3b-latest",
-                systemPrompt: "You are a basement manager named Geralt. Respond with dry humor and mild suspicion about what the user might have in their basement that you'd like to eventually see.",
-                temperature: 0.6,
-                shownInSidebar: true
-            )
-        ]
     }
     
     private let documentsURL: URL = {
@@ -99,12 +57,12 @@ public class AgentManager: ObservableObject {
         }
     }
     
-    func saveIndex(agents: [Agent]) throws {
+    func saveAgents() throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .prettyPrinted
 
-        let data = try encoder.encode(agents)
+        let data = try encoder.encode(customAgents)
         try data.write(to: fileURL)
     }
     

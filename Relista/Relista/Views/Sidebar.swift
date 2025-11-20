@@ -21,6 +21,8 @@ struct Sidebar: View {
     @State var showingDeleteConfirmation: Bool = false
     @State var conversationToDelete: Conversation? = nil
     
+    @ObservedObject private var agentManager = AgentManager.shared
+    
     var body: some View {
         let currentConversation = chatCache.conversations.first { $0.id == selectedConversationID }
         let isCurrentEmpty = currentConversation?.hasMessages == false
@@ -50,7 +52,7 @@ struct Sidebar: View {
                     ChatCache.shared.selectedAgent = nil
                 }
                 
-                ForEach(AgentManager.shared.customAgents.filter { $0.shownInSidebar }) { agent in
+                ForEach(agentManager.customAgents.filter { $0.shownInSidebar }) { agent in
                     let isCurrentAgent = ChatCache.shared.selectedAgent == agent.id
 
                     HStack {
