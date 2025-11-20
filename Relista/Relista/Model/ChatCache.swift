@@ -85,11 +85,6 @@ class ChatCache {
         guard let conversation = getConversation(for: id) else { return }
         let chat = getChat(for: id)
 
-        // Update title from first message if conversation is new
-        if chat.messages.count > 0 && conversation.title == "New Conversation" {
-            conversation.title = chat.messages[0].text
-        }
-
         // Save index
         do {
             try ConversationManager.saveIndex(conversations: conversations)
@@ -203,7 +198,8 @@ class ChatCache {
         guard let conversation = getConversation(for: conversationID) else { return }
 
         // If this is the first message, mark conversation as having messages
-        if chat.messages.isEmpty {
+        let isChatNew = chat.messages.isEmpty
+        if isChatNew {
             conversation.hasMessages = true
             // Save index immediately so it appears in sidebar
             do {
@@ -275,6 +271,8 @@ class ChatCache {
                     // Clean up if chat is no longer needed
                     cleanupUnusedChats()
                 }
+                
+                if isChatNew { try? conversation.title = await service.generateChatName(messages: chat.messages) }
 
             } catch {
                 await MainActor.run {

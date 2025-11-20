@@ -10,18 +10,35 @@ import Foundation
 struct MistralService {
     let apiKey: String
     
-    /*func sendMessage(_ message: String) async throws -> String {
+    func generateChatName(messages: [Message]) async throws -> String {
         let url = URL(string: "https://api.mistral.ai/v1/chat/completions")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        let systemMessage: [String: String] = [
+            "role": "user",
+            "content": """
+                    Create a short title (max 3 words) describing the topic of the FIRST user message and the FIRST assistant reply. 
+                    Write the title only, nothing else. 
+                    Do not mention "user", "assistant" or other roles. 
+                    Describe the subject of the conversation, not the act of talking. 
+                    Use the same language that the user used.
+                    """
+        ]
+        
+        let apiMessages = messages.map { message in
+            [
+                "role": message.role.toAPIString(),
+                "content": message.text
+            ]
+        } + [systemMessage]
+                
         let body: [String: Any] = [
             "model": "ministral-3b-latest",
-            "messages": [
-                ["role": "user", "content": message]
-            ]
+            "messages": apiMessages,
+            "stream": false
         ]
         
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -32,7 +49,7 @@ struct MistralService {
         let firstChoice = choices[0]
         let messageObj = firstChoice["message"] as! [String: Any]
         return messageObj["content"] as! String
-    }*/
+    }
     
     func streamMessage(messages: [Message], modelName: String) async throws -> AsyncThrowingStream<String, Error> {
         let url = URL(string: "https://api.mistral.ai/v1/chat/completions")!

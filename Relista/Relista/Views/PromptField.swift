@@ -92,7 +92,13 @@ struct PromptField: View {
         
         #if os(iOS) // only show this on iOS because the other platforms use a popover
         .sheet(isPresented: $showModelPickerSheet) {
-            ModelPicker(selectedModel: $selectedModel, isOpen: $showModelPickerSheet)
+            ModelPicker(
+                selectedModel: Binding(
+                    get: { ChatCache.shared.selectedModel },
+                    set: { ChatCache.shared.selectedModel = $0 }
+                ),
+                isOpen: $showModelPickerPopOver
+            )
                 .presentationDetents([.medium, .large])
             
                 .navigationTransition(
