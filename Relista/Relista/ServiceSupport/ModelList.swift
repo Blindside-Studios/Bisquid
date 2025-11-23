@@ -53,7 +53,8 @@ struct RemoteAIModel: Codable {
 }
 
 class ModelList{
-    static var Models: [AIModel] = [AIModel(name: "Mistral Medium",   modelID: "mistralai/mistral-medium-latest",   provider: .mistral, family: "Mistral",   specifier: "Medium", isFree: false)]
+    private static let placeHolderModel = AIModel(name: "Mistral Medium",   modelID: "mistralai/mistral-medium-3.1",   provider: .mistral, family: "Mistral",   specifier: "Medium 3.1", isFree: false)
+    static var Models: [AIModel] = [placeHolderModel]
     
     @MainActor
     static func loadModels() async {
@@ -70,6 +71,7 @@ class ModelList{
         }
 
         Models = loadBundledDefaults()
+        ChatCache.shared.selectedModel = Models.first ?? placeHolderModel
     }
     
     private static let remoteModelURL = URL(string: "https://raw.githubusercontent.com/Blindside-Studios/Relista/refs/heads/main/featured_models.json")!
