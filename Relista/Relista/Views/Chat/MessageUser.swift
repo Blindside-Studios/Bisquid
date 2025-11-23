@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct MessageUser: View {
-    let messageText: String
+    let message: Message
     let availableWidth: CGFloat
     
     var body: some View {
@@ -16,7 +16,7 @@ struct MessageUser: View {
             HStack {
                 Spacer(minLength: availableWidth * 0.2)
                 
-                Text(messageText)
+                Text(message.text)
                     .padding()
                     .glassEffect(in: .rect(cornerRadius: 25.0))
             }
@@ -30,5 +30,5 @@ struct MessageUser: View {
 }
 
 #Preview {
-    MessageUser(messageText: "Assistant message", availableWidth: 200)
+    //MessageUser(messageText: "Assistant message", availableWidth: 200)
 }

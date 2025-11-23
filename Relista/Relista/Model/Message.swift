@@ -11,6 +11,7 @@ struct Message: Identifiable, Codable{
     let id: UUID
     var text: String
     let role: MessageRole
+    var modelUsed: String = "Unspecified Model"
     let attachmentLinks: [String]
     var timeStamp: Date
 }

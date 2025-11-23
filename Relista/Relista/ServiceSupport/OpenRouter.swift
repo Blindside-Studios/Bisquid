@@ -33,7 +33,7 @@ struct OpenRouter {
             "role": "user",
             "content": """
             Create a short title (3 words, max 4 words) describing the topic of the FIRST user message and the FIRST assistant reply.
-            Only the title. No quotation marks.
+            Only the title. NEVER use quotation marks.
             Same language as the user.
             """
         ]

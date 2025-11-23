@@ -236,6 +236,7 @@ class ChatCache {
                     id: UUID(),
                     text: "",
                     role: .assistant,
+                    modelUsed: modelName,
                     attachmentLinks: [],
                     timeStamp: .now
                 )
@@ -274,6 +275,8 @@ class ChatCache {
                 }
                 
                 if isChatNew { try? conversation.title = await service.generateChatName(messages: chat.messages) }
+                // save again to make sure it saves our chat title
+                try? ConversationManager.saveIndex(conversations: conversations)
 
             } catch {
                 await MainActor.run {

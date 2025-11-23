@@ -24,12 +24,12 @@ struct ChatWindow: View {
                         VStack{
                             ForEach(chat.messages){ message in
                                 if(message.role == .assistant){
-                                    MessageModel(messageText: message.text)
+                                    MessageModel(message: message)
                                         .frame(minHeight: message.id == chat.messages.last!.id ? geo.size.height * 0.8 : 0)
                                         .id(message.id)
                                 }
                                 else if (message.role == .user){
-                                    MessageUser(messageText: message.text, availableWidth: geo.size.width)
+                                    MessageUser(message: message, availableWidth: geo.size.width)
                                         .frame(minHeight: message.id == chat.messages.last!.id ? geo.size.height * 0.8 : 0)
                                         .id(message.id)
                                         .onAppear(){
