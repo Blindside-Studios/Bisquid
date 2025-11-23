@@ -17,24 +17,31 @@ struct ChatWindow: View {
             GeometryReader { geo in
                 let chat = chatCache.getChat(for: conversationID)
 
-                ScrollView(.vertical){
-                    VStack{
-                        ForEach(chat.messages){ message in
-                            if(message.role == .assistant){
-                                MessageModel(messageText: message.text)
-                            }
-                            else if (message.role == .user){
-                                MessageUser(messageText: message.text, availableWidth: geo.size.width)
+                ScrollViewReader { proxy in
+                    ScrollView(.vertical){
+                        VStack{
+                            ForEach(chat.messages){ message in
+                                if(message.role == .assistant){
+                                    MessageModel(messageText: message.text)
+                                        .frame(minHeight: message.id == chat.messages.filter { $0.role == .assistant }.last!.id ? geo.size.height * 0.7 : 0)
+                                        .id(message.id)
+                                        .onAppear(){
+                                            proxy.scrollTo(chat.messages.last!.id)
+                                        }
+                                }
+                                else if (message.role == .user){
+                                    MessageUser(messageText: message.text, availableWidth: geo.size.width)
+                                }
                             }
                         }
+                        // to center-align
+                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: 740)
+                        .frame(maxWidth: .infinity)
                     }
-                    // to center-align
-                    .frame(maxWidth: .infinity)
-                    .frame(maxWidth: 740)
-                    .frame(maxWidth: .infinity)
-                }
-                .safeAreaInset(edge: .bottom, spacing: 0){
-                    PromptField(conversationID: conversationID, inputMessage: $inputMessage)
+                    .safeAreaInset(edge: .bottom, spacing: 0){
+                        PromptField(conversationID: conversationID, inputMessage: $inputMessage)
+                    }
                 }
             }
         }
