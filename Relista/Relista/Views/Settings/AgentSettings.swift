@@ -102,38 +102,36 @@ struct AgentCreateView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView(.vertical){
-                Form {
-                    Section("Basics") {
-                        TextField("Name", text: $name)
-                        TextField("Description", text: $description)
-                        TextField("Icon (Emoji)", text: $icon)
-                            .font(.largeTitle)
-                    }
-                    
-                    Section("System Prompt") {
-                        TextEditor(text: $systemPrompt)
-                            .frame(minHeight: 120)
-                    }
-                    
-                    Section("Temperature") {
-                        Slider(value: $temperature, in: 0...2, step: 0.1)
-                    }
-                    
-                    Section("Model") {
-                        TextField("Model Identifier", text: Binding($model, replacingNilWith: ""))
-                    }
+            Form {
+                Section("Basics") {
+                    TextField("Name", text: $name)
+                    TextField("Description", text: $description)
+                    TextField("Icon (Emoji)", text: $icon)
+                        .font(.largeTitle)
                 }
-                .navigationTitle("New Agent")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { isPresented = false }
-                    }
-                    
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Create") { create() }
-                            .disabled(name.isEmpty)
-                    }
+                
+                Section("System Prompt") {
+                    TextEditor(text: $systemPrompt)
+                        .frame(minHeight: 120)
+                }
+                
+                Section("Temperature") {
+                    Slider(value: $temperature, in: 0...2, step: 0.1)
+                }
+                
+                Section("Model") {
+                    TextField("Model Identifier", text: Binding($model, replacingNilWith: ""))
+                }
+            }
+            .navigationTitle("New Agent")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { isPresented = false }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") { create() }
+                        .disabled(name.isEmpty)
                 }
             }
         }
