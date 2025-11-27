@@ -218,6 +218,7 @@ class ChatCache {
             timeStamp: .now
         )
         chat.messages.append(userMsg)
+        conversation.lastInteracted = Date.now
 
         // Save user message immediately
         saveMessages(for: conversationID)
@@ -304,6 +305,7 @@ class ChatCache {
             timeStamp: .now
         )
         chat.messages.append(userMsg)
+        conversation.lastInteracted = Date.now
 
         // Save system message immediately
             if conversation.hasMessages { saveMessages(for: conversationID)}

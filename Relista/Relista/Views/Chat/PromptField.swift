@@ -127,28 +127,32 @@ struct PromptField: View {
     
     
     func sendMessage(){
-        let input = inputMessage
-        inputMessage = ""
-        DispatchQueue.main.async {
-            // force render refresh to prevent a bug where the placeholder text isn't showing up and the blinking cursor disappears
+        if (inputMessage != ""){
+            let input = inputMessage
+            inputMessage = ""
+            DispatchQueue.main.async {
+                // force render refresh to prevent a bug where the placeholder text isn't showing up and the blinking cursor disappears
+            }
+            
+            // Use ChatCache to send message and handle generation
+            chatCache.sendMessage(
+                modelName: ChatCache.shared.selectedModel.modelID,
+                inputText: input,
+                to: conversationID,
+                apiKey: apiKey
+            )
         }
-
-        // Use ChatCache to send message and handle generation
-        chatCache.sendMessage(
-            modelName: ChatCache.shared.selectedModel.modelID,
-            inputText: input,
-            to: conversationID,
-            apiKey: apiKey
-        )
     }
     
     func sendMessageAsSystem(){
-        let input = inputMessage
-        inputMessage = ""
-        DispatchQueue.main.async {
+        if (inputMessage != ""){
+            let input = inputMessage
+            inputMessage = ""
+            DispatchQueue.main.async {
+            }
+            
+            chatCache.sendMessageAsSystem(inputText: input, to: conversationID)
         }
-        
-        chatCache.sendMessageAsSystem(inputText: input, to: conversationID)
     }
 
     func appendDummyMessages(){

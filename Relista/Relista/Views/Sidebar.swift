@@ -84,7 +84,13 @@ struct Sidebar: View {
                 Divider()
                     .padding(8)
                 
-                ForEach(chatCache.conversations.filter { $0.hasMessages && !$0.isArchived }) { conv in
+                ForEach(
+                    chatCache.conversations
+                            .filter { $0.hasMessages && !$0.isArchived }
+                            .sorted { a, b in
+                                a.lastInteracted > b.lastInteracted
+                            }
+                ) { conv in
                     HStack {
                         Text(conv.title)
                         Spacer()

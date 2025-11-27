@@ -38,7 +38,7 @@ struct OpenRouter {
             """
         ]
         
-        let apiMessages = messages.map {
+        let apiMessages = messages.filter{$0.role == .assistant || $0.role == .user}.map {
             ["role": $0.role.toAPIString(), "content": $0.text]
         } + [systemMessage]
 
