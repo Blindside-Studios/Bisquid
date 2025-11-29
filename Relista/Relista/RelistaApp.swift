@@ -31,6 +31,19 @@ struct RelistaApp: App {
                     }
                 }
         }
+        .commands {
+            // Add refresh command to View menu (macOS and iPadOS)
+            #if os(macOS) || os(iOS)
+            CommandGroup(after: .sidebar) {
+                Button("Refresh", systemImage: "arrow.clockwise") {
+                    Task {
+                        try? await CloudKitSyncManager.shared.performFullSync()
+                    }
+                }
+                .keyboardShortcut("r", modifiers: .command)
+            }
+            #endif
+        }
 
         #if os(macOS)
         Settings {
