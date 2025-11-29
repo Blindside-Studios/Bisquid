@@ -111,6 +111,9 @@ class ChatCache {
 
     /// Deletes a conversation
     func deleteConversation(id: UUID) {
+        // Mark as deleted for CloudKit sync
+        CloudKitSyncManager.shared.markConversationDeleted(id)
+
         // Unload from cache
         unloadChat(id: id)
 

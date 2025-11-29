@@ -138,15 +138,6 @@ class ConversationManager {
         if FileManager.default.fileExists(atPath: conversationFolder.path) {
             try FileManager.default.removeItem(at: conversationFolder)
         }
-
-        // Delete from CloudKit
-        Task {
-            do {
-                try await CloudKitSyncManager.shared.deleteConversation(id)
-            } catch {
-                print("Error deleting conversation from CloudKit: \(error)")
-            }
-        }
     }
     
     static func createNewConversation(fromID: UUID?, usingAgent: Bool = false, withAgent: UUID? = nil) -> UUID {
