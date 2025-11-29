@@ -42,7 +42,9 @@ struct AgentSettings: View {
                             .contextMenu {
                                     Button(role: .destructive) {
                                         if let index = manager.customAgents.firstIndex(where: { $0.id == agent.id }) {
+                                            let agentID = agent.id
                                             manager.customAgents.remove(at: index)
+                                            CloudKitSyncManager.shared.markAgentDeleted(agentID)
                                             try? AgentManager.shared.saveAgents()
                                         }
                                     } label: {
@@ -73,6 +75,10 @@ struct AgentSettings: View {
     }
     
     private func deleteAgents(at offsets: IndexSet) {
+        // Mark agents as deleted before removing
+        for index in offsets {
+            CloudKitSyncManager.shared.markAgentDeleted(manager.customAgents[index].id)
+        }
         manager.customAgents.remove(atOffsets: offsets)
         try? AgentManager.shared.saveAgents()
     }

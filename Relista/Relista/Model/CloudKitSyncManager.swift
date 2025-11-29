@@ -34,6 +34,10 @@ class CloudKitSyncManager: ObservableObject {
     private var changedConversationIDs = Set<UUID>()
     private var changedConversationMessagesIDs = Set<UUID>() // Conversations whose messages changed
 
+    // Deletion tracking
+    private var deletedAgentIDs = Set<UUID>()
+    private var deletedConversationIDs = Set<UUID>()
+
     private init() {
         self.container = CKContainer(identifier: "iCloud.Blindside-Studios.Relista")
         self.privateDatabase = container.privateCloudDatabase
@@ -69,6 +73,21 @@ class CloudKitSyncManager: ObservableObject {
         hasPendingChanges = true
     }
 
+    /// Mark an agent as deleted (call before removing from local storage)
+    func markAgentDeleted(_ id: UUID) {
+        deletedAgentIDs.insert(id)
+        changedAgentIDs.remove(id) // Remove from changed set if it was there
+        hasPendingChanges = true
+    }
+
+    /// Mark a conversation as deleted (call before removing from local storage)
+    func markConversationDeleted(_ id: UUID) {
+        deletedConversationIDs.insert(id)
+        changedConversationIDs.remove(id) // Remove from changed set if it was there
+        changedConversationMessagesIDs.remove(id)
+        hasPendingChanges = true
+    }
+
     /// Debounced push - batches multiple push requests together
     func debouncedPush() {
         // Cancel any pending push
@@ -89,6 +108,7 @@ class CloudKitSyncManager: ObservableObject {
             if !Task.isCancelled && hasPendingChanges {
                 print("☁️ Starting debounced CloudKit push...")
                 print("  Changed: \(changedAgentIDs.count) agents, \(changedConversationIDs.count) conversations, \(changedConversationMessagesIDs.count) message sets")
+                print("  Deleted: \(deletedAgentIDs.count) agents, \(deletedConversationIDs.count) conversations")
 
                 try? await pushChangedItems()
 
@@ -96,6 +116,8 @@ class CloudKitSyncManager: ObservableObject {
                 changedAgentIDs.removeAll()
                 changedConversationIDs.removeAll()
                 changedConversationMessagesIDs.removeAll()
+                deletedAgentIDs.removeAll()
+                deletedConversationIDs.removeAll()
                 hasPendingChanges = false
 
                 print("✅ CloudKit push completed")
@@ -160,6 +182,16 @@ class CloudKitSyncManager: ObservableObject {
 
     /// Pushes only items that have changed (efficient)
     private func pushChangedItems() async throws {
+        // Delete agents first
+        for agentID in deletedAgentIDs {
+            try? await deleteAgent(agentID)
+        }
+
+        // Delete conversations and their messages
+        for conversationID in deletedConversationIDs {
+            try? await deleteConversation(conversationID)
+        }
+
         // Push changed agents
         if !changedAgentIDs.isEmpty {
             print("  📤 Pushing \(changedAgentIDs.count) changed agent(s)")
@@ -279,7 +311,7 @@ class CloudKitSyncManager: ObservableObject {
         }
 
         AgentManager.shared.customAgents = mergedAgents
-        try? AgentManager.shared.saveAgents()
+        try? AgentManager.shared.saveAgents(syncToCloudKit: false)
     }
 
     // MARK: - Conversation Sync

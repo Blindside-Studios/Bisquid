@@ -94,7 +94,7 @@ public class AgentManager: ObservableObject {
         }
     }
     
-    func saveAgents() throws {
+    func saveAgents(syncToCloudKit: Bool = true) throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .prettyPrinted
@@ -103,8 +103,10 @@ public class AgentManager: ObservableObject {
         try data.write(to: fileURL)
 
         // Mark agents as changed and sync to CloudKit (debounced to avoid rate limiting)
-        CloudKitSyncManager.shared.markAgentsChanged()
-        CloudKitSyncManager.shared.debouncedPush()
+        if syncToCloudKit {
+            CloudKitSyncManager.shared.markAgentsChanged()
+            CloudKitSyncManager.shared.debouncedPush()
+        }
     }
     
     func loadAgents() throws -> [Agent] {
