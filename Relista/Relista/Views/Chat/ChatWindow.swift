@@ -48,7 +48,7 @@ struct ChatWindow: View {
                         .frame(maxWidth: .infinity)
                     }
                     .scrollDismissesKeyboard(.interactively)
-                    .safeAreaInset(edge: .bottom, spacing: 0){
+                    .safeAreaBar(edge: .bottom, spacing: 0){
                         PromptField(conversationID: conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
                     }
                     //.onChange(of: chat.id, chatChanged)

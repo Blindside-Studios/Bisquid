@@ -211,7 +211,7 @@ struct Sidebar: View {
             await performSync()
         }
         #if os(iOS)
-        .safeAreaInset(edge: .bottom, spacing: 0){
+        .safeAreaBar(edge: .bottom, spacing: 0){
             HStack{
                 Button {
                     showingSettings.toggle()

@@ -18,11 +18,13 @@ struct GeneralSettings: View {
             }
             
             // haptic feedback only applies to iPhone
+            #if os(iOS)
             if UIDevice.current.userInterfaceIdiom == .phone {
                 Section(header: Text("Haptic Feedback")){
                     Toggle("Haptic feedback during response generation", isOn: $vibrateOnTokensReceived)
                 }
             }
+            #endif
         }
     }
 }
