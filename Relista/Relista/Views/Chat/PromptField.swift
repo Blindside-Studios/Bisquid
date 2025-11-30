@@ -17,16 +17,14 @@ struct PromptField: View {
     @AppStorage("APIKeyOpenRouter") private var apiKey: String = ""
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var chatCache = ChatCache.shared
+    @State private var placeHolder = ChatPlaceHolders.returnRandomString()
+    @State private var placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
 
     @Namespace private var MessageOptionsTransition
 
     var body: some View {
         VStack(spacing: 12) {
-            if (selectedAgent != nil){
-                Text(selectedAgent!.uuidString)
-            }
-            
-            TextField("Message to the model", text: $inputMessage, axis: .vertical)
+            TextField(selectedAgent == nil ? placeHolder : "\(placeHolderVerb) @\(AgentManager.getUIAgentName(fromUUID: selectedAgent!))", text: $inputMessage, axis: .vertical)
                 .lineLimit(1...10)
                 .textFieldStyle(.plain)
                 .onSubmit(sendMessage)
@@ -128,6 +126,8 @@ struct PromptField: View {
     
     
     func sendMessage(){
+        placeHolder = ChatPlaceHolders.returnRandomString()
+        placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
         if (inputMessage != ""){
             let input = inputMessage
             inputMessage = ""
@@ -147,6 +147,8 @@ struct PromptField: View {
     }
     
     func sendMessageAsSystem(){
+        placeHolder = ChatPlaceHolders.returnRandomString()
+        placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
         if (inputMessage != ""){
             let input = inputMessage
             inputMessage = ""
@@ -182,6 +184,87 @@ struct PromptField: View {
         // Save the dummy messages
         chatCache.saveMessages(for: conversationID)
         chatCache.syncConversation(id: conversationID)
+    }
+}
+
+class ChatPlaceHolders{
+    static let placeHolders = [
+        "Ask anything",
+        "Type to chat",
+        "Message the model",
+        "Feel free to ask",
+        "How can I help",
+        "Thinking of something?",
+        "Don't overthink it",
+        "What's on your mind?",
+        "Ready when you are",
+        "What's up?",
+        "Don't doom-scroll, talk to me",
+        "Stuck? I could help",
+        "If thou dost require aid… then speak plainly",
+        "The next free AI is reserved for you",
+        "Can I have message? UwU",
+        "I don't bite, usually…",
+        "Your move, genius",
+        "Don't worry, I've seen worse",
+        "Speak, mortal!",
+        "Don't bore me, little worm",
+        "Try me…",
+        "Don't ask about r's in strawberry, please…",
+        "Just an AI, don't fall in love…",
+        "You sound great out of context",
+        "Lay it on me",
+        "We do what we must because we can",
+        "Hey you, finally awake?",
+        "Anyone can cook",
+        "Ready, set, go",
+    ]
+    
+    static let verbs = [
+        "Message",
+        "Talk to",
+        "Work with",
+        "Slack off with",
+        "Chat with",
+        "Huddle with",
+        "Debate with",
+        "Joke with",
+        "Chill with",
+        "Hang out with",
+        "Entertain",
+        "Employ",
+        "Underpay",
+        "Play with",
+        "Rant to",
+        "Plan with",
+        "Overthink with",
+        "Cook with",
+        "Learn with",
+        "Debug with",
+        "Scare off",
+        "Trust",
+        "Join",
+        "Butter up",
+        "Count to 3 with",
+        "Throw Ignifer with",
+        "Test",
+        "Explore with",
+        "Hallucinate with",
+        "Procrastinate with",
+        "Procreate with",
+        "Transform with",
+        "Marvel at",
+        "Survive with",
+        "Report to",
+        "Exercise with"
+    ]
+    
+    public static func returnRandomString() -> String {
+        return placeHolders.randomElement()!
+    }
+    
+    public static func returnRandomVerb() -> String {
+        return verbs.randomElement()!
     }
 }
 

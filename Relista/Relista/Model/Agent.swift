@@ -128,6 +128,14 @@ public class AgentManager: ObservableObject {
     static func getAgent(fromUUID: UUID) -> Agent?{
         return AgentManager.shared.customAgents.filter { $0.id == fromUUID }.first
     }
+    
+    static func getUIAgentName(fromUUID: UUID) -> String{
+        let agent = AgentManager.shared.customAgents.filter { $0.id == fromUUID }.first
+        if agent != nil {
+            return agent!.name
+        }
+        else { return "Unkown Agent" }
+    }
 
     /// Updates an agent's lastModified timestamp - call before saving
     func touchAgent(id: UUID) {
