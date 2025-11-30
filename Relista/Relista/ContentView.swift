@@ -18,6 +18,9 @@ struct ContentView: View {
     @State var selectedConversationID: UUID? = ConversationManager.createNewConversation(fromID: nil)
     @State var inputMessage = "" // put this here so switching between layouts doesn't clear it
     
+    @State var selectedAgent: UUID? = nil
+    @State var selectedModel: String = ModelList.placeHolderModel
+    
     @State private var columnVisibility: NavigationSplitViewVisibility = {
             #if os(iOS)
             return .detailOnly
@@ -28,10 +31,10 @@ struct ContentView: View {
 
     var body: some View {
         UnifiedSplitView {
-            Sidebar(showingSettings: $showingSettings, chatCache: $chatCache, selectedConversationID: $selectedConversationID)
+            Sidebar(showingSettings: $showingSettings, chatCache: $chatCache, selectedConversationID: $selectedConversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
         } content: {
             if let id = selectedConversationID {
-                ChatWindow(conversationID: id, inputMessage: $inputMessage)
+                ChatWindow(conversationID: id, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
                     .toolbar(){
                         ToolbarItemGroup() {
                             Button("New chat", systemImage: "square.and.pencil"){

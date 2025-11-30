@@ -57,12 +57,12 @@ struct OpenRouter {
         return messageObj["content"] as! String
     }
     
-    func streamMessage(messages: [Message], modelName: String) async throws -> AsyncThrowingStream<String, Error> {
+    func streamMessage(messages: [Message], modelName: String, agent: UUID?) async throws -> AsyncThrowingStream<String, Error> {
         var request = makeRequest()
         
         let systemMessage = [
             "role": "system",
-            "content": ChatCache.shared.selectedAgent
+            "content": agent
                 .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""
         ]
         

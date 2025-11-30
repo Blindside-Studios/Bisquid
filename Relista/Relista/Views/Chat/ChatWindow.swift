@@ -10,8 +10,10 @@ import SwiftUI
 struct ChatWindow: View {
     let conversationID: UUID
     @Binding var inputMessage: String
+    @Binding var selectedAgent: UUID?
+    @Binding var selectedModel: String
     @State private var chatCache = ChatCache.shared
-    
+
     @State private var scrollWithAnimation = true
     
     var body: some View {
@@ -47,7 +49,7 @@ struct ChatWindow: View {
                     }
                     .scrollDismissesKeyboard(.interactively)
                     .safeAreaInset(edge: .bottom, spacing: 0){
-                        PromptField(conversationID: conversationID, inputMessage: $inputMessage)
+                        PromptField(conversationID: conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
                     }
                     //.onChange(of: chat.id, chatChanged)
                     //.onChange(of: inputMessage, textChanged)

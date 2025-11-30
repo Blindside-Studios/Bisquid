@@ -8,12 +8,12 @@
 import SwiftUI
 
 struct ModelPicker: View {
-    @Binding var selectedModel: AIModel
+    @Binding var selectedModelSlug: String
     @Binding var isOpen: Bool
-    
+
     var body: some View {
         ScrollView(.vertical){
-            ForEach(ModelList.Models){ model in
+            ForEach(ModelList.AllModels){ model in
                 HStack{
                     VStack(alignment: .leading, spacing: 0.0) {
                         Text(model.name)
@@ -27,11 +27,11 @@ struct ModelPicker: View {
                 }
                 .padding(.vertical, 4.0)
                 .padding(.horizontal, 8.0)
-                .background(selectedModel == model ? AnyShapeStyle(.thickMaterial) : AnyShapeStyle(.clear))
+                .background(selectedModelSlug == model.modelID ? AnyShapeStyle(.thickMaterial) : AnyShapeStyle(.clear))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    selectedModel = model
+                    selectedModelSlug = model.modelID
                     isOpen = false
                 }
             }
@@ -41,5 +41,5 @@ struct ModelPicker: View {
 }
 
 #Preview {
-    ModelPicker(selectedModel: .constant(AIModel(name: "Mistral Medium", modelID: "mistral-medium-latest", provider: .mistral, family: "Mistral", specifier: "Medium", isFree: false)), isOpen: .constant(true))
+    ModelPicker(selectedModelSlug: .constant("mistral-medium-latest"), isOpen: .constant(true))
 }

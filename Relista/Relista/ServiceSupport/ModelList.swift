@@ -53,25 +53,25 @@ struct RemoteAIModel: Codable {
 }
 
 class ModelList{
-    private static let placeHolderModel = AIModel(name: "Mistral Medium",   modelID: "mistralai/mistral-medium-3.1",   provider: .mistral, family: "Mistral",   specifier: "Medium 3.1", isFree: false)
-    static var Models: [AIModel] = [placeHolderModel]
+    static let placeHolderModel = "mistralai/mistral-medium-3.1"
+    static var AllModels: [AIModel] = []
     
     @MainActor
     static func loadModels() async {
         if await updateFromRemote() {
             if let models = loadFromCache() {
-                Models = models.compactMap { $0.toLocal() }
+                AllModels = models.compactMap { $0.toLocal() }
                 return
             }
         }
 
         if let models = loadFromCache() {
-            Models = models.compactMap { $0.toLocal() }
+            AllModels = models.compactMap { $0.toLocal() }
             return
         }
 
-        Models = loadBundledDefaults()
-        ChatCache.shared.selectedModel = Models.first ?? placeHolderModel
+        AllModels = loadBundledDefaults()
+        // ChatCache.shared.selectedModel = Models.first ?? getModelFromSlug(slug: placeHolderModel)
     }
     
     private static let remoteModelURL = URL(string: "https://raw.githubusercontent.com/Blindside-Studios/Relista/refs/heads/main/featured_models.json")!
@@ -116,8 +116,33 @@ class ModelList{
               let decoded = try? JSONDecoder().decode([RemoteAIModel].self, from: data)
         else {
             debugPrint("Returning existing variable instead")
-            return Models
+            return AllModels
         }
         return decoded.compactMap { $0.toLocal() }
     }
+    
+    public static func getModelFromSlug(slug: String) -> AIModel{
+        let filteredModels = AllModels.filter({$0.modelID == slug})
+        if !filteredModels.isEmpty{
+            return filteredModels.first!
+        }
+        else{
+            let parsedSlug = parseSlug(slug)
+            return AIModel(
+                id: UUID(),
+                name: slug,
+                modelID: slug,
+                provider: .uncategorized,
+                family: parsedSlug.family,
+                specifier: parsedSlug.specifier,
+                isFree: false
+            )
+        }
+    }
+    
+    private static func parseSlug(_ slug: String) -> (family: String, specifier: String) {
+        let parts = slug.split(separator: "/", maxSplits: 1).map(String.init)
+        return (parts.first ?? "", parts.count > 1 ? parts[1] : "")
+    }
+
 }

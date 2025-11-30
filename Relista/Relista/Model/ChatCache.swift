@@ -32,8 +32,6 @@ class ChatCache {
 
     /// All conversations (metadata only)
     var conversations: [Conversation] = []
-    var selectedAgent: UUID? = nil
-    var selectedModel: AIModel = ModelList.Models.first!
 
     /// Dictionary mapping conversation IDs to their loaded chat data
     private(set) var loadedChats: [UUID: LoadedChat] = [:]
@@ -196,6 +194,7 @@ class ChatCache {
     /// Returns immediately, updates happen asynchronously via Observable updates
     func sendMessage(
         modelName: String,
+        agent: UUID?,
         inputText: String,
         to conversationID: UUID,
         apiKey: String,
@@ -256,7 +255,7 @@ class ChatCache {
             do {
                 //let service = MistralService(apiKey: apiKey)
                 let service = OpenRouter(apiKey: apiKey)
-                let stream = try await service.streamMessage(messages: chat.messages, modelName: modelName)
+                let stream = try await service.streamMessage(messages: chat.messages, modelName: modelName, agent: agent)
 
                 // Create blank assistant message
                 let assistantMsg = Message(

@@ -12,10 +12,12 @@ struct PromptField: View {
     @State var showModelPickerPopOver = false
     let conversationID: UUID
     @Binding var inputMessage: String
+    @Binding var selectedAgent: UUID?
+    @Binding var selectedModel: String
     @AppStorage("APIKeyOpenRouter") private var apiKey: String = ""
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var chatCache = ChatCache.shared
-    
+
     @Namespace private var MessageOptionsTransition
 
     var body: some View {
@@ -47,18 +49,19 @@ struct PromptField: View {
                         if horizontalSizeClass == .compact { showModelPickerSheet = true }
                         else { showModelPickerPopOver.toggle() }
                     } label: {
+                        let model = ModelList.getModelFromSlug(slug: selectedModel)
                         VStack(alignment: .center, spacing: -2) {
-                            if let family = ChatCache.shared.selectedModel.family,
-                               let spec = ChatCache.shared.selectedModel.specifier {
-                                
+                            if let family = model.family,
+                               let spec = model.specifier {
+
                                 Text(family)
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
-                                
+
                                 Text(spec)
                                     .font(.caption)
                             } else {
-                                Text(ChatCache.shared.selectedModel.name)
+                                Text(model.name)
                                     .font(.caption)
                             }
                         }
@@ -71,10 +74,7 @@ struct PromptField: View {
                     )
                     .popover(isPresented: $showModelPickerPopOver) {
                         ModelPicker(
-                            selectedModel: Binding(
-                                get: { ChatCache.shared.selectedModel },
-                                set: { ChatCache.shared.selectedModel = $0 }
-                            ),
+                            selectedModelSlug: $selectedModel,
                             isOpen: $showModelPickerPopOver
                         )
                         .frame(minWidth: 250, maxHeight: 450)
@@ -110,14 +110,11 @@ struct PromptField: View {
         #if os(iOS) // only show this on iOS because the other platforms use a popover
         .sheet(isPresented: $showModelPickerSheet) {
             ModelPicker(
-                selectedModel: Binding(
-                    get: { ChatCache.shared.selectedModel },
-                    set: { ChatCache.shared.selectedModel = $0 }
-                ),
-                isOpen: $showModelPickerPopOver
+                selectedModelSlug: $selectedModel,
+                isOpen: $showModelPickerSheet
             )
                 .presentationDetents([.medium, .large])
-            
+
                 .navigationTransition(
                     .zoom(sourceID: "model", in: MessageOptionsTransition)
                 )
@@ -136,7 +133,8 @@ struct PromptField: View {
             
             // Use ChatCache to send message and handle generation
             chatCache.sendMessage(
-                modelName: ChatCache.shared.selectedModel.modelID,
+                modelName: selectedModel,
+                agent: selectedAgent,
                 inputText: input,
                 to: conversationID,
                 apiKey: apiKey

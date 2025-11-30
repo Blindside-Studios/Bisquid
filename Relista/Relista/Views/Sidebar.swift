@@ -11,6 +11,8 @@ struct Sidebar: View {
     @Binding var showingSettings: Bool
     @Binding var chatCache: ChatCache
     @Binding var selectedConversationID: UUID?
+    @Binding var selectedAgent: UUID?
+    @Binding var selectedModel: String
 
     // Rename dialog state
     @State var showingRenameDialog: Bool = false
@@ -37,7 +39,7 @@ struct Sidebar: View {
                 }
                 .padding(8)
                 .background {
-                    if isCurrentEmpty && ChatCache.shared.selectedAgent == nil {
+                    if isCurrentEmpty && selectedAgent == nil {
                         RoundedRectangle(cornerRadius: 8)
                             .fill(.thickMaterial)
                     } else {
@@ -50,11 +52,11 @@ struct Sidebar: View {
                     selectedConversationID = ConversationManager.createNewConversation(
                         fromID: selectedConversationID
                     )
-                    ChatCache.shared.selectedAgent = nil
+                    selectedAgent = nil
                 }
                 
                 ForEach(agentManager.customAgents.filter { $0.shownInSidebar }) { agent in
-                    let isCurrentAgent = ChatCache.shared.selectedAgent == agent.id
+                    let isCurrentAgent = selectedAgent == agent.id
 
                     HStack {
                         Text(agent.icon + " " + agent.name)
@@ -77,8 +79,8 @@ struct Sidebar: View {
                             fromID: selectedConversationID,
                             withAgent: agent.id
                         )
-                        ChatCache.shared.selectedAgent = agent.id
-                        if agent.model != nil { ChatCache.shared.selectedModel = ModelList.Models.filter {$0.modelID == agent.model! }.first! }
+                        selectedAgent = agent.id
+                        if agent.model != nil { selectedModel = agent.model! }
                     }
                 }
                                 
@@ -112,12 +114,9 @@ struct Sidebar: View {
                         loadConversation(conv.id)
                         if (conv.agentUsed != nil){
                             let agent = AgentManager.getAgent(fromUUID: conv.agentUsed!)
-                            if agent != nil { ChatCache.shared.selectedAgent = agent!.id }
+                            if agent != nil { selectedAgent = agent!.id }
                         }
-                        let possibleModels = ModelList.Models.filter { $0.modelID == conv.modelUsed }
-                        if (possibleModels.count > 0){
-                            ChatCache.shared.selectedModel = possibleModels.first!
-                        }
+                        selectedModel = conv.modelUsed
                     }
                     .contextMenu {
                         Button {
