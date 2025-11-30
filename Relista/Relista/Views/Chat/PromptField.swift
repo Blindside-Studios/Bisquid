@@ -21,6 +21,8 @@ struct PromptField: View {
     @State private var placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
 
     @Namespace private var MessageOptionsTransition
+    
+    @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
 
     var body: some View {
         VStack(spacing: 12) {
@@ -129,6 +131,12 @@ struct PromptField: View {
         placeHolder = ChatPlaceHolders.returnRandomString()
         placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
         if (inputMessage != ""){
+            #if os(iOS)
+            if vibrateOnTokensReceived {
+                let feedbackGenerator = UINotificationFeedbackGenerator()
+                feedbackGenerator.notificationOccurred(.success)
+            }
+            #endif
             let input = inputMessage
             inputMessage = ""
             DispatchQueue.main.async {
@@ -141,7 +149,8 @@ struct PromptField: View {
                 agent: selectedAgent,
                 inputText: input,
                 to: conversationID,
-                apiKey: apiKey
+                apiKey: apiKey,
+                withHapticFeedback: vibrateOnTokensReceived
             )
         }
     }
@@ -150,6 +159,12 @@ struct PromptField: View {
         placeHolder = ChatPlaceHolders.returnRandomString()
         placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
         if (inputMessage != ""){
+            #if os(iOS)
+            if vibrateOnTokensReceived {
+                let feedbackGenerator = UINotificationFeedbackGenerator()
+                feedbackGenerator.notificationOccurred(.warning)
+            }
+            #endif
             let input = inputMessage
             inputMessage = ""
             DispatchQueue.main.async {

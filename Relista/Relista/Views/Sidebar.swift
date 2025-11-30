@@ -34,7 +34,7 @@ struct Sidebar: View {
 
         return ScrollView {
             VStack(spacing: 0) {
-
+                
                 HStack {
                     Text("🐙 New chat")
                     Spacer()
@@ -107,16 +107,16 @@ struct Sidebar: View {
                 .buttonStyle(.plain)
                 .labelStyle(.iconOnly)
                 .backgroundStyle(.clear)
-                                
+                
                 Divider()
                     .padding(8)
                 
                 ForEach(
                     chatCache.conversations
-                            .filter { $0.hasMessages && !$0.isArchived }
-                            .sorted { a, b in
-                                a.lastInteracted > b.lastInteracted
-                            }
+                        .filter { $0.hasMessages && !$0.isArchived }
+                        .sorted { a, b in
+                            a.lastInteracted > b.lastInteracted
+                        }
                 ) { conv in
                     HStack {
                         Text(conv.title)
@@ -205,11 +205,11 @@ struct Sidebar: View {
             } message: {
                 Text("Are you sure you want to delete this conversation? This action cannot be undone.")
             }
+            .padding(8)
         }
         .refreshable {
             await performSync()
         }
-        .padding(8)
         #if os(iOS)
         .safeAreaInset(edge: .bottom, spacing: 0){
             HStack{

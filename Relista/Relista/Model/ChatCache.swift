@@ -7,6 +7,10 @@
 
 import Foundation
 import Observation
+import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 /// Represents a loaded chat in memory with its messages and metadata
 @Observable
@@ -27,7 +31,7 @@ class LoadedChat: Identifiable {
 /// Manages chat state and message generation for all conversations
 /// This centralizes chat data so it can be accessed and modified even when not actively displayed
 @Observable
-class ChatCache {
+class ChatCache {    
     static let shared = ChatCache()
 
     /// All conversations (metadata only)
@@ -230,6 +234,7 @@ class ChatCache {
         inputText: String,
         to conversationID: UUID,
         apiKey: String,
+        withHapticFeedback: Bool = true,
         onCompletion: (() -> Void)? = nil
     ) {
         let chat = getChat(for: conversationID)
@@ -306,6 +311,12 @@ class ChatCache {
 
                 let assistantIndex = chat.messages.count - 1
 
+                // Haptic feedback setup
+                #if os(iOS)
+                var chunkCount = 0
+                let maxHapticChunks = 400 // Number of chunks to provide haptic feedback for
+                #endif
+
                 // Stream response chunks
                 for try await chunk in stream {
                     await MainActor.run {
@@ -314,6 +325,15 @@ class ChatCache {
                         updatedMessage.text += chunk
                         updatedMessage.lastModified = Date.now
                         chat.messages[assistantIndex] = updatedMessage
+
+                        // Haptic feedback with decreasing intensity
+                        #if os(iOS)
+                        if withHapticFeedback && chunkCount < maxHapticChunks {
+                            let intensity = 0.75 - (Double(chunkCount) / Double(maxHapticChunks))
+                            self.triggerHapticFeedback(intensity: intensity)
+                            chunkCount += 1
+                        }
+                        #endif
                     }
                 }
 
@@ -337,11 +357,26 @@ class ChatCache {
                 if isChatNew { try? conversation.title = await service.generateChatName(messages: chat.messages) }
                 // save again to make sure it saves our chat title
                 try? ConversationManager.saveIndex(conversations: conversations, changedConversationID: conversationID)
+                
+                #if os(iOS)
+                // provide haptic feedback that message is done generating
+                if withHapticFeedback {
+                    let feedbackGenerator = UINotificationFeedbackGenerator()
+                    feedbackGenerator.notificationOccurred(.success)
+                }
+                #endif
 
             } catch {
                 await MainActor.run {
                     chat.isGenerating = false
                     print("Error generating message: \(error)")
+                    #if os(iOS)
+                    // provide haptic feedback that message failed generating
+                    if withHapticFeedback {
+                        let feedbackGenerator = UINotificationFeedbackGenerator()
+                        feedbackGenerator.notificationOccurred(.error)
+                    }
+                    #endif
                     cleanupUnusedChats()
                 }
             }
@@ -383,4 +418,28 @@ class ChatCache {
             print("Error saving messages for \(id): \(error)")
         }
     }
+
+    // MARK: - Haptic Feedback
+
+    #if os(iOS)
+    /// Triggers haptic feedback with varying intensity (1.0 = strongest, 0.0 = weakest)
+    private func triggerHapticFeedback(intensity: Double) {
+        let clampedIntensity = max(0.0, min(1.0, intensity))
+
+        // Map intensity to feedback style
+        let impactGenerator: UIImpactFeedbackGenerator
+        if clampedIntensity > 0.75 {
+            impactGenerator = UIImpactFeedbackGenerator(style: .heavy)
+        } else if clampedIntensity > 0.5 {
+            impactGenerator = UIImpactFeedbackGenerator(style: .medium)
+        } else if clampedIntensity > 0.25 {
+            impactGenerator = UIImpactFeedbackGenerator(style: .light)
+        } else {
+            impactGenerator = UIImpactFeedbackGenerator(style: .soft)
+        }
+
+        impactGenerator.prepare()
+        impactGenerator.impactOccurred(intensity: clampedIntensity)
+    }
+    #endif
 }

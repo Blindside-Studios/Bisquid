@@ -9,7 +9,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @State private var selection: SettingsItem? = .apiProvider
-    @AppStorage("AlwaysShowFullModelMessageToolbar") private var alwaysShowFullModelMessageToolbar: Bool = false
         
         var body: some View {
             #if os(macOS)
@@ -24,12 +23,12 @@ struct SettingsView: View {
                             }
                         }
                     }
-
-                    Toggle("Always show time and model", isOn: $alwaysShowFullModelMessageToolbar)
                 }
                 .navigationTitle("Settings")
             } detail: {
                 switch selection {
+                case .general:
+                    GeneralSettings()
                 case .apiProvider:
                     APIProviderSettings()
                 case .personalization:
@@ -48,6 +47,8 @@ struct SettingsView: View {
                     ForEach(SettingsItem.allCases, id: \.self) { item in
                         NavigationLink(item.title) {
                             switch item {
+                            case .general:
+                                GeneralSettings()
                             case .apiProvider:
                                 APIProviderSettings()
                             case .personalization:
@@ -57,11 +58,6 @@ struct SettingsView: View {
                             }
                         }
                     }
-
-                    Toggle(
-                        "Always show time and model",
-                        isOn: $alwaysShowFullModelMessageToolbar
-                    )
                 }
                 .navigationTitle("Settings")
             }
@@ -70,6 +66,7 @@ struct SettingsView: View {
 }
 
 enum SettingsItem: String, CaseIterable, Identifiable {
+    case general
     case apiProvider
     case personalization
     case agents
@@ -78,6 +75,7 @@ enum SettingsItem: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .general: "General"
         case .apiProvider: "API Provider"
         case .personalization: "Personalization"
         case .agents: "Squidlets"
@@ -86,6 +84,7 @@ enum SettingsItem: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .general: "gearshape"
         case .apiProvider: "link"
         case .personalization: "paintpalette"
         case .agents: "person.crop.square"
