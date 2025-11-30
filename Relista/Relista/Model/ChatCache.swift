@@ -57,7 +57,7 @@ class ChatCache {
     }
 
     /// Creates a new conversation (not shown in sidebar until first message is sent)
-    func createConversation(modelUsed: String = "ministral-3b-latest", agentUsed: UUID?) -> Conversation {
+    func createConversation(modelUsed: String = "mistralai/mistral-medium-3.1", agentUsed: UUID?) -> Conversation {
         var model = modelUsed
         if (agentUsed != nil){
             let newModel = AgentManager.getAgent(fromUUID: agentUsed!)!.model

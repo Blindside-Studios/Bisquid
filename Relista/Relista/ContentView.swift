@@ -15,20 +15,20 @@ extension Notification.Name {
 struct ContentView: View {
     @State var showingSettings: Bool = false
     @State var chatCache = ChatCache.shared
-    @State var selectedConversationID: UUID? = ConversationManager.createNewConversation(fromID: nil)
+    @State var selectedConversationID: UUID? = ConversationManager.createNewConversation(fromID: nil).newChatUUID
     @State var inputMessage = "" // put this here so switching between layouts doesn't clear it
     
     @State var selectedAgent: UUID? = nil
     @State var selectedModel: String = ModelList.placeHolderModel
     
     @State private var columnVisibility: NavigationSplitViewVisibility = {
-            #if os(iOS)
-            return .detailOnly
-            #else
-            return .all
-            #endif
-        }()
-
+#if os(iOS)
+        return .detailOnly
+#else
+        return .all
+#endif
+    }()
+    
     var body: some View {
         UnifiedSplitView {
             Sidebar(showingSettings: $showingSettings, chatCache: $chatCache, selectedConversationID: $selectedConversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
@@ -48,9 +48,19 @@ struct ContentView: View {
             createNewChat()
         }
     }
-
+    
     private func createNewChat() {
-        selectedConversationID = ConversationManager.createNewConversation(fromID: selectedConversationID)
+        let prevChat = ChatCache.shared.conversations.first(where: { $0.id == selectedConversationID })
+        debugPrint("prevChat != nil: \(prevChat != nil) prevChat.hasMessages: \(prevChat!.hasMessages)")
+        let result = ConversationManager.createNewConversation(fromID: selectedConversationID, usingAgent: prevChat != nil && prevChat!.hasMessages, withAgent: selectedAgent)
+        selectedConversationID = result.newChatUUID
+        selectedAgent = result.newAgent
+        if result.newAgent != nil {
+            let agent = AgentManager.getAgent(fromUUID: result.newAgent!)
+            if agent != nil && agent!.model != nil{
+                selectedModel = agent!.model!
+            }
+        }
     }
 }
 

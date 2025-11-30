@@ -22,6 +22,10 @@ struct PromptField: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            if (selectedAgent != nil){
+                Text(selectedAgent!.uuidString)
+            }
+            
             TextField("Message to the model", text: $inputMessage, axis: .vertical)
                 .lineLimit(1...10)
                 .textFieldStyle(.plain)

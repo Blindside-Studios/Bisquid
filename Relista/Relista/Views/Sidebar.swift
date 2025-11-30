@@ -51,7 +51,7 @@ struct Sidebar: View {
                 .onTapGesture {
                     selectedConversationID = ConversationManager.createNewConversation(
                         fromID: selectedConversationID
-                    )
+                    ).newChatUUID
                     selectedAgent = nil
                 }
                 
@@ -75,10 +75,11 @@ struct Sidebar: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        selectedConversationID = ConversationManager.createNewConversation(
+                        let result = ConversationManager.createNewConversation(
                             fromID: selectedConversationID,
                             withAgent: agent.id
                         )
+                        selectedConversationID = result.newChatUUID
                         selectedAgent = agent.id
                         if agent.model != nil { selectedModel = agent.model! }
                     }
