@@ -7,6 +7,19 @@
 
 import SwiftUI
 
+// MARK: Environment Key for Sidebar Selection
+
+private struct SidebarSelectionActionKey: EnvironmentKey {
+    static let defaultValue: (() -> Void)? = nil
+}
+
+extension EnvironmentValues {
+    var onSidebarSelection: (() -> Void)? {
+        get { self[SidebarSelectionActionKey.self] }
+        set { self[SidebarSelectionActionKey.self] = newValue }
+    }
+}
+
 // MARK: Unified Control
 
 struct UnifiedSplitView<Sidebar: View, Content: View>: View {
@@ -29,6 +42,11 @@ struct UnifiedSplitView<Sidebar: View, Content: View>: View {
             if hSizeClass == .compact {
                 ChatSplitView(isOpen: $isSidebarOpen) {
                     sidebar
+                        .environment(\.onSidebarSelection, {
+                            withAnimation(.spring) {
+                                isSidebarOpen = false
+                            }
+                        })
                 } content: {
                     content
                         .toolbar {
@@ -44,7 +62,7 @@ struct UnifiedSplitView<Sidebar: View, Content: View>: View {
                         }
                         .navigationTitle("")
                 }
-                
+
             } else {
                 
                 NavigationSplitView {
@@ -158,6 +176,14 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                         }
                     }
             )
+            .onChange(of: isOpen) { oldValue, newValue in
+                // Dismiss keyboard when opening sidebar
+                if newValue == true && oldValue == false {
+                    #if os(iOS)
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    #endif
+                }
+            }
         }
     }
 }

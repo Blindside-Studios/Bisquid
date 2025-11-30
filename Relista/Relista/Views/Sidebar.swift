@@ -25,8 +25,10 @@ struct Sidebar: View {
 
     @ObservedObject private var agentManager = AgentManager.shared
     @ObservedObject private var syncManager = CloudKitSyncManager.shared
-    
+
     @AppStorage("CustomAgentsInSidebarAreExpanded") private var showCustomAgents: Bool = true
+
+    @Environment(\.onSidebarSelection) private var onSidebarSelection
 
     var body: some View {
         let currentConversation = chatCache.conversations.first { $0.id == selectedConversationID }
@@ -55,6 +57,7 @@ struct Sidebar: View {
                         fromID: selectedConversationID
                     ).newChatUUID
                     selectedAgent = nil
+                    onSidebarSelection?()
                 }
                 
                 if showCustomAgents{
@@ -85,6 +88,7 @@ struct Sidebar: View {
                             selectedConversationID = result.newChatUUID
                             selectedAgent = agent.id
                             if !agent.model.isEmpty { selectedModel = agent.model }
+                            onSidebarSelection?()
                         }
                     }
                 }
@@ -141,6 +145,7 @@ struct Sidebar: View {
                             if agent != nil { selectedAgent = agent!.id }
                         }
                         selectedModel = conv.modelUsed
+                        onSidebarSelection?()
                     }
                     .contextMenu {
                         Button {
