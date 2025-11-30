@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+// Notification for menu bar commands
+extension Notification.Name {
+    static let createNewChat = Notification.Name("createNewChat")
+}
+
 struct ContentView: View {
     @State var showingSettings: Bool = false
     @State var chatCache = ChatCache.shared
@@ -30,12 +35,19 @@ struct ContentView: View {
                     .toolbar(){
                         ToolbarItemGroup() {
                             Button("New chat", systemImage: "square.and.pencil"){
-                                selectedConversationID = ConversationManager.createNewConversation(fromID: selectedConversationID)
+                                createNewChat()
                             }
                         }
                     }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .createNewChat)) { _ in
+            createNewChat()
+        }
+    }
+
+    private func createNewChat() {
+        selectedConversationID = ConversationManager.createNewConversation(fromID: selectedConversationID)
     }
 }
 

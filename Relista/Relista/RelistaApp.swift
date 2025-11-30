@@ -32,6 +32,16 @@ struct RelistaApp: App {
                 }
         }
         .commands {
+            // Replace default "New Window" with "New Chat" in File menu
+            #if os(macOS) || os(iOS)
+            CommandGroup(replacing: .newItem) {
+                Button("New Chat", systemImage: "square.and.pencil") {
+                    NotificationCenter.default.post(name: .createNewChat, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
+            #endif
+
             // Add refresh command to View menu (macOS and iPadOS)
             #if os(macOS) || os(iOS)
             CommandGroup(after: .sidebar) {
