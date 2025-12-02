@@ -43,6 +43,9 @@ class ChatCache {
     /// Currently active/viewed conversation ID
     var activeConversationID: UUID?
 
+    /// Dictionary tracking cancellation requests for conversations
+    private var cancellationFlags: [UUID: Bool] = [:]
+
     private init() {
         // Load conversations from disk on init
         do {
@@ -226,6 +229,12 @@ class ChatCache {
 
     // MARK: - Message Generation
 
+    /// Cancels ongoing message generation for a conversation
+    /// The cleanup code (saving messages and naming chat) will still execute
+    func cancelGeneration(for conversationID: UUID) {
+        cancellationFlags[conversationID] = true
+    }
+
     /// Sends a message and generates a response in the background
     /// Returns immediately, updates happen asynchronously via Observable updates
     func sendMessage(
@@ -287,6 +296,7 @@ class ChatCache {
 
         // Start generation
         chat.isGenerating = true
+        cancellationFlags[conversationID] = false // Clear any previous cancellation flag
 
         Task {
             do {
@@ -319,6 +329,12 @@ class ChatCache {
 
                 // Stream response chunks
                 for try await chunk in stream {
+                    // Check for cancellation request
+                    if cancellationFlags[conversationID] == true {
+                        print("🛑 Generation cancelled for \(conversationID.uuidString.prefix(8))")
+                        break
+                    }
+
                     await MainActor.run {
                         // Update message text
                         var updatedMessage = chat.messages[assistantIndex]
@@ -340,12 +356,13 @@ class ChatCache {
                 // Generation complete - save and cleanup
                 await MainActor.run {
                     chat.isGenerating = false
+                    cancellationFlags[conversationID] = false // Clear cancellation flag
 
                     // Update conversation metadata
                     chat.messages[chat.messages.count - 1].timeStamp = .now
                     conversation.lastInteracted = Date.now
                     conversation.lastModified = Date.now
-                    
+
                     saveMessages(for: conversationID)
                     syncConversation(id: conversationID)
                     onCompletion?()
@@ -369,6 +386,7 @@ class ChatCache {
             } catch {
                 await MainActor.run {
                     chat.isGenerating = false
+                    cancellationFlags[conversationID] = false // Clear cancellation flag
                     print("Error generating message: \(error)")
                     #if os(iOS)
                     // provide haptic feedback that message failed generating

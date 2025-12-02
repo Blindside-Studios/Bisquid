@@ -89,13 +89,29 @@ struct PromptField: View {
                 .opacity(0.75)
                 
                 Spacer()
-                
-                Button("Send message", systemImage: "arrow.up") {
-                    sendMessage()
+
+                Button {
+                    let chat = chatCache.getChat(for: conversationID)
+                    if chat.isGenerating {
+                        chatCache.cancelGeneration(for: conversationID)
+                    } else {
+                        sendMessage()
+                    }
+                } label: {
+                    let chat = chatCache.getChat(for: conversationID)
+                    ZStack{
+                        Label("Stop generating", systemImage: "stop.fill")
+                            .offset(y: chat.isGenerating ? 0 : 20)
+                        Label("Send message", systemImage: "arrow.up")
+                            .offset(y: chat.isGenerating ? -20 : 0)
+                    }
+                    .animation(.bouncy(duration: 0.3, extraBounce: 0.15), value: chat.isGenerating)
+                    .clipped()
                 }
                 .buttonStyle(.borderedProminent)
                 .labelStyle(.iconOnly)
                 .buttonBorderShape(.circle)
+                .clipShape(Circle())
                 .contextMenu {
                     Button {
                         sendMessageAsSystem()
@@ -130,55 +146,61 @@ struct PromptField: View {
     
     
     func sendMessage(){
-        placeHolder = ChatPlaceHolders.returnRandomString()
-        placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
-        if (inputMessage != ""){
-            // Dismiss software keyboard while keeping hardware keyboard functional
-            #if os(iOS)
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-
-            if vibrateOnTokensReceived {
-                let feedbackGenerator = UINotificationFeedbackGenerator()
-                feedbackGenerator.notificationOccurred(.success)
+        let chat = chatCache.getChat(for: conversationID)
+        if !chat.isGenerating{
+            placeHolder = ChatPlaceHolders.returnRandomString()
+            placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
+            if (inputMessage != ""){
+                // Dismiss software keyboard while keeping hardware keyboard functional
+                #if os(iOS)
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                
+                if vibrateOnTokensReceived {
+                    let feedbackGenerator = UINotificationFeedbackGenerator()
+                    feedbackGenerator.notificationOccurred(.success)
+                }
+                #endif
+                let input = inputMessage
+                inputMessage = ""
+                DispatchQueue.main.async {
+                    // force render refresh to prevent a bug where the placeholder text isn't showing up and the blinking cursor disappears
+                }
+                
+                // Use ChatCache to send message and handle generation
+                chatCache.sendMessage(
+                    modelName: selectedModel,
+                    agent: selectedAgent,
+                    inputText: input,
+                    to: conversationID,
+                    apiKey: apiKey,
+                    withHapticFeedback: vibrateOnTokensReceived
+                )
             }
-            #endif
-            let input = inputMessage
-            inputMessage = ""
-            DispatchQueue.main.async {
-                // force render refresh to prevent a bug where the placeholder text isn't showing up and the blinking cursor disappears
-            }
-
-            // Use ChatCache to send message and handle generation
-            chatCache.sendMessage(
-                modelName: selectedModel,
-                agent: selectedAgent,
-                inputText: input,
-                to: conversationID,
-                apiKey: apiKey,
-                withHapticFeedback: vibrateOnTokensReceived
-            )
         }
     }
     
     func sendMessageAsSystem(){
-        placeHolder = ChatPlaceHolders.returnRandomString()
-        placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
-        if (inputMessage != ""){
-            // Dismiss software keyboard while keeping hardware keyboard functional
-            #if os(iOS)
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-
-            if vibrateOnTokensReceived {
-                let feedbackGenerator = UINotificationFeedbackGenerator()
-                feedbackGenerator.notificationOccurred(.warning)
+        let chat = chatCache.getChat(for: conversationID)
+        if !chat.isGenerating{
+            placeHolder = ChatPlaceHolders.returnRandomString()
+            placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
+            if (inputMessage != ""){
+                // Dismiss software keyboard while keeping hardware keyboard functional
+                #if os(iOS)
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                
+                if vibrateOnTokensReceived {
+                    let feedbackGenerator = UINotificationFeedbackGenerator()
+                    feedbackGenerator.notificationOccurred(.warning)
+                }
+                #endif
+                let input = inputMessage
+                inputMessage = ""
+                DispatchQueue.main.async {
+                }
+                
+                chatCache.sendMessageAsSystem(inputText: input, to: conversationID)
             }
-            #endif
-            let input = inputMessage
-            inputMessage = ""
-            DispatchQueue.main.async {
-            }
-
-            chatCache.sendMessageAsSystem(inputText: input, to: conversationID)
         }
     }
 
