@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 enum ModelProvider: String, CaseIterable, Decodable {
     case openAI = "OpenAI"
@@ -53,7 +54,7 @@ struct RemoteAIModel: Codable {
 }
 
 class ModelList{
-    static let placeHolderModel = "mistralai/mistral-medium-3.1"
+    @AppStorage("AppDefaultModel") static var placeHolderModel: String = "mistralai/mistral-medium-3.1"
     static var AllModels: [AIModel] = []
     
     @MainActor

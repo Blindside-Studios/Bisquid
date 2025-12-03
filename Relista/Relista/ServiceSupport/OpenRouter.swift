@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 struct OpenRouter {
     let apiKey: String
@@ -62,10 +63,11 @@ struct OpenRouter {
     
     func streamMessage(messages: [Message], modelName: String, agent: UUID?) async throws -> AsyncThrowingStream<String, Error> {
         var request = makeRequest()
+        @AppStorage("DefaultAssistantInstructions") var defaultInstructions: String = ""
         
         let systemMessage = [
             "role": "system",
-            "content": agent
+            "content": agent == nil ? defaultInstructions : agent
                 .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""
         ]
         

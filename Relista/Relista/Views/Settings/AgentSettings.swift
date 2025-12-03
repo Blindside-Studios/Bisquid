@@ -8,69 +8,71 @@
 import SwiftUI
 
 struct AgentSettings: View {
-    @ObservedObject private var manager = AgentManager.shared
-    
+    @StateObject private var manager = AgentManager.shared
+
     @State private var showCreateSheet = false
-    
+    @State private var selectedAgent: Agent?
+
     var body: some View {
-        NavigationStack {
-            Group {
-                if manager.customAgents.isEmpty {
-                    ContentUnavailableView(
-                        "No Agents Yet",
-                        systemImage: "person.crop.circle.badge.questionmark",
-                        description: Text("Create your first custom agent to get started.")
-                    )
-                } else {
-                    List {
-                        ForEach(manager.customAgents) { agent in
-                            NavigationLink(value: agent) {
-                                HStack {
-                                    Text(agent.icon)
-                                        .font(.largeTitle)
-                                        .padding(.trailing, 4)
-                                    
-                                    VStack(alignment: .leading) {
-                                        Text(agent.name)
-                                        Text(agent.description)
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
+        Group {
+            if manager.customAgents.isEmpty {
+                ContentUnavailableView(
+                    "No Agents Yet",
+                    systemImage: "person.crop.circle.badge.questionmark",
+                    description: Text("Create your first custom agent to get started.")
+                )
+            } else {
+                List {
+                    ForEach(manager.customAgents) { agent in
+                        HStack {
+                            Text(agent.icon)
+                                .font(.largeTitle)
+                                .padding(.trailing, 4)
+
+                            VStack(alignment: .leading) {
+                                Text(agent.name)
+                                Text(agent.description)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            selectedAgent = agent
+                        }
+                        .contextMenu {
+                                Button(role: .destructive) {
+                                    if let index = manager.customAgents.firstIndex(where: { $0.id == agent.id }) {
+                                        let agentID = agent.id
+                                        manager.customAgents.remove(at: index)
+                                        CloudKitSyncManager.shared.markAgentDeleted(agentID)
+                                        try? AgentManager.shared.saveAgents()
                                     }
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
                                 }
                             }
-                            .contentShape(Rectangle())
-                            .contextMenu {
-                                    Button(role: .destructive) {
-                                        if let index = manager.customAgents.firstIndex(where: { $0.id == agent.id }) {
-                                            let agentID = agent.id
-                                            manager.customAgents.remove(at: index)
-                                            CloudKitSyncManager.shared.markAgentDeleted(agentID)
-                                            try? AgentManager.shared.saveAgents()
-                                        }
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                        }
-                        .onDelete(perform: deleteAgents)
-                        .onMove(perform: moveAgents)
                     }
+                    .onDelete(perform: deleteAgents)
+                    .onMove(perform: moveAgents)
                 }
             }
-            .navigationTitle("Agents")
-            .toolbar(){
-                ToolbarItemGroup(placement: .automatic) {
-                    Button("New Squidlet", systemImage: "square.and.pencil"){
-                        showCreateSheet = true
-                    }
+        }
+        .navigationTitle("Agents")
+        .toolbar(){
+            ToolbarItemGroup(placement: .automatic) {
+                Button("New Squidlet", systemImage: "square.and.pencil"){
+                    showCreateSheet = true
                 }
             }
-            .navigationDestination(for: Agent.self) { agent in
+        }
+        .sheet(item: $selectedAgent) { agent in
+            NavigationStack {
                 AgentDetailView(agent: binding(for: agent))
             }
-            .sheet(isPresented: $showCreateSheet) {
-                AgentCreateView(isPresented: $showCreateSheet)
-            }
+        }
+        .sheet(isPresented: $showCreateSheet) {
+            AgentCreateView(isPresented: $showCreateSheet)
         }
     }
     
@@ -135,6 +137,7 @@ struct AgentCreateView: View {
                                 isOpen: $showModelPickerPopOver
                             )
                             .frame(minWidth: 250, maxHeight: 450)
+                            .presentationCompactAdaptation(.popover)
                         }
                         .contentShape(Rectangle())
                         .onTapGesture{ showModelPickerPopOver.toggle() }
@@ -172,10 +175,11 @@ struct AgentCreateView: View {
 }
 
 struct AgentDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     @Binding var agent: Agent
-    
+
     @State private var showModelPickerPopOver = false
-    
+
     var body: some View {
         Form {
             Section("Basics") {
@@ -193,6 +197,7 @@ struct AgentDetailView: View {
                             isOpen: $showModelPickerPopOver
                         )
                         .frame(minWidth: 250, maxHeight: 450)
+                        .presentationCompactAdaptation(.popover)
                     }
                     .contentShape(Rectangle())
                     .onTapGesture{ showModelPickerPopOver.toggle() }
@@ -216,6 +221,13 @@ struct AgentDetailView: View {
             try? AgentManager.shared.saveAgents()
         }
         .navigationTitle(agent.name)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") {
+                    dismiss()
+                }
+            }
+        }
     }
 }
 

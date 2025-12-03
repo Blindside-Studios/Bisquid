@@ -99,13 +99,6 @@ struct APIProviderSettings: View {
     }
 }
 
-struct PersonalizationSettings: View {
-    var body: some View {
-        Text("Personalization Settings")
-            .padding()
-    }
-}
-
 struct AgentsSettings: View {
     var body: some View {
         AgentSettings()
