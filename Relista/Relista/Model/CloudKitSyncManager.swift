@@ -502,6 +502,16 @@ class CloudKitSyncManager: ObservableObject {
                 existingRecord["timeStamp"] = message.timeStamp as CKRecordValue
                 existingRecord["lastModified"] = message.lastModified as CKRecordValue
                 existingRecord["attachmentLinks"] = message.attachmentLinks as CKRecordValue
+
+                // Update annotations if present
+                if let annotations = message.annotations {
+                    let encoder = JSONEncoder()
+                    if let annotationsData = try? encoder.encode(annotations),
+                       let annotationsJSON = String(data: annotationsData, encoding: .utf8) {
+                        existingRecord["annotations"] = annotationsJSON as CKRecordValue
+                    }
+                }
+
                 _ = try await privateDatabase.save(existingRecord)
             } else {
                 throw error
@@ -752,6 +762,15 @@ class CloudKitSyncManager: ObservableObject {
         // Store attachment links as an array (CloudKit expects STRING_LIST)
         record["attachmentLinks"] = message.attachmentLinks as CKRecordValue
 
+        // Store annotations as JSON string (CloudKit doesn't support nested arrays)
+        if let annotations = message.annotations {
+            let encoder = JSONEncoder()
+            if let annotationsData = try? encoder.encode(annotations),
+               let annotationsJSON = String(data: annotationsData, encoding: .utf8) {
+                record["annotations"] = annotationsJSON as CKRecordValue
+            }
+        }
+
         return record
     }
 
@@ -769,6 +788,14 @@ class CloudKitSyncManager: ObservableObject {
         let id = UUID(uuidString: record.recordID.recordName) ?? UUID()
         let lastModified = record["lastModified"] as? Date ?? Date.now
 
+        // Decode annotations from JSON string (backwards compatible - may not exist)
+        var annotations: [MessageAnnotation]? = nil
+        if let annotationsJSON = record["annotations"] as? String,
+           let annotationsData = annotationsJSON.data(using: .utf8) {
+            let decoder = JSONDecoder()
+            annotations = try? decoder.decode([MessageAnnotation].self, from: annotationsData)
+        }
+
         return Message(
             id: id,
             text: text,
@@ -776,7 +803,8 @@ class CloudKitSyncManager: ObservableObject {
             modelUsed: modelUsed,
             attachmentLinks: attachmentLinks,
             timeStamp: timeStamp,
-            lastModified: lastModified
+            lastModified: lastModified,
+            annotations: annotations
         )
     }
 

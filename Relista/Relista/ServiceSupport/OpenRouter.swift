@@ -8,6 +8,12 @@
 import Foundation
 import SwiftUI
 
+/// Represents a chunk from the streaming API response
+enum StreamChunk {
+    case content(String)
+    case annotations([MessageAnnotation])
+}
+
 struct OpenRouter {
     let apiKey: String
     let referer: String = "https://local.app"
@@ -61,7 +67,7 @@ struct OpenRouter {
         return messageObj["content"] as! String
     }
     
-    func streamMessage(messages: [Message], modelName: String, agent: UUID?) async throws -> AsyncThrowingStream<String, Error> {
+    func streamMessage(messages: [Message], modelName: String, agent: UUID?, useSearch: Bool = false) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         var request = makeRequest()
         @AppStorage("DefaultAssistantInstructions") var defaultInstructions: String = ""
         
@@ -75,12 +81,28 @@ struct OpenRouter {
             ["role": $0.role.toAPIString(), "content": $0.text]
         }
 
+        // Debug: Log message count and approximate token count
+        let totalChars = apiMessages.reduce(0) { $0 + (($1["content"] as? String)?.count ?? 0) }
+        let estimatedTokens = totalChars / 4 // Rough estimate: 1 token ≈ 4 characters
+        print("📊 Sending \(apiMessages.count) messages (~\(estimatedTokens) tokens estimated)")
+        if estimatedTokens > 100000 {
+            print("⚠️ WARNING: Estimated token count is very high!")
+            print("   System message length: \((systemMessage["content"] as? String)?.count ?? 0) chars")
+            print("   Total messages: \(messages.count)")
+        }
+
+        var model = modelName
+        if useSearch { model = model + ":online" }
+
+        print("🔍 Model being used: \(model)")
+        print("🔍 Search enabled: \(useSearch)")
+
         let body: [String: Any] = [
-            "model": modelName,
+            "model": model,
             "messages": apiMessages,
             "stream": true
         ]
-        
+
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
         let (bytes, _) = try await URLSession.shared.bytes(for: request)
@@ -89,6 +111,18 @@ struct OpenRouter {
             Task {
                 do {
                     for try await line in bytes.lines {
+                        // Check for error responses (they don't have "data: " prefix)
+                        if line.hasPrefix("{") && line.contains("\"error\"") {
+                            if let jsonData = line.data(using: .utf8),
+                               let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                               let errorDict = json["error"] as? [String: Any],
+                               let errorMessage = errorDict["message"] as? String {
+                                let error = NSError(domain: "OpenRouter", code: 1, userInfo: [NSLocalizedDescriptionKey: errorMessage])
+                                continuation.finish(throwing: error)
+                                return
+                            }
+                        }
+
                         guard line.hasPrefix("data: ") else { continue }
                         let data = line.dropFirst(6)
                         if data == "[DONE]" {
@@ -98,9 +132,20 @@ struct OpenRouter {
                         if let jsonData = data.data(using: .utf8),
                            let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
                            let choices = json["choices"] as? [[String: Any]],
-                           let delta = choices.first?["delta"] as? [String: Any],
-                           let content = delta["content"] as? String {
-                            continuation.yield(content)
+                           let delta = choices.first?["delta"] as? [String: Any] {
+
+                            // Yield content if present
+                            if let content = delta["content"] as? String {
+                                continuation.yield(.content(content))
+                            }
+
+                            // Yield annotations if present (typically at the end of stream)
+                            if let annotationsData = delta["annotations"] as? [[String: Any]] {
+                                let annotations = try? self.parseAnnotations(annotationsData)
+                                if let annotations = annotations {
+                                    continuation.yield(.annotations(annotations))
+                                }
+                            }
                         }
                     }
                     continuation.finish()
@@ -109,5 +154,12 @@ struct OpenRouter {
                 }
             }
         }
+    }
+
+    /// Parses annotations from JSON response data
+    private func parseAnnotations(_ annotationsData: [[String: Any]]) throws -> [MessageAnnotation] {
+        let jsonData = try JSONSerialization.data(withJSONObject: annotationsData)
+        let decoder = JSONDecoder()
+        return try decoder.decode([MessageAnnotation].self, from: jsonData)
     }
 }

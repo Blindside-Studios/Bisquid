@@ -244,7 +244,8 @@ class ChatCache {
         to conversationID: UUID,
         apiKey: String,
         withHapticFeedback: Bool = true,
-        onCompletion: (() -> Void)? = nil
+        onCompletion: (() -> Void)? = nil,
+        useSearch: Bool = false
     ) {
         let chat = getChat(for: conversationID)
         guard let conversation = getConversation(for: conversationID) else { return }
@@ -302,7 +303,7 @@ class ChatCache {
             do {
                 //let service = MistralService(apiKey: apiKey)
                 let service = OpenRouter(apiKey: apiKey)
-                let stream = try await service.streamMessage(messages: chat.messages, modelName: modelName, agent: agent)
+                let stream = try await service.streamMessage(messages: chat.messages, modelName: modelName, agent: agent, useSearch: useSearch)
 
                 // Create blank assistant message
                 let assistantMsg = Message(
@@ -336,20 +337,31 @@ class ChatCache {
                     }
 
                     await MainActor.run {
-                        // Update message text
                         var updatedMessage = chat.messages[assistantIndex]
-                        updatedMessage.text += chunk
-                        updatedMessage.lastModified = Date.now
-                        chat.messages[assistantIndex] = updatedMessage
 
-                        // Haptic feedback with decreasing intensity
-                        #if os(iOS)
-                        if withHapticFeedback && chunkCount < maxHapticChunks {
-                            let intensity = 0.75 - (Double(chunkCount) / Double(maxHapticChunks))
-                            self.triggerHapticFeedback(intensity: intensity)
-                            chunkCount += 1
+                        switch chunk {
+                        case .content(let text):
+                            // Update message text
+                            updatedMessage.text += text
+                            updatedMessage.lastModified = Date.now
+
+                            // Haptic feedback with decreasing intensity
+                            #if os(iOS)
+                            if withHapticFeedback && chunkCount < maxHapticChunks {
+                                let intensity = 0.75 - (Double(chunkCount) / Double(maxHapticChunks))
+                                self.triggerHapticFeedback(intensity: intensity)
+                                chunkCount += 1
+                            }
+                            #endif
+
+                        case .annotations(let annotations):
+                            // Store annotations (typically arrive at end of stream)
+                            updatedMessage.annotations = annotations
+                            updatedMessage.lastModified = Date.now
+                            print("📎 Received \(annotations.count) annotation(s) for message")
                         }
-                        #endif
+
+                        chat.messages[assistantIndex] = updatedMessage
                     }
                 }
 

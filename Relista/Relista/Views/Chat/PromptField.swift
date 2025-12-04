@@ -20,6 +20,8 @@ struct PromptField: View {
     @State private var chatCache = ChatCache.shared
     @State private var placeHolder = ChatPlaceHolders.returnRandomString()
     @State private var placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
+    
+    @State var useSearch = false
 
     @Namespace private var MessageOptionsTransition
 
@@ -48,13 +50,15 @@ struct PromptField: View {
                     }
                 }
             
-            HStack(spacing: spacing) {
-                Group{
+            HStack {
+                HStack(alignment: .center, spacing: spacing){
                     Button("Simulate message flow", systemImage: "ant") {
                         appendDummyMessages()
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.plain)
+                    
+                    SearchButton(useSearch: $useSearch)
                     
                     Button{
                         if horizontalSizeClass == .compact { showModelPickerSheet = true }
@@ -137,6 +141,8 @@ struct PromptField: View {
                     }
                 }
             }
+            // put animation here so that the whole group shifts, otherwise it would only be the element inside the view
+            .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: useSearch)
             .frame(maxHeight: 16)
         }
         .padding(spacing)
@@ -195,7 +201,8 @@ struct PromptField: View {
                     inputText: input,
                     to: conversationID,
                     apiKey: apiKey,
-                    withHapticFeedback: vibrateOnTokensReceived
+                    withHapticFeedback: vibrateOnTokensReceived,
+                    useSearch: useSearch
                 )
             }
         }

@@ -15,13 +15,14 @@ struct Message: Identifiable, Codable{
     let attachmentLinks: [String]
     var timeStamp: Date
     var lastModified: Date
+    var annotations: [MessageAnnotation]?
 
     // Custom Codable implementation for backwards compatibility
     enum CodingKeys: String, CodingKey {
-        case id, text, role, modelUsed, attachmentLinks, timeStamp, lastModified
+        case id, text, role, modelUsed, attachmentLinks, timeStamp, lastModified, annotations
     }
 
-    init(id: UUID, text: String, role: MessageRole, modelUsed: String = "Unspecified Model", attachmentLinks: [String], timeStamp: Date, lastModified: Date = Date.now) {
+    init(id: UUID, text: String, role: MessageRole, modelUsed: String = "Unspecified Model", attachmentLinks: [String], timeStamp: Date, lastModified: Date = Date.now, annotations: [MessageAnnotation]? = nil) {
         self.id = id
         self.text = text
         self.role = role
@@ -29,6 +30,7 @@ struct Message: Identifiable, Codable{
         self.attachmentLinks = attachmentLinks
         self.timeStamp = timeStamp
         self.lastModified = lastModified
+        self.annotations = annotations
     }
 
     init(from decoder: Decoder) throws {
@@ -41,6 +43,8 @@ struct Message: Identifiable, Codable{
         timeStamp = try container.decode(Date.self, forKey: .timeStamp)
         // Backwards compatible: default to now if missing
         lastModified = try container.decodeIfPresent(Date.self, forKey: .lastModified) ?? Date.now
+        // Backwards compatible: annotations may not exist in old messages
+        annotations = try container.decodeIfPresent([MessageAnnotation].self, forKey: .annotations)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -52,6 +56,7 @@ struct Message: Identifiable, Codable{
         try container.encode(attachmentLinks, forKey: .attachmentLinks)
         try container.encode(timeStamp, forKey: .timeStamp)
         try container.encode(lastModified, forKey: .lastModified)
+        try container.encodeIfPresent(annotations, forKey: .annotations)
     }
 }
 
