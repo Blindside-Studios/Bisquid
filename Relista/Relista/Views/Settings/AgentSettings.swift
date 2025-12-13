@@ -130,17 +130,7 @@ struct AgentCreateView: View {
                 }
                 
                 Section("Model") {
-                    Text(model)
-                        .popover(isPresented: $showModelPickerPopOver) {
-                            ModelPicker(
-                                selectedModelSlug: $model,
-                                isOpen: $showModelPickerPopOver
-                            )
-                            .frame(minWidth: 250, maxHeight: 450)
-                            .presentationCompactAdaptation(.popover)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture{ showModelPickerPopOver.toggle() }
+                    ModelPicker(selectedModel: $model)
                 }
             }
             .navigationTitle("New Agent")
@@ -190,17 +180,7 @@ struct AgentDetailView: View {
             }
             
             Section("Model") {
-                Text(agent.model)
-                    .popover(isPresented: $showModelPickerPopOver) {
-                        ModelPicker(
-                            selectedModelSlug: $agent.model,
-                            isOpen: $showModelPickerPopOver
-                        )
-                        .frame(minWidth: 250, maxHeight: 450)
-                        .presentationCompactAdaptation(.popover)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture{ showModelPickerPopOver.toggle() }
+                ModelPicker(selectedModel: $agent.model)
             }
             
             Section("System Prompt") {

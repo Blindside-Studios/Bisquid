@@ -10,7 +10,7 @@ import SwiftUI
 struct PromptField: View {
     @State var showModelPickerSheet = false
     @State var showModelPickerPopOver = false
-    let conversationID: UUID
+    @State var conversationID: UUID
     @Binding var inputMessage: String
     @Binding var selectedAgent: UUID?
     @Binding var selectedModel: String
@@ -22,10 +22,9 @@ struct PromptField: View {
     @State private var placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
     
     @State var useSearch = false
+    @State var useReasoning = false
     
     @State private var isTryingToAddNewLine = false // workaround for .handled because iPadOS 26 is garbage
-
-    @Namespace private var MessageOptionsTransition
 
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
 
@@ -54,103 +53,8 @@ struct PromptField: View {
                         return .ignored
                     }
                 }
-            
-            HStack {
-                HStack(alignment: .center, spacing: spacing){
-                    Button("Simulate message flow", systemImage: "ant") {
-                        appendDummyMessages()
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.plain)
-                    
-                    SearchButton(useSearch: $useSearch)
-                    
-                    Button{
-                        if horizontalSizeClass == .compact { showModelPickerSheet = true }
-                        else { showModelPickerPopOver.toggle() }
-                    } label: {
-                        let model = ModelList.getModelFromSlug(slug: selectedModel)
-                        VStack(alignment: .center, spacing: -2) {
-                            if let family = model.family,
-                               let spec = model.specifier {
-
-                                Text(family)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-
-                                Text(spec)
-                                    .font(.caption)
-                            } else {
-                                Text(model.name)
-                                    .font(.caption)
-                            }
-                        }
-                        .bold()
-                    }
-                    .buttonStyle(.plain)
-                    .labelStyle(.titleOnly)
-                    .matchedTransitionSource(
-                        id: "model", in: MessageOptionsTransition
-                    )
-                    .popover(isPresented: $showModelPickerPopOver) {
-                        ModelPicker(
-                            selectedModelSlug: $selectedModel,
-                            isOpen: $showModelPickerPopOver
-                        )
-                        .frame(minWidth: 250, maxHeight: 450)
-                    }
-                }
-                .opacity(0.75)
-                
-                Spacer()
-
-                Button {
-                    let chat = chatCache.getChat(for: conversationID)
-                    if chat.isGenerating {
-                        chatCache.cancelGeneration(for: conversationID)
-                    } else {
-                        sendMessage()
-                    }
-                } label: {
-                    let chat = chatCache.getChat(for: conversationID)
-                    ZStack{
-                        Label("Stop generating", systemImage: "stop.fill")
-                            .offset(y: chat.isGenerating ? 0 : 25)
-                        Label("Send message", systemImage: "arrow.up")
-                            .offset(y: chat.isGenerating ? -25 : 0)
-                    }
-                    .font(.headline)
-                    // weirdly these seem to be interpreted differently across platforms
-                    #if os(macOS)
-                    .frame(width: 18, height: 18)
-                    #else
-                    .frame(width: 19, height: 19)
-                    #endif
-                    .animation(.bouncy(duration: 0.3, extraBounce: 0.15), value: chat.isGenerating)
-                }
-                .buttonStyle(.glassProminent)
-                .labelStyle(.iconOnly)
-                .buttonBorderShape(.circle)
-                .clipped()
-                // weirdly these seem to be interpreted differently across platforms
-                #if os(macOS)
-                .offset(x: 7, y: 2)
-                #else
-                .offset(x: 15, y: 1)
-                #endif
-                .contextMenu {
-                    Button {
-                        sendMessageAsSystem()
-                    } label: {
-                        Label("Send as system message", systemImage: "exclamationmark.bubble")
-                    }
-                }
-            }
-            // put animation here so that the whole group shifts, otherwise it would only be the element inside the view
-            .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: useSearch)
-            .frame(maxHeight: 16)
+            CommandBar(useSearch: $useSearch, useReasoning: $useReasoning, selectedModel: $selectedModel, conversationID: $conversationID, sendMessage: sendMessage, sendMessageAsSystem: sendMessageAsSystem, appendDummyMessages: appendDummyMessages)
         }
-        .padding(spacing)
         #if os(macOS)
         .glassEffect(in: .rect(cornerRadius: 18))
         #else
@@ -161,20 +65,6 @@ struct PromptField: View {
         .frame(maxWidth: 750)
         .frame(maxWidth: .infinity)
         .padding(8)
-        
-        #if os(iOS) // only show this on iOS because the other platforms use a popover
-        .sheet(isPresented: $showModelPickerSheet) {
-            ModelPicker(
-                selectedModelSlug: $selectedModel,
-                isOpen: $showModelPickerSheet
-            )
-                .presentationDetents([.medium, .large])
-
-                .navigationTransition(
-                    .zoom(sourceID: "model", in: MessageOptionsTransition)
-                )
-        }
-        #endif
     }
     
     
