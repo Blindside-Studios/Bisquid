@@ -73,6 +73,10 @@ struct ChatWindow: View {
             // Pull latest messages from CloudKit in background
             chatCache.pullMessagesIfNeeded(for: conversationID)
         }
+        .navigationTitle(chatCache.getConversation(for: conversationID)?.title ?? "New chat")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
     
     //func chatChanged(){
