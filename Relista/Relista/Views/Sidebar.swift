@@ -120,7 +120,8 @@ struct Sidebar: View {
                         .filter { $0.hasMessages && !$0.isArchived }
                         .sorted { a, b in
                             a.lastInteracted > b.lastInteracted
-                        }
+                        },
+                    id: \.id
                 ) { conv in
                     HStack {
                         Text(conv.title)

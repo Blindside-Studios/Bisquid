@@ -259,6 +259,9 @@ class ChatCache {
         if isChatNew {
             print("  🆕 This is the FIRST message for this conversation")
             conversation.hasMessages = true
+            // Ensure this conversation stays as the active one and is marked as being viewed
+            activeConversationID = conversationID
+            chat.isBeingViewed = true
             // Save index immediately so it appears in sidebar
             do {
                 try ConversationManager.saveIndex(conversations: conversations, changedConversationID: conversationID)

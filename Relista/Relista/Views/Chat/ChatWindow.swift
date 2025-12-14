@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ChatWindow: View {
-    let conversationID: UUID
+    @Binding var conversationID: UUID
     @Binding var inputMessage: String
     @Binding var selectedAgent: UUID?
     @Binding var selectedModel: String
@@ -55,7 +55,7 @@ struct ChatWindow: View {
                         #endif
                     }
                     .safeAreaBar(edge: .bottom, spacing: 0){
-                        PromptField(conversationID: conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
+                        PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
                     }
                     //.onChange(of: chat.id, chatChanged)
                     //.onChange(of: inputMessage, textChanged)

@@ -629,7 +629,15 @@ class CloudKitSyncManager: ObservableObject {
     }
 
     private func mergeMessages(cloudMessages: [Message], conversationID: UUID) {
-        var localMessages = (try? ConversationManager.loadMessages(for: conversationID)) ?? []
+        // Start with in-memory messages if chat is loaded, otherwise load from disk
+        var localMessages: [Message]
+        if let loadedChat = ChatCache.shared.loadedChats[conversationID] {
+            // Use in-memory messages to preserve unsaved changes
+            localMessages = loadedChat.messages
+        } else {
+            // Not loaded yet, load from disk
+            localMessages = (try? ConversationManager.loadMessages(for: conversationID)) ?? []
+        }
 
         // Create a dictionary of local messages by ID for faster lookup and conflict resolution
         var localMessageDict = Dictionary(uniqueKeysWithValues: localMessages.map { ($0.id, $0) })

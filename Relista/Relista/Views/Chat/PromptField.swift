@@ -10,7 +10,7 @@ import SwiftUI
 struct PromptField: View {
     @State var showModelPickerSheet = false
     @State var showModelPickerPopOver = false
-    @State var conversationID: UUID
+    @Binding var conversationID: UUID
     @Binding var inputMessage: String
     @Binding var selectedAgent: UUID?
     @Binding var selectedModel: String
