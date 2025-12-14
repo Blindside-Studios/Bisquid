@@ -46,6 +46,9 @@ class ChatCache {
     /// Dictionary tracking cancellation requests for conversations
     private var cancellationFlags: [UUID: Bool] = [:]
 
+    /// Set tracking conversations currently being pulled from CloudKit to prevent duplicate pulls
+    private var activeCloudKitPulls: Set<UUID> = []
+
     private init() {
         // Load conversations from disk on init
         do {
@@ -139,13 +142,10 @@ class ChatCache {
     // MARK: - Chat Loading/Unloading
 
     /// Loads or retrieves a chat from cache
-    /// Now supports on-demand CloudKit sync for better performance and storage efficiency
+    /// Loads from local disk only - call pullMessagesIfNeeded() separately to sync from CloudKit
     func getChat(for id: UUID) -> LoadedChat {
         if let existing = loadedChats[id] {
-            // Already loaded - trigger background refresh from CloudKit
-            Task {
-                try? await CloudKitSyncManager.shared.pullMessages(for: id)
-            }
+            // Already loaded - return it
             return existing
         }
 
@@ -155,39 +155,39 @@ class ChatCache {
             let chat = LoadedChat(id: id, messages: messages)
             loadedChats[id] = chat
 
-            // If we have local messages, fetch any new ones from CloudKit in background
             if !messages.isEmpty {
                 print("📂 Loaded \(messages.count) cached message(s) for \(id.uuidString.prefix(8))")
-                Task {
-                    try? await CloudKitSyncManager.shared.pullMessages(for: id)
-                }
             } else {
-                // Empty local cache - try pulling from CloudKit immediately
-                print("📭 No local messages for \(id.uuidString.prefix(8)) - checking CloudKit")
-                //let chat = chat // Capture for async use
-                Task {
-                    try? await CloudKitSyncManager.shared.pullMessages(for: id)
-                }
+                print("📭 No local messages for \(id.uuidString.prefix(8))")
             }
 
             return chat
         } catch {
             print("⚠️ No local cache for \(id.uuidString.prefix(8)): \(error)")
-            // No local cache exists - create empty chat and try CloudKit
+            // No local cache exists - create empty chat
             let chat = LoadedChat(id: id)
             loadedChats[id] = chat
-
-            // Attempt to pull from CloudKit
-            Task {
-                do {
-                    try await CloudKitSyncManager.shared.pullMessages(for: id)
-                    print("✅ Successfully pulled messages from CloudKit for \(id.uuidString.prefix(8))")
-                } catch {
-                    print("❌ Failed to pull messages from CloudKit: \(error)")
-                }
-            }
-
             return chat
+        }
+    }
+
+    /// Pulls messages from CloudKit for a conversation if not already pulling
+    /// Safe to call multiple times - will only pull once
+    func pullMessagesIfNeeded(for id: UUID) {
+        guard !activeCloudKitPulls.contains(id) else {
+            return // Already pulling
+        }
+
+        activeCloudKitPulls.insert(id)
+        Task {
+            do {
+                try await CloudKitSyncManager.shared.pullMessages(for: id)
+            } catch {
+                print("Failed to pull messages from CloudKit: \(error)")
+            }
+            await MainActor.run {
+                activeCloudKitPulls.remove(id)
+            }
         }
     }
 

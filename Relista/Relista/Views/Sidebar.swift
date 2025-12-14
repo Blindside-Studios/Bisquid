@@ -255,6 +255,8 @@ struct Sidebar: View {
 
         selectedConversationID = id
         chatCache.setViewing(id: id, isViewing: true)
+        // Pull latest messages from CloudKit in background
+        chatCache.pullMessagesIfNeeded(for: id)
     }
 
     func renameConversation() {

@@ -23,12 +23,15 @@ struct SendMessageButton: View {
                 sendMessage()
             }
         } label: {
-            let chat = chatCache.getChat(for: conversationID)
+            // Access chat directly from cache to avoid infinite loop
+            let chat = chatCache.loadedChats[conversationID]
+            let isGenerating = chat?.isGenerating ?? false
+
             ZStack{
                 Label("Stop generating", systemImage: "stop.fill")
-                    .offset(y: chat.isGenerating ? 0 : 25)
+                    .offset(y: isGenerating ? 0 : 25)
                 Label("Send message", systemImage: "arrow.up")
-                    .offset(y: chat.isGenerating ? -25 : 0)
+                    .offset(y: isGenerating ? -25 : 0)
             }
             .font(.headline)
             // weirdly these seem to be interpreted differently across platforms
@@ -37,7 +40,7 @@ struct SendMessageButton: View {
             #else
             .frame(width: 19, height: 19)
             #endif
-            .animation(.bouncy(duration: 0.3, extraBounce: 0.15), value: chat.isGenerating)
+            .animation(.bouncy(duration: 0.3, extraBounce: 0.15), value: isGenerating)
         }
         .buttonStyle(.glassProminent)
         .labelStyle(.iconOnly)

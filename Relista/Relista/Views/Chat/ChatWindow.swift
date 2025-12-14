@@ -19,9 +19,9 @@ struct ChatWindow: View {
     var body: some View {
         ZStack{
             GeometryReader { geo in
-                let chat = chatCache.getChat(for: conversationID)
-
-                ScrollViewReader { proxy in
+                // Access chat directly from cache - it's loaded in .task
+                if let chat = chatCache.loadedChats[conversationID] {
+                    ScrollViewReader { proxy in
                     ScrollView(.vertical){
                         VStack{
                             ForEach(chat.messages.sorted { $0.timeStamp < $1.timeStamp }){ message in
@@ -59,8 +59,19 @@ struct ChatWindow: View {
                     }
                     //.onChange(of: chat.id, chatChanged)
                     //.onChange(of: inputMessage, textChanged)
+                    }
+                } else {
+                    // Chat loading or not found
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+        }
+        .task(id: conversationID) {
+            // Load the chat when the view appears or conversation changes
+            _ = chatCache.getChat(for: conversationID)
+            // Pull latest messages from CloudKit in background
+            chatCache.pullMessagesIfNeeded(for: conversationID)
         }
     }
     

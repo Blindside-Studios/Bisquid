@@ -19,7 +19,6 @@ struct PromptField: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var chatCache = ChatCache.shared
     @State private var placeHolder = ChatPlaceHolders.returnRandomString()
-    @State private var placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
     
     @State var useSearch = false
     @State var useReasoning = false
@@ -35,7 +34,7 @@ struct PromptField: View {
         let spacing: CGFloat = 16
         #endif
         VStack(spacing: spacing) {
-            TextField(selectedAgent == nil ? placeHolder : "\(placeHolderVerb) @\(AgentManager.getUIAgentName(fromUUID: selectedAgent!))", text: $inputMessage, axis: .vertical)
+            TextField(placeHolder, text: $inputMessage, axis: .vertical)
                 .lineLimit(1...10)
                 .textFieldStyle(.plain)
                 .focused($isTextFieldFocused)
@@ -67,14 +66,13 @@ struct PromptField: View {
         .frame(maxWidth: 750)
         .frame(maxWidth: .infinity)
         .padding(8)
+        .onChange(of: selectedAgent, refreshPlaceHolder)
     }
-    
     
     func sendMessage(){
         let chat = chatCache.getChat(for: conversationID)
         if !chat.isGenerating && !isTryingToAddNewLine {
-            placeHolder = ChatPlaceHolders.returnRandomString()
-            placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
+            placeHolder = ChatPlaceHolders.returnAppropriatePlaceholder(agentUUID: selectedAgent)
             if (inputMessage != ""){
                 // Dismiss software keyboard while keeping hardware keyboard functional
                 #if os(iOS)
@@ -116,8 +114,7 @@ struct PromptField: View {
     func sendMessageAsSystem(){
         let chat = chatCache.getChat(for: conversationID)
         if !chat.isGenerating{
-            placeHolder = ChatPlaceHolders.returnRandomString()
-            placeHolderVerb = ChatPlaceHolders.returnRandomVerb()
+            placeHolder = ChatPlaceHolders.returnAppropriatePlaceholder(agentUUID: selectedAgent)
             if (inputMessage != ""){
                 // Dismiss software keyboard while keeping hardware keyboard functional
                 #if os(iOS)
@@ -164,9 +161,22 @@ struct PromptField: View {
         chatCache.saveMessages(for: conversationID)
         chatCache.syncConversation(id: conversationID)
     }
+    
+    func refreshPlaceHolder(){
+        placeHolder = ChatPlaceHolders.returnAppropriatePlaceholder(agentUUID: selectedAgent)
+    }
 }
 
 class ChatPlaceHolders{
+    public static func returnAppropriatePlaceholder(agentUUID: UUID?) -> String {
+        if agentUUID == nil{
+            return returnRandomString()
+        }
+        else{
+            return "\(returnRandomVerb()) @\(AgentManager.getUIAgentName(fromUUID: agentUUID!))"
+        }
+    }
+    
     static let placeHolders = [
         "Ask anything",
         "Type to chat",
