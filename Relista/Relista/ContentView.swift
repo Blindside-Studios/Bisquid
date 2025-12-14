@@ -20,6 +20,8 @@ struct ContentView: View {
 
     @State var selectedAgent: UUID? = nil
     @State var selectedModel: String = ModelList.placeHolderModel
+    @State var useSearch = false
+    @State var useReasoning = false
 
     @State private var columnVisibility: NavigationSplitViewVisibility = {
 #if os(iOS)
@@ -34,7 +36,7 @@ struct ContentView: View {
             Sidebar(showingSettings: $showingSettings, chatCache: $chatCache, selectedConversationID: $selectedConversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
         } content: {
             if let id = selectedConversationID {
-                ChatWindow(conversationID: .constant(id), inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
+                ChatWindow(conversationID: .constant(id), inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
                     .toolbar(){
                         ToolbarItemGroup() {
                             Button("New chat", systemImage: "square.and.pencil"){

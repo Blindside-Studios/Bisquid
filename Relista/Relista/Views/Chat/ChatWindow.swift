@@ -13,6 +13,9 @@ struct ChatWindow: View {
     @Binding var selectedAgent: UUID?
     @Binding var selectedModel: String
     @State private var chatCache = ChatCache.shared
+    
+    @Binding var useSearch: Bool
+    @Binding var useReasoning: Bool
 
     @State private var scrollWithAnimation = true
 
@@ -55,7 +58,7 @@ struct ChatWindow: View {
                         #endif
                     }
                     .safeAreaBar(edge: .bottom, spacing: 0){
-                        PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
+                        PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
                     }
                     //.onChange(of: chat.id, chatChanged)
                     //.onChange(of: inputMessage, textChanged)

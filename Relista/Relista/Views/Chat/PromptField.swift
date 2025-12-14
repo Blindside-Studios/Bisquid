@@ -20,8 +20,8 @@ struct PromptField: View {
     @State private var chatCache = ChatCache.shared
     @State private var placeHolder = ChatPlaceHolders.returnRandomString()
     
-    @State var useSearch = false
-    @State var useReasoning = false
+    @Binding var useSearch: Bool
+    @Binding var useReasoning: Bool
     
     @State private var isTryingToAddNewLine = false // workaround for .handled because iPadOS 26 is garbage
 
