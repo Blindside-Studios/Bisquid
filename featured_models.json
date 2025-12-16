@@ -1,18 +1,98 @@
 [
-  {
-    "name": "GPT 5.1",
-    "modelID": "openai/gpt-5.1",
-    "provider": "OpenAI",
-    "family": "GPT",
-    "specifier": "5.1",
+    {
+    "name": "Mistral Medium 3.1",
+    "modelID": "mistralai/mistral-medium-3.1",
+    "provider": "Mistral",
+    "family": "Mistral",
+    "specifier": "Medium 3.1",
     "isFree": false
   },
   {
-    "name": "GPT 5.1 Chat",
-    "modelID": "openai/gpt-5.1-chat",
+    "name": "Mistral Small Creative",
+    "modelID": "mistralai/mistral-small-creative",
+    "provider": "Mistral",
+    "family": "Mistral",
+    "specifier": "Small Creative",
+    "isFree": false
+  },
+  {
+    "name": "Mistral Small 3.2 24B",
+    "modelID": "mistralai/mistral-small-3.2-24b-instruct",
+    "provider": "Mistral",
+    "family": "Mistral",
+    "specifier": "Small 3.2",
+    "isFree": true
+  },
+  {
+    "name": "Magistral Small",
+    "modelID": "mistralai/magistral-small-2506",
+    "provider": "Mistral",
+    "family": "Magistral",
+    "specifier": "Small",
+    "isFree": false
+  },
+  {
+    "name": "Magistral Medium",
+    "modelID": "mistralai/magistral-medium-2506",
+    "provider": "Mistral",
+    "family": "Magistral",
+    "specifier": "Medium",
+    "isFree": false
+  },
+  {
+    "name": "Mistral Small 3",
+    "modelID": "mistralai/mistral-small-24b-instruct-2501",
+    "provider": "Mistral",
+    "family": "Mistral",
+    "specifier": "Small 3",
+    "isFree": false
+  },
+  {
+    "name": "Mistral Large 3",
+    "modelID": "mistralai/mistral-large-2512",
+    "provider": "Mistral",
+    "family": "Mistral",
+    "specifier": "Large",
+    "isFree": false
+  },
+  {
+    "name": "Ministral 3B",
+    "modelID": "mistralai/ministral-3b",
+    "provider": "Mistral",
+    "family": "Ministral",
+    "specifier": "3B",
+    "isFree": false
+  },
+  {
+    "name": "Mistral NeMo",
+    "modelID": "mistralai/mistral-nemo",
+    "provider": "Mistral",
+    "family": "Mistral",
+    "specifier": "NeMo",
+    "isFree": true
+  },
+  {
+    "name": "Mistral 7B Instruct",
+    "modelID": "mistralai/mistral-7b-instruct",
+    "provider": "Mistral",
+    "family": "Mistral",
+    "specifier": "7B Instruct",
+    "isFree": true
+  },
+  {
+    "name": "GPT 5.2",
+    "modelID": "openai/gpt-5.2",
     "provider": "OpenAI",
     "family": "GPT",
-    "specifier": "5.1 Chat",
+    "specifier": "5.2",
+    "isFree": false
+  },
+  {
+    "name": "GPT 5.2 Chat",
+    "modelID": "openai/gpt-5.2-chat",
+    "provider": "OpenAI",
+    "family": "GPT",
+    "specifier": "5.2 Chat",
     "isFree": false
   },
   {
@@ -152,79 +232,6 @@
     "provider": "DeepSeek",
     "family": "DeepSeek",
     "specifier": "R1",
-    "isFree": true
-  },
-
-  {
-    "name": "Mistral Medium 3.1",
-    "modelID": "mistralai/mistral-medium-3.1",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "Medium 3.1",
-    "isFree": false
-  },
-  {
-    "name": "Mistral Small 3.2 24B",
-    "modelID": "mistralai/mistral-small-3.2-24b-instruct",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "Small 3.2",
-    "isFree": true
-  },
-  {
-    "name": "Magistral Small",
-    "modelID": "mistralai/magistral-small-2506",
-    "provider": "Mistral",
-    "family": "Magistral",
-    "specifier": "Small",
-    "isFree": false
-  },
-  {
-    "name": "Magistral Medium",
-    "modelID": "mistralai/magistral-medium-2506",
-    "provider": "Mistral",
-    "family": "Magistral",
-    "specifier": "Medium",
-    "isFree": false
-  },
-  {
-    "name": "Mistral Small 3",
-    "modelID": "mistralai/mistral-small-24b-instruct-2501",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "Small 3",
-    "isFree": false
-  },
-  {
-    "name": "Mistral Large 3",
-    "modelID": "mistralai/mistral-large-2512",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "Large",
-    "isFree": false
-  },
-  {
-    "name": "Ministral 3B",
-    "modelID": "mistralai/ministral-3b",
-    "provider": "Mistral",
-    "family": "Ministral",
-    "specifier": "3B",
-    "isFree": false
-  },
-  {
-    "name": "Mistral NeMo",
-    "modelID": "mistralai/mistral-nemo",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "NeMo",
-    "isFree": true
-  },
-  {
-    "name": "Mistral 7B Instruct",
-    "modelID": "mistralai/mistral-7b-instruct",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "7B Instruct",
     "isFree": true
   }
 ]
