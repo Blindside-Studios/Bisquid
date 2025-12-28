@@ -26,7 +26,7 @@ struct ChatWindow: View {
                 if let chat = chatCache.loadedChats[conversationID] {
                     ScrollViewReader { proxy in
                     ScrollView(.vertical){
-                        VStack{
+                        LazyVStack{
                             ForEach(chat.messages.sorted { $0.timeStamp < $1.timeStamp }){ message in
                                 if(message.role == .assistant){
                                     MessageModel(message: message)
@@ -37,11 +37,6 @@ struct ChatWindow: View {
                                     MessageUser(message: message, availableWidth: geo.size.width)
                                         .frame(minHeight: message.id == chat.messages.last!.id ? geo.size.height * 0.8 : 0)
                                         .id(message.id)
-                                        .onAppear(){
-                                            withAnimation(.easeInOut(duration: scrollWithAnimation ? 0.35 : 0)) {
-                                                proxy.scrollTo(chat.messages.last!.id)
-                                            }
-                                        }
                                 }
                             }
                         }
@@ -60,8 +55,15 @@ struct ChatWindow: View {
                     .safeAreaBar(edge: .bottom, spacing: 0){
                         PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
                     }
-                    //.onChange(of: chat.id, chatChanged)
-                    //.onChange(of: inputMessage, textChanged)
+                    .onChange(of: chat.messages.last?.id) { _, newLastMessageID in
+                        guard let lastMessage = chat.messages.last,
+                              lastMessage.role == .user || lastMessage.role == .system else {
+                            return
+                        }
+                        withAnimation(.easeInOut(duration: scrollWithAnimation ? 0.35 : 0)) {
+                            proxy.scrollTo(newLastMessageID)
+                        }
+                    }
                     }
                 } else {
                     // Chat loading or not found

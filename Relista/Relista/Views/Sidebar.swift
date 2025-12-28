@@ -35,7 +35,7 @@ struct Sidebar: View {
         let isCurrentEmpty = currentConversation?.hasMessages == false
 
         return ScrollView {
-            VStack(spacing: 0) {
+            LazyVStack(spacing: 0) {
                 
                 HStack {
                     Text("🐙 New chat")
