@@ -12,46 +12,44 @@ struct MessageUser: View {
     let availableWidth: CGFloat
     @State private var isExpanded: Bool = false
     @State private var naturalHeight: CGFloat = 0
-
+    
     private var needsTruncation: Bool {
         naturalHeight > 200
     }
-
+    
     var body: some View {
-        VStack{
+        VStack(spacing: 0){
             HStack(alignment: .top) {
                 Spacer(minLength: availableWidth * 0.2)
                 VStack(alignment: .leading, spacing: 4){
-                    HStack(alignment: .top){
-                        Text(message.text)
-                            .padding()
-                            .foregroundStyle(message.role == .system ? Color.orange : Color.primary)
-                            .clipped()
-                            .glassEffect(in: .rect(cornerRadius: 25.0))
-                            .background(
-                                Text(message.text)
-                                    .padding()
-                                    .foregroundStyle(.clear)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .background(
-                                        GeometryReader { geo in
-                                            Color.clear.preference(key: HeightPreferenceKey.self, value: geo.size.height)
-                                        }
-                                    )
-                            )
-                            .onPreferenceChange(HeightPreferenceKey.self) { height in
-                                naturalHeight = height
-                            }
-                            .onTapGesture(){
-                                if needsTruncation{
-                                    withAnimation(.bouncy(duration: 0.3, extraBounce: 0.05)) {
-                                        isExpanded.toggle()
+                    Text(message.text)
+                        .frame(maxHeight: isExpanded ? .infinity : 200, alignment: .topLeading)
+                        .foregroundStyle(message.role == .system ? Color.orange : Color.primary)
+                        .clipped()
+                        .padding()
+                        .glassEffect(in: .rect(cornerRadius: 25.0))
+                        .background(
+                            Text(message.text)
+                                .padding()
+                                .foregroundStyle(.clear)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .background(
+                                    GeometryReader { geo in
+                                        Color.clear.preference(key: HeightPreferenceKey.self, value: geo.size.height)
                                     }
+                                )
+                        )
+                        .onPreferenceChange(HeightPreferenceKey.self) { height in
+                            naturalHeight = height
+                        }
+                        .onTapGesture(){
+                            if needsTruncation{
+                                withAnimation(.bouncy(duration: 0.3, extraBounce: 0.05)) {
+                                    isExpanded.toggle()
                                 }
                             }
-                    }
-                    .frame(maxHeight: isExpanded ? .infinity : 200)
-
+                        }
+                    
                     HStack(spacing: 8){
                         if needsTruncation {
                             Button{
@@ -62,7 +60,7 @@ struct MessageUser: View {
                                 HStack{
                                     Label("Expand/collapse full message", systemImage: "chevron.down")
                                         .rotationEffect(isExpanded ? Angle(degrees: -180) : Angle(degrees: 0))
-                                        //.animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: isExpanded)
+                                    //.animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: isExpanded)
                                 }
                             }
                             .opacity(0.6)
@@ -92,9 +90,9 @@ struct MessageUser: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.horizontal)
-
-            Spacer()
-                .frame(minWidth: 0)
+            .fixedSize(horizontal: false, vertical: true)
+            
+            Spacer(minLength: 0)
         }
     }
 }
