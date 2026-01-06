@@ -53,7 +53,7 @@ struct ChatWindow: View {
                             #endif
                         }
                         .safeAreaBar(edge: .bottom, spacing: 0){
-                            PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
+                            InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
                         }
                         .onChange(of: conversationID) { _, _ in
                             // scroll to last user/system message when switching conversations

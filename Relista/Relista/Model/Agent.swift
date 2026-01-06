@@ -136,6 +136,14 @@ public class AgentManager: ObservableObject {
         }
         else { return "Unkown Agent" }
     }
+    
+    static func getUIAgentImage(fromUUID: UUID) -> String{
+        let agent = AgentManager.shared.customAgents.filter { $0.id == fromUUID }.first
+        if agent != nil {
+            return agent!.icon
+        }
+        else { return "" }
+    }
 
     /// Updates an agent's lastModified timestamp - call before saving
     func touchAgent(id: UUID) {

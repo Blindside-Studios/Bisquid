@@ -1,0 +1,108 @@
+//
+//  InputUI.swift
+//  Relista
+//
+//  Created by Nicolas Helbig on 06.01.26.
+//
+
+import SwiftUI
+
+struct InputUI: View {
+    // pass-through
+    @Binding var conversationID: UUID
+    @Binding var inputMessage: String
+    @Binding var selectedAgent: UUID?
+    @Binding var selectedModel: String
+    @Binding var useSearch: Bool
+    @Binding var useReasoning: Bool
+    
+    // own logic
+    @AppStorage("APIKeyMistral") private var apiKey: String = ""
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private var isChatBlank: Bool{
+        ChatCache.shared.loadedChats[conversationID]?.messages.isEmpty ?? false
+    }
+    private var agentIcon: String{
+        if selectedAgent != nil{
+            AgentManager.getUIAgentImage(fromUUID: selectedAgent!)
+        } else {
+            "🐙"
+        }
+    }
+    @State private var greetingBannerText: String = ""
+    @State private var displayedGreeting: String = ""
+    @State private var greetingTask: Task<Void, Never>?
+    
+    var body: some View {
+        if horizontalSizeClass == .compact {
+            PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
+        } else {
+            VStack{
+                if isChatBlank {
+                    Spacer()
+                    
+                    HStack(alignment: .bottom){
+                        Spacer()
+                        Text(agentIcon)
+                        Text(displayedGreeting)
+                            .fixedSize(horizontal: false, vertical: true)
+                            //.animation(.easeOut(duration: 0.075), value: displayedGreeting)
+                        Spacer()
+                    }
+                    .padding()
+                    .font(Font.largeTitle.bold())
+                    // cap it to something really small, in combination with elements not being clipped and the bottom alignment, this will make the text expand upwards.
+                    .frame(height: 20, alignment: .bottom)
+                    .transition(
+                        AnyTransition.offset(y: -150).combined(with: .opacity)
+                    )
+                }
+                PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
+                if isChatBlank {
+                    // double spacer so the actual content is above center
+                    Spacer()
+                    Spacer()
+                }
+            }
+            .task(id: conversationID){
+                greetingTask?.cancel()
+                if !isChatBlank { return } // don't create a greeting when the user navigates to an actual chat
+                
+                displayedGreeting = ""
+                
+                do {
+                    greetingBannerText = try await Mistral(apiKey: apiKey)
+                        .generateGreetingBanner(agent: selectedAgent)
+                    
+                    greetingTask = Task {
+                        await animateGreeting(greetingBannerText)
+                    }
+                } catch {
+                    greetingBannerText = "Hello!"
+                    displayedGreeting = "Hello!"
+                }
+            }
+            .animation(.bouncy, value: isChatBlank)
+            // center-alignment
+            .frame(maxWidth: .infinity)
+            .frame(maxWidth: 750)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, isChatBlank ? 50 : 0)
+        }
+    }
+    
+    private func animateGreeting(_ fullText: String) async {
+        displayedGreeting = ""
+        
+        for character in fullText {
+            if Task.isCancelled { return }
+            
+            displayedGreeting.append(character)
+            try? await Task.sleep(for: .milliseconds(30))
+        }
+    }
+}
+
+#Preview {
+    //InputUI()
+}

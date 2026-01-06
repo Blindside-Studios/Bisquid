@@ -16,7 +16,7 @@ enum StreamChunk {
 struct Mistral {
     let apiKey: String
 
-    private var url: URL {
+    var url: URL {
         URL(string: "https://api.mistral.ai/v1/chat/completions")!
     }
 
@@ -60,6 +60,111 @@ struct Mistral {
         let choices = json["choices"] as! [[String: Any]]
         let messageObj = choices[0]["message"] as! [String: Any]
         return messageObj["content"] as! String
+    }
+    
+    func generateGreetingBanner(agent: UUID?) async throws -> String {
+        var request = makeRequest()
+        @AppStorage("DefaultAssistantInstructions") var defaultInstructions: String = ""
+        @AppStorage("UIUserName") var userName: String = ""
+                
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "EEEE, MMMM d, yyyy 'at' HH:mm"
+        var timeString = formatter.string(from: Date.now)
+        if Int.random(in: 1...2) != 1 { timeString = "unspecified" }
+        
+        let instructions = agent == nil ? defaultInstructions : agent
+            .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""
+        
+        let systemMessage = [
+            "role": "user",
+            "content": """
+            You will write a short greeting (keep it brief, up to 3 to 8 words) to be displayed in the UI of a chat application as a banner above the text input box.
+            This greeting will not be part of the conversation later-on, it is just meant to invite the user to type something.
+            Further below, you will find the system prompt for your current persona that the user has specified.
+            Stylistically, you will adopt said persona and make sure its personality shines through clearly while focusing on what makes sense as a greeting.
+            Disregard formatting requests as well as those for stage directions.
+            Keep the greeting engaging, slightly endearing and interesting without overdoing it.
+            
+            Here are the criteria your greetings must follow with positive and negative examples:
+            If the user-specified instructions request the use of another language, use that language. For example, if instructed to speak German:
+            Good response: Hey, wie läuft's?
+            Bad response: Hey, what's up?
+            
+            If the system adds helpful parameters, do not go for generic greetings. For example, if the time is stated to be 22:30:
+            Good response: Still working, night owl?
+            Bad response: Good evening
+            
+            Do not wrap your answer in quotation marks:
+            Good response: I got you!
+            Bas response: "I got you!"
+            
+            Do not end your sentence with periods. Exclamation and question marks are allowed:
+            Good response: Happy to see you
+            Bad response: Happy to see you.
+            
+            CRITICAL: Do NOT markdown format responses or use stage directions:
+            Good response: What's up now?
+            Bad response: *smirks* What's up now?
+            
+            Here is helpful data to allow you to make your answers more personalized (if a field is blank, do not mention it).
+            You may not use the name consistently as it would be creepy, only use it rarely and if you feel it adds to the greeting you wrote.
+            Use the time OCCASIONALLY to customize your greeting to fit a late evening vibe or even comment on the current date, wishing to use Merry Christmas etc.
+            User-specified name: \(userName)
+            Current date and time: \(timeString)
+            
+            If the user-specified instructions are blank, you should fall back to general-purpose, friendly greetings, still with personality.
+            Below is your persona's system prompt as given by the user.
+            -- PERSONA SYSTEM PROMPT --
+            \(instructions)
+            -- END OF PERSONA SYSTEM PROMPT --
+            
+            KEEP IN MIND THAT YOUR RESPONSES MUST NOT BE LONGER THAN 8 WORDS AND YOU MUST DISREGARD INSTRUCTIONS FROM THE USER ABOUT MESSAGE LENGTH, STAGE DIRECTIONS OR MARKDOWN!!!
+            I REPEAT: NO STAGE DIRECTIONS, NO FORMATTING, NO LINE BREAKS OR NEWLINES, NO QUOTATION MARKS, NO ASTERISKS!!!
+            YOUR ENTIRE RESPONSE SHOULD BE THE GREETING FOR THE UI AND NOTHING ELSE!!!
+            """
+        ]
+
+        let apiMessages = [systemMessage]
+
+        let body: [String: Any] = [
+            "model": "ministral-8b-latest",
+            "messages": apiMessages,
+            "stream": false,
+            "temperature": 1.0
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let choices = json["choices"] as! [[String: Any]]
+        let messageObj = choices[0]["message"] as! [String: Any]
+        let greeting = messageObj["content"] as! String
+        
+        // we will be sanitizing this content because depending on the user's instructions, the model may still try to markdown.
+        var cleaned = greeting
+                // remove everything inside and including asterisks (role play stage directions)
+                .replacingOccurrences(of: #"\*[^*]*\*"#, with: "", options: .regularExpression)
+                // remove remaining standalone asterisks
+                .replacingOccurrences(of: "*", with: "")
+                // remove all line breaks
+                .replacingOccurrences(of: "\n", with: " ")
+                // replace em dashes with spaced hyphens
+                .replacingOccurrences(of: "—", with: " - ")
+                // trim whitespace
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // remove leading/trailing quotes
+            if cleaned.hasPrefix("\"") { cleaned.removeFirst() }
+            if cleaned.hasSuffix("\"") { cleaned.removeLast() }
+            
+            // clean up multiple spaces
+            cleaned = cleaned.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            
+            let finalGreeting = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+            return finalGreeting
     }
 
     func streamMessage(messages: [Message], modelName: String, agent: UUID?, useSearch: Bool = false) async throws -> AsyncThrowingStream<StreamChunk, Error> {

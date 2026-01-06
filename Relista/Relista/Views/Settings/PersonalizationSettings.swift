@@ -10,9 +10,13 @@ import SwiftUI
 struct PersonalizationSettings: View {
     @AppStorage("AppDefaultModel") private var defaultModel: String = "mistralai/mistral-medium-3.1"
     @AppStorage("DefaultAssistantInstructions") private var sysInstructions: String = ""
+    @AppStorage("UIUserName") private var userName: String = ""
     
     var body: some View {
         Form{
+            Section("Personal info"){
+                TextField("Name", text: $userName)
+            }
             Section("Default Model"){
                 ModelPicker(selectedModel: $defaultModel)
             }

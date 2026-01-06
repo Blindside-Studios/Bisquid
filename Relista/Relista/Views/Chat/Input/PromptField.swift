@@ -61,10 +61,6 @@ struct PromptField: View {
         #else
         .glassEffect(in: .rect(cornerRadius: 22))
         #endif
-        // to center-align
-        .frame(maxWidth: .infinity)
-        .frame(maxWidth: 750)
-        .frame(maxWidth: .infinity)
         .padding(8)
         .onChange(of: selectedAgent, refreshPlaceHolder)
     }
