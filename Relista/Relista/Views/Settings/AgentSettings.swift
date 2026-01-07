@@ -7,6 +7,61 @@
 
 import SwiftUI
 
+// MARK: - Color Extension for Hex Conversion
+extension Color {
+    init?(hex: String) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+
+        var rgb: UInt64 = 0
+
+        guard Scanner(string: hexSanitized).scanHexInt64(&rgb) else { return nil }
+
+        let length = hexSanitized.count
+        let r, g, b, a: Double
+
+        if length == 6 {
+            r = Double((rgb & 0xFF0000) >> 16) / 255.0
+            g = Double((rgb & 0x00FF00) >> 8) / 255.0
+            b = Double(rgb & 0x0000FF) / 255.0
+            a = 1.0
+        } else if length == 8 {
+            r = Double((rgb & 0xFF000000) >> 24) / 255.0
+            g = Double((rgb & 0x00FF0000) >> 16) / 255.0
+            b = Double((rgb & 0x0000FF00) >> 8) / 255.0
+            a = Double(rgb & 0x000000FF) / 255.0
+        } else {
+            return nil
+        }
+
+        self.init(.sRGB, red: r, green: g, blue: b, opacity: a)
+    }
+
+    func toHex() -> String? {
+        guard let components = self.cgColor?.components, components.count >= 3 else {
+            return nil
+        }
+
+        let r = Float(components[0])
+        let g = Float(components[1])
+        let b = Float(components[2])
+        let a = components.count >= 4 ? Float(components[3]) : 1.0
+
+        if a < 1.0 {
+            return String(format: "#%02lX%02lX%02lX%02lX",
+                         lroundf(r * 255),
+                         lroundf(g * 255),
+                         lroundf(b * 255),
+                         lroundf(a * 255))
+        } else {
+            return String(format: "#%02lX%02lX%02lX",
+                         lroundf(r * 255),
+                         lroundf(g * 255),
+                         lroundf(b * 255))
+        }
+    }
+}
+
 struct AgentSettings: View {
     @StateObject private var manager = AgentManager.shared
 
@@ -100,14 +155,16 @@ struct AgentSettings: View {
 
 struct AgentCreateView: View {
     @Binding var isPresented: Bool
-    
+
     @State private var name = ""
     @State private var description = ""
     @State private var icon = "🤖"
     @State private var systemPrompt = ""
     @State private var temperature = 1.0
     @State private var model: String = ModelList.placeHolderModel
-    
+    @State private var primaryAccentColor: Color = .blue
+    @State private var secondaryAccentColor: Color = .purple
+
     @State private var showModelPickerPopOver: Bool = false
     
     var body: some View {
@@ -119,16 +176,21 @@ struct AgentCreateView: View {
                     TextField("Icon (Emoji)", text: $icon)
                         .font(.largeTitle)
                 }
-                
+
+                Section("Colors") {
+                    ColorPicker("Primary Accent Color", selection: $primaryAccentColor)
+                    ColorPicker("Secondary Accent Color", selection: $secondaryAccentColor)
+                }
+
                 Section("System Prompt") {
                     TextEditor(text: $systemPrompt)
                         .frame(minHeight: 120)
                 }
-                
+
                 Section("Temperature") {
                     Slider(value: $temperature, in: 0...2, step: 0.1)
                 }
-                
+
                 Section("Model") {
                     ModelPicker(selectedModel: $model)
                 }
@@ -155,9 +217,11 @@ struct AgentCreateView: View {
             model: model,
             systemPrompt: systemPrompt,
             temperature: temperature,
-            shownInSidebar: true
+            shownInSidebar: true,
+            primaryAccentColor: primaryAccentColor.toHex(),
+            secondaryAccentColor: secondaryAccentColor.toHex()
         )
-        
+
         AgentManager.shared.customAgents.append(newAgent)
         try? AgentManager.shared.saveAgents()
         isPresented = false
@@ -170,6 +234,37 @@ struct AgentDetailView: View {
 
     @State private var showModelPickerPopOver = false
 
+    // Computed bindings for color pickers
+    private var primaryColorBinding: Binding<Color> {
+        Binding(
+            get: {
+                if let hexString = agent.primaryAccentColor,
+                   let color = Color(hex: hexString) {
+                    return color
+                }
+                return .blue // Default color
+            },
+            set: { newColor in
+                agent.primaryAccentColor = newColor.toHex()
+            }
+        )
+    }
+
+    private var secondaryColorBinding: Binding<Color> {
+        Binding(
+            get: {
+                if let hexString = agent.secondaryAccentColor,
+                   let color = Color(hex: hexString) {
+                    return color
+                }
+                return .purple // Default color
+            },
+            set: { newColor in
+                agent.secondaryAccentColor = newColor.toHex()
+            }
+        )
+    }
+
     var body: some View {
         Form {
             Section("Basics") {
@@ -178,21 +273,26 @@ struct AgentDetailView: View {
                 TextField("Icon (Emoji)", text: $agent.icon)
                     .font(.largeTitle)
             }
-            
+
+            Section("Colors") {
+                ColorPicker("Primary Accent Color", selection: primaryColorBinding)
+                ColorPicker("Secondary Accent Color", selection: secondaryColorBinding)
+            }
+
             Section("Model") {
                 ModelPicker(selectedModel: $agent.model)
             }
-            
+
             Section("System Prompt") {
                 TextEditor(text: $agent.systemPrompt)
                     .frame(minHeight: 150)
             }
-            
+
             Section("Temperature") {
                 Slider(value: $agent.temperature, in: 0...2, step: 0.1)
                 Text("Current: \(agent.temperature, specifier: "%.1f")")
             }
-            
+
             Section("Sidebar") {
                 Toggle("Show in Sidebar", isOn: $agent.shownInSidebar)
             }

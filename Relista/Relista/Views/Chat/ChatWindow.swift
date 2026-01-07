@@ -21,6 +21,10 @@ struct ChatWindow: View {
 
     var body: some View {
         ZStack{
+            ChatBackground(selectedAgent: $selectedAgent, selectedChat: $conversationID)
+                //.ignoresSafeArea(edges: .top)
+                //.ignoresSafeArea()
+            
             GeometryReader { geo in
                 // Access chat directly from cache - it's loaded in .task
                 if let chat = chatCache.loadedChats[conversationID] {

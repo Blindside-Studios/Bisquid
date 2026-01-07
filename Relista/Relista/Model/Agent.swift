@@ -18,13 +18,15 @@ struct Agent: Identifiable, Hashable, Codable{
     var temperature: Double
     var shownInSidebar: Bool
     var lastModified: Date
+    var primaryAccentColor: String?
+    var secondaryAccentColor: String?
 
     // Custom Codable implementation for backwards compatibility
     enum CodingKeys: String, CodingKey {
-        case id, name, description, icon, model, systemPrompt, temperature, shownInSidebar, lastModified
+        case id, name, description, icon, model, systemPrompt, temperature, shownInSidebar, lastModified, primaryAccentColor, secondaryAccentColor
     }
 
-    init(id: UUID = UUID(), name: String, description: String, icon: String, model: String, systemPrompt: String, temperature: Double, shownInSidebar: Bool, lastModified: Date = Date.now) {
+    init(id: UUID = UUID(), name: String, description: String, icon: String, model: String, systemPrompt: String, temperature: Double, shownInSidebar: Bool, lastModified: Date = Date.now, primaryAccentColor: String? = nil, secondaryAccentColor: String? = nil) {
         self.id = id
         self.name = name
         self.description = description
@@ -34,6 +36,8 @@ struct Agent: Identifiable, Hashable, Codable{
         self.temperature = temperature
         self.shownInSidebar = shownInSidebar
         self.lastModified = lastModified
+        self.primaryAccentColor = primaryAccentColor
+        self.secondaryAccentColor = secondaryAccentColor
     }
 
     init(from decoder: Decoder) throws {
@@ -48,6 +52,9 @@ struct Agent: Identifiable, Hashable, Codable{
         shownInSidebar = try container.decode(Bool.self, forKey: .shownInSidebar)
         // Backwards compatible: default to now if missing
         lastModified = try container.decodeIfPresent(Date.self, forKey: .lastModified) ?? Date.now
+        // Backwards compatible: default to nil if missing
+        primaryAccentColor = try container.decodeIfPresent(String.self, forKey: .primaryAccentColor)
+        secondaryAccentColor = try container.decodeIfPresent(String.self, forKey: .secondaryAccentColor)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -61,6 +68,8 @@ struct Agent: Identifiable, Hashable, Codable{
         try container.encode(temperature, forKey: .temperature)
         try container.encode(shownInSidebar, forKey: .shownInSidebar)
         try container.encode(lastModified, forKey: .lastModified)
+        try container.encodeIfPresent(primaryAccentColor, forKey: .primaryAccentColor)
+        try container.encodeIfPresent(secondaryAccentColor, forKey: .secondaryAccentColor)
     }
 }
 
@@ -143,6 +152,15 @@ public class AgentManager: ObservableObject {
             return agent!.icon
         }
         else { return "" }
+    }
+    
+    static func getUIAgentColors(fromUUID: UUID) -> [String?]
+    {
+        let agent = AgentManager.shared.customAgents.filter { $0.id == fromUUID }.first
+        if agent != nil {
+            return [agent!.primaryAccentColor, agent!.secondaryAccentColor]
+        }
+        else { return ["", ""] }
     }
 
     /// Updates an agent's lastModified timestamp - call before saving

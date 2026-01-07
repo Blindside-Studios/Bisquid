@@ -253,6 +253,19 @@ class CloudKitSyncManager: ObservableObject {
                 existingRecord["temperature"] = agent.temperature as CKRecordValue
                 existingRecord["shownInSidebar"] = (agent.shownInSidebar ? 1 : 0) as CKRecordValue
                 existingRecord["lastModified"] = agent.lastModified as CKRecordValue
+
+                // Update color properties
+                if let primaryColor = agent.primaryAccentColor {
+                    existingRecord["primaryAccentColor"] = primaryColor as CKRecordValue
+                } else {
+                    existingRecord["primaryAccentColor"] = nil
+                }
+                if let secondaryColor = agent.secondaryAccentColor {
+                    existingRecord["secondaryAccentColor"] = secondaryColor as CKRecordValue
+                } else {
+                    existingRecord["secondaryAccentColor"] = nil
+                }
+
                 _ = try await privateDatabase.save(existingRecord)
             } else {
                 throw error
@@ -685,6 +698,14 @@ class CloudKitSyncManager: ObservableObject {
         record["shownInSidebar"] = (agent.shownInSidebar ? 1 : 0) as CKRecordValue
         record["lastModified"] = agent.lastModified as CKRecordValue
 
+        // Optional color properties
+        if let primaryColor = agent.primaryAccentColor {
+            record["primaryAccentColor"] = primaryColor as CKRecordValue
+        }
+        if let secondaryColor = agent.secondaryAccentColor {
+            record["secondaryAccentColor"] = secondaryColor as CKRecordValue
+        }
+
         return record
     }
 
@@ -702,6 +723,10 @@ class CloudKitSyncManager: ObservableObject {
         let id = UUID(uuidString: record.recordID.recordName) ?? UUID()
         let lastModified = record["lastModified"] as? Date ?? Date.now
 
+        // Optional color properties (backwards compatible)
+        let primaryAccentColor = record["primaryAccentColor"] as? String
+        let secondaryAccentColor = record["secondaryAccentColor"] as? String
+
         return Agent(
             id: id,
             name: name,
@@ -711,7 +736,9 @@ class CloudKitSyncManager: ObservableObject {
             systemPrompt: systemPrompt,
             temperature: temperature,
             shownInSidebar: shownInSidebarInt == 1,
-            lastModified: lastModified
+            lastModified: lastModified,
+            primaryAccentColor: primaryAccentColor,
+            secondaryAccentColor: secondaryAccentColor
         )
     }
 
