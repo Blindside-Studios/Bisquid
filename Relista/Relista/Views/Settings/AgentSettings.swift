@@ -97,12 +97,8 @@ struct AgentSettings: View {
                         }
                         .contextMenu {
                                 Button(role: .destructive) {
-                                    if let index = manager.customAgents.firstIndex(where: { $0.id == agent.id }) {
-                                        let agentID = agent.id
-                                        manager.customAgents.remove(at: index)
-                                        CloudKitSyncManager.shared.markAgentDeleted(agentID)
-                                        try? AgentManager.shared.saveAgents()
-                                    }
+                                    // Use new deleteAgent() API for proper sync
+                                    try? AgentManager.shared.deleteAgent(agent.id)
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
@@ -132,12 +128,11 @@ struct AgentSettings: View {
     }
     
     private func deleteAgents(at offsets: IndexSet) {
-        // Mark agents as deleted before removing
+        // Use new deleteAgent() API for each agent
         for index in offsets {
-            CloudKitSyncManager.shared.markAgentDeleted(manager.customAgents[index].id)
+            let agentID = manager.customAgents[index].id
+            try? AgentManager.shared.deleteAgent(agentID)
         }
-        manager.customAgents.remove(atOffsets: offsets)
-        try? AgentManager.shared.saveAgents()
     }
     
     private func moveAgents(from source: IndexSet, to destination: Int) {
@@ -222,8 +217,8 @@ struct AgentCreateView: View {
             secondaryAccentColor: secondaryAccentColor.toHex()
         )
 
-        AgentManager.shared.customAgents.append(newAgent)
-        try? AgentManager.shared.saveAgents()
+        // Use new createAgent() API for proper timestamp and sync
+        try? AgentManager.shared.createAgent(newAgent)
         isPresented = false
     }
 }
@@ -298,7 +293,11 @@ struct AgentDetailView: View {
             }
         }
         .onDisappear {
-            try? AgentManager.shared.saveAgents()
+            // Use new updateAgent() API to properly track timestamp and sync
+            try? AgentManager.shared.updateAgent(agent.id) { _ in
+                // Agent is already updated via binding
+                // This ensures timestamp update and CloudKit sync tracking
+            }
         }
         .navigationTitle(agent.name)
         .toolbar {

@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import CloudKit
 
 struct Agent: Identifiable, Hashable, Codable{
     var id = UUID()
@@ -77,56 +78,199 @@ public class AgentManager: ObservableObject {
     static let shared = AgentManager()
 
     @Published var customAgents: [Agent] = []
-    
+
+    /// CloudKit sync engine for agents
+    private let syncEngine: SyncEngine<Agent>
+
     init(){
+        // Initialize CloudKit sync engine
+        let container = CKContainer(identifier: "iCloud.Blindside-Studios.Relista")
+        self.syncEngine = SyncEngine(database: container.privateCloudDatabase)
+
+        // Load agents from disk
         try? initializeStorage()
         try? customAgents = loadAgents()
+
+        print("📱 AgentManager initialized with \(customAgents.count) agents")
     }
-    
+
     private let documentsURL: URL = {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }()
-    
+
     private var relistaURL: URL {
         documentsURL.appendingPathComponent("Relista")
     }
-    
+
     private var fileURL: URL {
         relistaURL.appendingPathComponent("agents.json")
     }
-    
+
     func initializeStorage() throws {
         let fileManager = FileManager.default
-        
+
         if !fileManager.fileExists(atPath: relistaURL.path) {
             try fileManager.createDirectory(at: relistaURL, withIntermediateDirectories: true)
         }
     }
-    
+
+    // MARK: - New Sync-Aware API
+
+    /// Update a specific agent and sync to CloudKit
+    /// This is the preferred way to modify agents - ensures timestamp and sync tracking
+    /// - Parameters:
+    ///   - id: The ID of the agent to update
+    ///   - changes: A closure that modifies the agent
+    /// - Throws: Error if agent not found or save fails
+    func updateAgent(_ id: UUID, changes: (inout Agent) -> Void) throws {
+        guard let index = customAgents.firstIndex(where: { $0.id == id }) else {
+            throw SyncError.notFound
+        }
+
+        // Apply changes
+        changes(&customAgents[index])
+
+        // Update timestamp BEFORE saving (critical for sync!)
+        customAgents[index].lastModified = Date.now
+
+        print("✏️  Updated agent '\(customAgents[index].name)'")
+
+        // Save to disk
+        try saveToDisk()
+
+        // Sync to CloudKit (debounced)
+        Task {
+            await syncEngine.markForPush(id)
+            await syncEngine.startDebouncedPush { [weak self] in
+                self?.customAgents ?? []
+            }
+        }
+    }
+
+    /// Create a new agent and sync to CloudKit
+    /// - Parameter agent: The agent to create
+    /// - Throws: Error if save fails
+    func createAgent(_ agent: Agent) throws {
+        var newAgent = agent
+        newAgent.lastModified = Date.now
+        customAgents.append(newAgent)
+
+        print("➕ Created agent '\(newAgent.name)'")
+
+        try saveToDisk()
+
+        Task {
+            await syncEngine.markForPush(newAgent.id)
+            await syncEngine.startDebouncedPush { [weak self] in
+                self?.customAgents ?? []
+            }
+        }
+    }
+
+    /// Delete an agent and sync deletion to CloudKit
+    /// - Parameter id: The ID of the agent to delete
+    /// - Throws: Error if agent not found or save fails
+    func deleteAgent(_ id: UUID) throws {
+        guard let index = customAgents.firstIndex(where: { $0.id == id }) else {
+            throw SyncError.notFound
+        }
+
+        let name = customAgents[index].name
+        customAgents.remove(at: index)
+
+        print("🗑️  Deleted agent '\(name)'")
+
+        try saveToDisk()
+
+        Task {
+            await syncEngine.markForDelete(id)
+            await syncEngine.startDebouncedPush { [weak self] in
+                self?.customAgents ?? []
+            }
+        }
+    }
+
+    /// Manually refresh agents from CloudKit
+    /// Call this when user taps refresh button
+    /// - Throws: Error if sync fails
+    func refreshFromCloud() async throws {
+        print("🔄 Refreshing agents from CloudKit...")
+
+        // Step 1: Pull deletion tombstones (do this first!)
+        let deletedIDs = try await syncEngine.pullDeletions()
+
+        // Step 2: Remove deleted agents from local collection
+        if !deletedIDs.isEmpty {
+            await MainActor.run {
+                customAgents.removeAll { deletedIDs.contains($0.id) }
+                print("  🗑️  Removed \(deletedIDs.count) deleted agent(s) from local storage")
+            }
+        }
+
+        // Step 3: Pull updated agents from CloudKit
+        let cloudAgents = try await syncEngine.pull()
+
+        // Step 4: Merge with local agents (newest wins)
+        let merged = SyncMerge.merge(
+            cloudItems: cloudAgents,
+            into: customAgents,
+            itemName: "agent"
+        )
+
+        // Step 5: Update local state on main thread
+        await MainActor.run {
+            customAgents = merged
+        }
+
+        // Step 6: Save merged result to disk
+        try saveToDisk()
+
+        print("✅ Agents refreshed: now have \(customAgents.count) total")
+    }
+
+    // MARK: - Legacy API (Deprecated)
+
+    /// Save agents to disk and optionally sync to CloudKit
+    /// ⚠️ Deprecated: Use updateAgent(), createAgent(), or deleteAgent() instead
+    /// Those methods properly update timestamps and track specific changes
+    @available(*, deprecated, message: "Use updateAgent(), createAgent(), or deleteAgent() instead")
     func saveAgents(syncToCloudKit: Bool = true) throws {
+        try saveToDisk()
+
+        if syncToCloudKit {
+            // Old behavior: mark ALL agents as changed (inefficient)
+            Task {
+                for agent in customAgents {
+                    await syncEngine.markForPush(agent.id)
+                }
+                await syncEngine.startDebouncedPush { [weak self] in
+                    self?.customAgents ?? []
+                }
+            }
+        }
+    }
+
+    // MARK: - Private Methods
+
+    /// Save agents to disk (local only, no CloudKit)
+    private func saveToDisk() throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .prettyPrinted
 
         let data = try encoder.encode(customAgents)
         try data.write(to: fileURL)
-
-        // Mark agents as changed and sync to CloudKit (debounced to avoid rate limiting)
-        if syncToCloudKit {
-            CloudKitSyncManager.shared.markAgentsChanged()
-            CloudKitSyncManager.shared.debouncedPush()
-        }
     }
-    
+
     func loadAgents() throws -> [Agent] {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return []  // No index yet, return empty
         }
-        
+
         let data = try Data(contentsOf: fileURL)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        
+
         return try decoder.decode([Agent].self, from: data)
     }
     

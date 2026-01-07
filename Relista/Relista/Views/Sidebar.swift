@@ -331,9 +331,13 @@ struct Sidebar: View {
 
     func performSync() async {
         do {
-            try await CloudKitSyncManager.shared.performFullSync()
+            // Use new sync system
+            print("🔄 Manual refresh triggered (Sidebar)")
+            try await AgentManager.shared.refreshFromCloud()
+            // TODO: Add conversation/message refresh when implemented
+            // try await ConversationManager.shared.refreshFromCloud()
         } catch {
-            print("Sync error: \(error)")
+            print("❌ Sync error: \(error)")
         }
     }
 }

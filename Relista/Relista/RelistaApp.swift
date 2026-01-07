@@ -22,11 +22,14 @@ struct RelistaApp: App {
                     Task {
                         await ModelList.loadModels()
 
-                        // Perform initial CloudKit sync
+                        // Perform initial CloudKit sync (app launch)
+                        print("🚀 App launched - performing initial sync")
                         do {
-                            try await CloudKitSyncManager.shared.performFullSync()
+                            try await AgentManager.shared.refreshFromCloud()
+                            // TODO: Add conversation/message refresh when implemented
+                            // try await ConversationManager.shared.refreshFromCloud()
                         } catch {
-                            print("CloudKit sync error: \(error)")
+                            print("❌ CloudKit sync error on launch: \(error)")
                         }
                     }
                 }
@@ -47,7 +50,11 @@ struct RelistaApp: App {
             CommandGroup(after: .sidebar) {
                 Button("Refresh", systemImage: "arrow.clockwise") {
                     Task {
-                        try? await CloudKitSyncManager.shared.performFullSync()
+                        // Refresh from CloudKit using new sync system
+                        print("🔄 Manual refresh triggered")
+                        try? await AgentManager.shared.refreshFromCloud()
+                        // TODO: Add conversation/message refresh when implemented
+                        // try? await ConversationManager.shared.refreshFromCloud()
                     }
                 }
                 .keyboardShortcut("r", modifiers: .command)
