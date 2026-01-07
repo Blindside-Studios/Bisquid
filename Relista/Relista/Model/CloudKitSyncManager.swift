@@ -969,7 +969,7 @@ class CloudKitSyncManager: ObservableObject {
         print("Received CloudKit notification")
 
         // Check if it's a CloudKit notification
-        guard let notification = CKNotification(fromRemoteNotificationDictionary: userInfo) else {
+        guard let _ = CKNotification(fromRemoteNotificationDictionary: userInfo) else {
             return
         }
 

@@ -204,7 +204,7 @@ struct Mistral {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (bytes, response) = try await URLSession.shared.bytes(for: request)
+        let (bytes, _) = try await URLSession.shared.bytes(for: request)
 
         return AsyncThrowingStream { continuation in
             Task {

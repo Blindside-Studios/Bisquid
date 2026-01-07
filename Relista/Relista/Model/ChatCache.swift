@@ -185,7 +185,7 @@ class ChatCache {
             } catch {
                 print("Failed to pull messages from CloudKit: \(error)")
             }
-            await MainActor.run {
+            await _ = MainActor.run {
                 activeCloudKitPulls.remove(id)
             }
         }
@@ -316,7 +316,7 @@ class ChatCache {
                     role: .assistant,
                     modelUsed: modelName,
                     attachmentLinks: [],
-                    timeStamp: .now,
+                    timeStamp: Date.now.addingTimeInterval(0.001),
                     lastModified: Date.now
                 )
 
