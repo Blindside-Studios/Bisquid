@@ -43,6 +43,7 @@ struct InputUI: View {
                             Text(agentIcon)
                                 .font(.system(size: 72))
                             Text(displayedGreeting)
+                                .opacity(0.75)
                                 .multilineTextAlignment(.center)
                                 .font(.largeTitle)
                             Spacer()
@@ -52,7 +53,7 @@ struct InputUI: View {
                     }
                     .padding()
                     .transition(
-                        AnyTransition.offset(y: -150).combined(with: .opacity)
+                        AnyTransition.blurFade.combined(with: .offset(y: -150)).combined(with: .opacity)
                     )
                     
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
@@ -66,6 +67,7 @@ struct InputUI: View {
                             Spacer()
                             Text(agentIcon)
                             Text(displayedGreeting)
+                                .opacity(0.85)
                                 .multilineTextAlignment(.center)
                                 .fixedSize(horizontal: false, vertical: true)
                             Spacer()
@@ -75,7 +77,7 @@ struct InputUI: View {
                         // cap it to something really small, in combination with elements not being clipped and the bottom alignment, this will make the text expand upwards.
                         .frame(height: 20, alignment: .bottom)
                         .transition(
-                            AnyTransition.offset(y: -150).combined(with: .opacity)
+                            AnyTransition.blurFade.combined(with: .offset(y: -150)).combined(with: .opacity)
                         )
                     }
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
@@ -122,6 +124,23 @@ struct InputUI: View {
             displayedGreeting.append(character)
             try? await Task.sleep(for: .milliseconds(30))
         }
+    }
+}
+
+extension AnyTransition {
+    static var blurFade: AnyTransition {
+        .modifier(
+            active: BlurModifier(radius: 30),
+            identity: BlurModifier(radius: 0)
+        )
+    }
+}
+
+struct BlurModifier: ViewModifier {
+    let radius: CGFloat
+    
+    func body(content: Content) -> some View {
+        content.blur(radius: radius)
     }
 }
 
