@@ -29,6 +29,7 @@ struct Sidebar: View {
     @AppStorage("CustomAgentsInSidebarAreExpanded") private var showCustomAgents: Bool = true
 
     @Environment(\.onSidebarSelection) private var onSidebarSelection
+    @Environment(\.horizontalSizeClass) private var hSizeClass
 
     var body: some View {
         let currentConversation = chatCache.conversations.first { $0.id == selectedConversationID }
@@ -46,7 +47,11 @@ struct Sidebar: View {
                     if isCurrentEmpty && selectedAgent == nil {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .glassEffect(in: .rect(cornerRadius: 16.0))
-                            .transition(.opacity.combined(with: .scale(scale: 0.3)).combined(with: .offset(x: -100)))
+                            .transition(
+                                hSizeClass == .compact
+                                    ? .opacity
+                                    : .opacity.combined(with: .scale(scale: 0.3)).combined(with: .offset(x: -100))
+                            )
                     }
                 }
                 .animation(.default, value: isCurrentEmpty)
@@ -74,11 +79,15 @@ struct Sidebar: View {
                             if isCurrentEmpty && isCurrentAgent {
                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                                     .glassEffect(in: .rect(cornerRadius: 16.0))
-                                    .transition(.opacity.combined(with: .scale(scale: 0.3)).combined(with: .offset(x: -100)))
+                                    .transition(
+                                        hSizeClass == .compact
+                                            ? .opacity
+                                            : .opacity.combined(with: .scale(scale: 0.3)).combined(with: .offset(x: -100))
+                                    )
                             }
                         }
-                        .animation(.bouncy, value: isCurrentEmpty)
-                        .animation(.bouncy, value: isCurrentAgent)
+                        .animation(.default, value: isCurrentEmpty)
+                        .animation(.default, value: isCurrentAgent)
                         //.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .contentShape(Rectangle())
                         .onTapGesture {
@@ -133,10 +142,14 @@ struct Sidebar: View {
                         if selectedConversationID == conv.id {
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
                                 .glassEffect(in: .rect(cornerRadius: 16.0))
-                                .transition(.opacity.combined(with: .scale(scale: 0.3)).combined(with: .offset(x: -100)))
+                                .transition(
+                                    hSizeClass == .compact
+                                        ? .opacity
+                                        : .opacity.combined(with: .scale(scale: 0.3)).combined(with: .offset(x: -100))
+                                )
                         }
                     }
-                    .animation(.bouncy, value: selectedConversationID)
+                    .animation(.default, value: selectedConversationID)
                     //.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .contentShape(Rectangle())
                     .onTapGesture {
