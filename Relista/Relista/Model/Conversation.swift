@@ -9,7 +9,7 @@ import Foundation
 import Observation
 
 @Observable
-class Conversation: Identifiable, Codable, Equatable {
+final class Conversation: Identifiable, Codable, Equatable {
     var id: UUID
     var title: String
     var lastInteracted: Date

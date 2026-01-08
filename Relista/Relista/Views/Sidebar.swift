@@ -24,7 +24,6 @@ struct Sidebar: View {
     @State var conversationToDelete: Conversation? = nil
 
     @ObservedObject private var agentManager = AgentManager.shared
-    @ObservedObject private var syncManager = CloudKitSyncManager.shared
 
     @AppStorage("CustomAgentsInSidebarAreExpanded") private var showCustomAgents: Bool = true
     @AppStorage("ChatsInSidebarAreExpanded") private var showChats = true
@@ -131,38 +130,29 @@ struct Sidebar: View {
                         Divider()
                             .padding(4)
                     }
-                    if syncManager.isSyncing {
-                        ProgressView()
-                            .controlSize(.small)
-                            .scaleEffect(0.7)
-                            .opacity(0.5)
-                            .transition(.scale(scale: 0.4, anchor: .center).combined(with: .opacity))
-                    } else {
-                        Button {
-                            Task {
-                                await performSync()
-                            }
-                        } label: {
-                            Label("Refresh", systemImage: "arrow.clockwise")
-                                .contentShape(Rectangle())
+                    Button {
+                        Task {
+                            await performSync()
                         }
-                        .keyboardShortcut("r", modifiers: .command)
-                        .opacity(0.5)
-                        .buttonStyle(.plain)
-                        .background(.clear)
-                        .controlSize(.small)
-                        .labelStyle(.iconOnly)
-                        .transition(.scale(scale: 0.4, anchor: .center).combined(with: .opacity))
-                        .contentShape(Rectangle())
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                            .contentShape(Rectangle())
                     }
-                    
+                    .keyboardShortcut("r", modifiers: .command)
+                    .opacity(0.5)
+                    .buttonStyle(.plain)
+                    .background(.clear)
+                    .controlSize(.small)
+                    .labelStyle(.iconOnly)
+                    .contentShape(Rectangle())
+
                     Button {
                         showChats.toggle()
                     } label: {
                         Label("Show/hide chats", systemImage: "chevron.down")
                             .rotationEffect(showChats ? Angle(degrees: 180) : Angle(degrees: 0))
                             .contentShape(Rectangle())
-                        
+
                     }
                     .opacity(0.5)
                     .buttonStyle(.plain)
@@ -172,7 +162,6 @@ struct Sidebar: View {
                     .contentShape(Rectangle())
                 }
                 .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showChats)
-                .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: syncManager.isSyncing)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
                 
@@ -334,8 +323,7 @@ struct Sidebar: View {
             // Use new sync system
             print("🔄 Manual refresh triggered (Sidebar)")
             try await AgentManager.shared.refreshFromCloud()
-            // TODO: Add conversation/message refresh when implemented
-            // try await ConversationManager.shared.refreshFromCloud()
+            try await ConversationManager.refreshConversationsFromCloud()
         } catch {
             print("❌ Sync error: \(error)")
         }

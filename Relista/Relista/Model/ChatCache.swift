@@ -119,9 +119,6 @@ class ChatCache {
 
     /// Deletes a conversation
     func deleteConversation(id: UUID) {
-        // Mark as deleted for CloudKit sync
-        CloudKitSyncManager.shared.markConversationDeleted(id)
-
         // Unload from cache
         unloadChat(id: id)
 
@@ -130,10 +127,11 @@ class ChatCache {
             conversations.remove(at: index)
         }
 
-        // Delete from disk
+        // Delete from disk and sync to CloudKit
         do {
             try ConversationManager.deleteConversation(id: id)
-            try ConversationManager.saveIndex(conversations: conversations)
+            // Don't sync to CloudKit here - deleteConversation() already handles CloudKit deletion
+            try ConversationManager.saveIndex(conversations: conversations, syncToCloudKit: false)
         } catch {
             print("Error deleting conversation: \(error)")
         }
@@ -181,7 +179,7 @@ class ChatCache {
         activeCloudKitPulls.insert(id)
         Task {
             do {
-                try await CloudKitSyncManager.shared.pullMessages(for: id)
+                try await ConversationManager.refreshMessagesFromCloud(for: id)
             } catch {
                 print("Failed to pull messages from CloudKit: \(error)")
             }
@@ -280,7 +278,8 @@ class ChatCache {
             role: .user,
             attachmentLinks: [],
             timeStamp: .now,
-            lastModified: Date.now
+            lastModified: Date.now,
+            conversationID: conversationID
         )
         chat.messages.append(userMsg)
         conversation.lastInteracted = Date.now
@@ -317,7 +316,8 @@ class ChatCache {
                     modelUsed: modelName,
                     attachmentLinks: [],
                     timeStamp: Date.now.addingTimeInterval(0.001),
-                    lastModified: Date.now
+                    lastModified: Date.now,
+                    conversationID: conversationID
                 )
 
                 await MainActor.run {
@@ -431,7 +431,8 @@ class ChatCache {
             role: .system,
             attachmentLinks: [],
             timeStamp: .now,
-            lastModified: Date.now
+            lastModified: Date.now,
+            conversationID: conversationID
         )
         chat.messages.append(userMsg)
         conversation.lastInteracted = Date.now
@@ -476,4 +477,61 @@ class ChatCache {
         impactGenerator.impactOccurred(intensity: clampedIntensity)
     }
     #endif
+
+    // MARK: - CloudKit Sync Support
+
+    /// Remove deleted conversations from ChatCache
+    /// Called when CloudKit sync detects conversations were deleted on another device
+    /// - Parameter deletedIDs: Set of conversation IDs that were deleted
+    @MainActor
+    func removeDeletedConversations(_ deletedIDs: Set<UUID>) {
+        print("  🔄 Removing \(deletedIDs.count) deleted conversation(s) from ChatCache")
+
+        // Remove from conversations array
+        conversations.removeAll { deletedIDs.contains($0.id) }
+
+        // Remove from loaded chats
+        for id in deletedIDs {
+            loadedChats.removeValue(forKey: id)
+        }
+
+        // Clear selection if deleted
+        if let activeID = activeConversationID, deletedIDs.contains(activeID) {
+            activeConversationID = nil
+        }
+    }
+
+    /// Update loaded conversations with newer versions from CloudKit
+    /// Called after refresh to swap out loaded chats with updated data
+    /// - Parameter updatedConversations: Array of conversations with latest data from CloudKit
+    @MainActor
+    func updateLoadedConversations(_ updatedConversations: [Conversation]) {
+        print("  🔄 Updating loaded conversations in ChatCache")
+
+        var updatedCount = 0
+
+        // Update conversations array with newest versions
+        for (index, conversation) in conversations.enumerated() {
+            if let updated = updatedConversations.first(where: { $0.id == conversation.id }),
+               updated.lastModified > conversation.lastModified {
+                conversations[index] = updated
+                updatedCount += 1
+            }
+        }
+
+        // Add any new conversations from cloud that we don't have locally
+        let localIDs = Set(conversations.map { $0.id })
+        let newConversations = updatedConversations.filter { !localIDs.contains($0.id) }
+        conversations.append(contentsOf: newConversations)
+
+        if updatedCount > 0 || !newConversations.isEmpty {
+            print("  ✅ Updated \(updatedCount) conversation(s), added \(newConversations.count) new")
+        }
+
+        // Note: LoadedChat doesn't store conversation metadata separately
+        // The conversations array has already been updated above, which is what the UI uses
+        // Messages in loadedChats are updated separately when conversations are opened
+
+        print("  ✅ ChatCache updated with latest conversation metadata")
+    }
 }

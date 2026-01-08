@@ -93,9 +93,13 @@ actor SyncEngine<Item: Syncable> {
     /// Mark an item for deletion from CloudKit
     /// - Parameter id: The ID of the item to delete
     func markForDelete(_ id: UUID) {
-        pendingDeletes.insert(id)
+        let wasNew = pendingDeletes.insert(id).inserted
         pendingPushes.remove(id) // Don't push if we're deleting
-        print("  🗑️ Marked \(recordType) \(id.uuidString.prefix(8))... for deletion")
+        if wasNew {
+            print("  🗑️ Marked \(recordType) \(id.uuidString.prefix(8))... for deletion")
+        } else {
+            print("  ⚠️ \(recordType) \(id.uuidString.prefix(8))... ALREADY marked for deletion (duplicate call)")
+        }
     }
 
     /// Check if there are any pending changes
@@ -276,11 +280,19 @@ actor SyncEngine<Item: Syncable> {
     /// Delete an item from CloudKit and create a deletion tombstone
     /// - Parameter id: The ID of the item to delete
     func delete(_ id: UUID) async throws {
-        // First, delete the actual record
-        try await executeWithRetry(operationName: "delete(\(recordType))") {
-            let recordID = CKRecord.ID(recordName: id.uuidString)
-            _ = try await self.database.deleteRecord(withID: recordID)
-            print("  ✅ Deleted \(self.recordType) \(id.uuidString.prefix(8))... from CloudKit")
+        // First, delete the actual record (idempotent - succeeds even if already deleted)
+        do {
+            try await executeWithRetry(operationName: "delete(\(recordType))") {
+                let recordID = CKRecord.ID(recordName: id.uuidString)
+                _ = try await self.database.deleteRecord(withID: recordID)
+                print("  ✅ Deleted \(self.recordType) \(id.uuidString.prefix(8))... from CloudKit")
+            }
+        } catch let error as CKError where error.code == .unknownItem {
+            // Record doesn't exist - already deleted, which is fine
+            print("  ✅ \(self.recordType) \(id.uuidString.prefix(8))... already deleted from CloudKit")
+        } catch {
+            // Other errors should still be thrown
+            throw error
         }
 
         // Then, create a deletion tombstone so other devices know to delete it
@@ -298,9 +310,13 @@ actor SyncEngine<Item: Syncable> {
         do {
             _ = try await database.save(deletionRecord)
             print("  🪦 Created deletion tombstone for \(recordType) \(id.uuidString.prefix(8))...")
+        } catch let error as CKError where error.code == .serverRecordChanged {
+            // Tombstone already exists - that's fine
+            print("  🪦 Deletion tombstone for \(recordType) \(id.uuidString.prefix(8))... already exists")
         } catch {
-            print("  ⚠️  Failed to create deletion tombstone: \(error.localizedDescription)")
-            throw error
+            // Don't fail the deletion just because tombstone creation failed
+            // The deletion itself succeeded, so we should still clear it from pendingDeletes
+            print("  ⚠️  Failed to create deletion tombstone (non-fatal): \(error.localizedDescription)")
         }
     }
 
@@ -315,7 +331,11 @@ actor SyncEngine<Item: Syncable> {
                                    recordType)
         let query = CKQuery(recordType: deletionRecordType, predicate: predicate)
 
+        print("  🪦 Querying CloudKit for \(recordType) deletion tombstones since \(thirtyDaysAgo)...")
+
         let results = try await database.records(matching: query)
+        let totalResults = results.matchResults.count
+        print("  🪦 CloudKit returned \(totalResults) deletion record(s)")
 
         var deletedIDs: [UUID] = []
 
@@ -323,17 +343,26 @@ actor SyncEngine<Item: Syncable> {
             switch result {
             case .success(let record):
                 guard let deletedIDString = record["deletedRecordID"] as? String,
-                      let deletedID = UUID(uuidString: deletedIDString) else {
+                      let deletedID = UUID(uuidString: deletedIDString),
+                      let deletedType = record["deletedRecordType"] as? String else {
+                    print("  ⚠️  Malformed deletion record: \(record)")
                     continue
                 }
-                deletedIDs.append(deletedID)
+
+                // Double-check the type matches (predicate should handle this, but be safe)
+                if deletedType == recordType {
+                    deletedIDs.append(deletedID)
+                    print("  🪦 Found deletion tombstone for \(recordType) \(deletedID.uuidString.prefix(8))...")
+                } else {
+                    print("  ⚠️  Skipping tombstone for wrong type: \(deletedType) (expected \(recordType))")
+                }
             case .failure(let error):
                 print("  ⚠️  Error fetching deletion record: \(error.localizedDescription)")
             }
         }
 
-        if !deletedIDs.isEmpty {
-            print("  🪦 Found \(deletedIDs.count) deletion tombstone(s) for \(recordType)")
+        if deletedIDs.isEmpty && totalResults > 0 {
+            print("  ⚠️  Found \(totalResults) tombstone record(s) but none were valid \(recordType) deletions")
         }
 
         return deletedIDs
