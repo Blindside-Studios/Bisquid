@@ -41,7 +41,7 @@ struct ChatWindow: View {
                                             .id(message.id)
                                     }
                                     else if (message.role == .user || message.role == .system){
-                                        MessageUser(message: message, availableWidth: geo.size.width)
+                                        MessageUser(message: message, availableWidth: geo.size.width, primaryAccentColor: $primaryAccentColor)
                                             .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height : 0)
                                             .id(message.id)
                                     }

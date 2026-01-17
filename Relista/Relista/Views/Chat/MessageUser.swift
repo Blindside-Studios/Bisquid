@@ -13,6 +13,8 @@ struct MessageUser: View {
     @State private var isExpanded: Bool = false
     @State private var naturalHeight: CGFloat = 0
     
+    @Binding var primaryAccentColor: Color
+    
     private var needsTruncation: Bool {
         naturalHeight > 200
     }
@@ -27,7 +29,8 @@ struct MessageUser: View {
                         .foregroundStyle(message.role == .system ? Color.orange : Color.primary)
                         .clipped()
                         .padding()
-                        .glassEffect(in: .rect(cornerRadius: 25.0))
+                        .glassEffect(.regular.tint(primaryAccentColor.opacity(0.3)), in: .rect(cornerRadius: 25.0, style: .continuous))
+                        .animation(.default, value: primaryAccentColor)
                         .background(
                             Text(message.text)
                                 .padding()
@@ -85,6 +88,7 @@ struct MessageUser: View {
                         .buttonStyle(.plain)
                         .labelStyle(.iconOnly)
                     }
+                    .opacity(0.5)
                     .padding(.horizontal)
                 }
             }

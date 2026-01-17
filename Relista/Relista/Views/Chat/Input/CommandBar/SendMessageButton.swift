@@ -30,10 +30,27 @@ struct SendMessageButton: View {
             let isGenerating = chat?.isGenerating ?? false
 
             ZStack{
-                Label("Stop generating", systemImage: "stop.fill")
+                /*Label("Stop generating", systemImage: "stop.fill")
                     .offset(y: isGenerating ? 0 : 25)
                 Label("Send message", systemImage: "arrow.up")
-                    .offset(y: isGenerating ? -25 : 0)
+                    .offset(y: isGenerating ? -25 : 0)*/
+                if isGenerating {
+                    Label("Stop generating", systemImage: "stop.fill")
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .bottom).combined(with: .opacity),
+                                removal: .move(edge: .bottom).combined(with: .opacity)
+                            )
+                        )
+                } else {
+                    Label("Stop generating", systemImage: "arrow.up")
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .top).combined(with: .opacity),
+                                removal: .move(edge: .top).combined(with: .opacity)
+                            )
+                        )
+                }
             }
             .font(.headline)
             // weirdly these seem to be interpreted differently across platforms
@@ -44,12 +61,14 @@ struct SendMessageButton: View {
             #endif
             .animation(.bouncy(duration: 0.3, extraBounce: 0.15), value: isGenerating)
         }
+        .buttonBorderShape(.circle)
         .buttonStyle(.glassProminent)
         .tint(accentColor)
+        #if os(iOS)
+        .foregroundStyle(accentColor == .primary ? Color(uiColor: .systemBackground) : Color(uiColor: .label)) // fix for iOS making background and label white... bruh iOS, macOS does this properly... but this won't compile on macOS... SwiftUI...
+        #endif
         .animation(.default, value: accentColor)
         .labelStyle(.iconOnly)
-        .buttonBorderShape(.circle)
-        .clipped()
         // weirdly these seem to be interpreted differently across platforms
         #if os(macOS)
         .offset(x: 0, y: 2)
