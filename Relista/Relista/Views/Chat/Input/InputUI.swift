@@ -58,6 +58,13 @@ struct InputUI: View {
                         AnyTransition.blurFade.combined(with: .offset(y: -150)).combined(with: .opacity)
                     )
                     
+                    if isChatBlank {
+                        NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
+                            .transition(
+                                AnyTransition.blurFade.combined(with: .offset(y: 50)).combined(with: .opacity)
+                            )
+                    }
+                    
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor)
                 }
             } else {
@@ -84,6 +91,10 @@ struct InputUI: View {
                     }
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor)
                     if isChatBlank {
+                        NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
+                            .transition(
+                                AnyTransition.blurFade.combined(with: .offset(y: 350)).combined(with: .opacity)
+                            )
                         // double spacer so the actual content is above center
                         Spacer()
                         Spacer()

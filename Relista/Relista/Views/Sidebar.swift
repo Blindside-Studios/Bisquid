@@ -10,31 +10,33 @@ import SwiftUI
 struct Sidebar: View {
     @Binding var showingSettings: Bool
     @Binding var chatCache: ChatCache
-    @Binding var selectedConversationID: UUID?
+    @Binding var selectedConversationID: UUID
     @Binding var selectedAgent: UUID?
     @Binding var selectedModel: String
-
+    
     // Rename dialog state
     @State var showingRenameDialog: Bool = false
     @State var conversationToRename: Conversation? = nil
     @State var renameText: String = ""
-
+    
     // Delete confirmation state
     @State var showingDeleteConfirmation: Bool = false
     @State var conversationToDelete: Conversation? = nil
-
+    
     @ObservedObject private var agentManager = AgentManager.shared
-
+    
     @AppStorage("CustomAgentsInSidebarAreExpanded") private var showCustomAgents: Bool = true
     @AppStorage("ChatsInSidebarAreExpanded") private var showChats = true
-
+    
     @Environment(\.onSidebarSelection) private var onSidebarSelection
     @Environment(\.horizontalSizeClass) private var hSizeClass
-
+    
+    let createNewChat: () -> Void
+    
     var body: some View {
         let currentConversation = chatCache.conversations.first { $0.id == selectedConversationID }
         let isCurrentEmpty = currentConversation?.hasMessages == false
-
+        
         return ScrollView {
             LazyVStack(spacing: 0) {
                 
@@ -145,14 +147,14 @@ struct Sidebar: View {
                     .controlSize(.small)
                     .labelStyle(.iconOnly)
                     .contentShape(Rectangle())
-
+                    
                     Button {
                         showChats.toggle()
                     } label: {
                         Label("Show/hide chats", systemImage: "chevron.down")
                             .rotationEffect(showChats ? Angle(degrees: 180) : Angle(degrees: 0))
                             .contentShape(Rectangle())
-
+                        
                     }
                     .opacity(0.5)
                     .buttonStyle(.plain)
@@ -255,7 +257,7 @@ struct Sidebar: View {
         .refreshable {
             await performSync()
         }
-        #if os(iOS)
+#if os(iOS)
         .safeAreaBar(edge: .bottom, spacing: 0){
             HStack{
                 Spacer()
@@ -284,40 +286,39 @@ struct Sidebar: View {
                 Spacer()
             }
         }
-        #endif
+#endif
     }
-
+    
     func loadConversation(_ id: UUID) {
-        if let previousID = selectedConversationID {
-            chatCache.setViewing(id: previousID, isViewing: false)
-            if let previousConv = chatCache.getConversation(for: previousID),
-               !previousConv.hasMessages {
-                chatCache.deleteConversation(id: previousID)
-            }
+        let previousID = selectedConversationID
+        chatCache.setViewing(id: previousID, isViewing: false)
+        if let previousConv = chatCache.getConversation(for: previousID),
+           !previousConv.hasMessages {
+            chatCache.deleteConversation(id: previousID)
+            
+            selectedConversationID = id
+            chatCache.setViewing(id: id, isViewing: true)
+            // Pull latest messages from CloudKit in background
+            chatCache.pullMessagesIfNeeded(for: id)
         }
-
-        selectedConversationID = id
-        chatCache.setViewing(id: id, isViewing: true)
-        // Pull latest messages from CloudKit in background
-        chatCache.pullMessagesIfNeeded(for: id)
     }
-
+    
     func renameConversation() {
         guard let conv = conversationToRename, !renameText.isEmpty else { return }
         chatCache.renameConversation(id: conv.id, to: renameText)
         conversationToRename = nil
         renameText = ""
     }
-
+    
     func deleteConversation() {
         guard let conv = conversationToDelete else { return }
         if selectedConversationID == conv.id {
-            selectedConversationID = nil
+            createNewChat()
         }
         chatCache.deleteConversation(id: conv.id)
         conversationToDelete = nil
     }
-
+    
     func performSync() async {
         do {
             // Use new sync system

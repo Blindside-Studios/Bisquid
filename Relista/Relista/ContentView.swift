@@ -15,36 +15,26 @@ extension Notification.Name {
 struct ContentView: View {
     @State var showingSettings: Bool = false
     @State var chatCache = ChatCache.shared
-    @State var selectedConversationID: UUID? = ConversationManager.createNewConversation(fromID: nil).newChatUUID
+    @State var selectedConversationID: UUID = ConversationManager.createNewConversation(fromID: nil).newChatUUID
     @State var inputMessage = "" // put this here so switching between layouts doesn't clear it
 
     @State var selectedAgent: UUID? = nil
     @State var selectedModel: String = ModelList.placeHolderModel
     @State var useSearch = false
     @State var useReasoning = false
-
-    @State private var columnVisibility: NavigationSplitViewVisibility = {
-#if os(iOS)
-        return .detailOnly
-#else
-        return .all
-#endif
-    }()
     
     var body: some View {
         UnifiedSplitView {
-            Sidebar(showingSettings: $showingSettings, chatCache: $chatCache, selectedConversationID: $selectedConversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
+            Sidebar(showingSettings: $showingSettings, chatCache: $chatCache, selectedConversationID: $selectedConversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel, createNewChat: createNewChat)
         } content: {
-            if let id = selectedConversationID {
-                ChatWindow(conversationID: .constant(id), inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
-                    .toolbar(){
-                        ToolbarItemGroup() {
-                            Button("New chat", systemImage: "square.and.pencil"){
-                                createNewChat()
-                            }
+            ChatWindow(conversationID: $selectedConversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, useSearch: $useSearch, useReasoning: $useReasoning)
+                .toolbar(){
+                    ToolbarItemGroup() {
+                        Button("New chat", systemImage: "square.and.pencil"){
+                            createNewChat()
                         }
                     }
-            }
+                }
         }
         .onReceive(NotificationCenter.default.publisher(for: .createNewChat)) { _ in
             createNewChat()
