@@ -292,15 +292,18 @@ struct Sidebar: View {
     func loadConversation(_ id: UUID) {
         let previousID = selectedConversationID
         chatCache.setViewing(id: previousID, isViewing: false)
+
+        // Delete previous conversation if it was empty
         if let previousConv = chatCache.getConversation(for: previousID),
            !previousConv.hasMessages {
             chatCache.deleteConversation(id: previousID)
-            
-            selectedConversationID = id
-            chatCache.setViewing(id: id, isViewing: true)
-            // Pull latest messages from CloudKit in background
-            chatCache.pullMessagesIfNeeded(for: id)
         }
+
+        // Always update to the new conversation
+        selectedConversationID = id
+        chatCache.setViewing(id: id, isViewing: true)
+        // Pull latest messages from CloudKit in background
+        chatCache.pullMessagesIfNeeded(for: id)
     }
     
     func renameConversation() {

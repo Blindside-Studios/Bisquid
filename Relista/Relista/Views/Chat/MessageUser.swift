@@ -30,7 +30,6 @@ struct MessageUser: View {
                         .clipped()
                         .padding()
                         .glassEffect(.regular.tint(primaryAccentColor.opacity(0.3)), in: .rect(cornerRadius: 25.0, style: .continuous))
-                        .animation(.default, value: primaryAccentColor)
                         .background(
                             Text(message.text)
                                 .padding()
