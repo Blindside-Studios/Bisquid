@@ -112,7 +112,7 @@ struct Sidebar: View {
                     HStack{
                         Label("Expand/collapse Squidlet list", systemImage: "chevron.down")
                             .rotationEffect(showCustomAgents ? Angle(degrees: -180) : Angle(degrees: 0))
-                            .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showCustomAgents)
+                            //.animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showCustomAgents)
                         Text("Squidlets")
                         Spacer()
                     }
@@ -229,7 +229,7 @@ struct Sidebar: View {
             .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showCustomAgents)
             //.animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: chatCache.conversations)
             //.animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: agentManager.customAgents)
-            .navigationTitle("Chats")
+            //.navigationTitle("Chats")
             .alert("Rename Conversation", isPresented: $showingRenameDialog) {
                 TextField("Conversation Name", text: $renameText)
                 Button("Cancel", role: .cancel) {
