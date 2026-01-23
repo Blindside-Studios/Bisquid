@@ -68,8 +68,8 @@ struct NewChatAgentPicker: View {
             .font(.callout)
             .padding(.horizontal, 12)
         }
+        .scrollClipDisabled()
         .scrollIndicators(.hidden)
-        .scrollEdgeEffectStyle(.soft, for: .horizontal)
     }
 }
 
