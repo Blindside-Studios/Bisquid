@@ -7,20 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0A886BC52F16DC5500169EFB /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = 0A886BC42F16DC5500169EFB /* Textual */; };
+		0A2BD90D2F26771500C9C5D7 /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = 0A2BD90C2F26771500C9C5D7 /* Textual */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0ABA50AF2EB7DE3A00FE0182 /* Relista.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Relista.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0ABA50AF2EB7DE3A00FE0182 /* Bisquid.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bisquid.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		0A2BD8AE2F266EB900C9C5D7 /* Exceptions for "Relista" folder in "Relista" target */ = {
+		0A2BD8AE2F266EB900C9C5D7 /* Exceptions for "Relista" folder in "Bisquid" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 0ABA50AE2EB7DE3A00FE0182 /* Relista */;
+			target = 0ABA50AE2EB7DE3A00FE0182 /* Bisquid */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -28,7 +28,7 @@
 		0ABA50B12EB7DE3A00FE0182 /* Relista */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				0A2BD8AE2F266EB900C9C5D7 /* Exceptions for "Relista" folder in "Relista" target */,
+				0A2BD8AE2F266EB900C9C5D7 /* Exceptions for "Relista" folder in "Bisquid" target */,
 			);
 			path = Relista;
 			sourceTree = "<group>";
@@ -40,7 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0A886BC52F16DC5500169EFB /* Textual in Frameworks */,
+				0A2BD90D2F26771500C9C5D7 /* Textual in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,7 +58,7 @@
 		0ABA50B02EB7DE3A00FE0182 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0ABA50AF2EB7DE3A00FE0182 /* Relista.app */,
+				0ABA50AF2EB7DE3A00FE0182 /* Bisquid.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,9 +66,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		0ABA50AE2EB7DE3A00FE0182 /* Relista */ = {
+		0ABA50AE2EB7DE3A00FE0182 /* Bisquid */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0ABA50BA2EB7DE3C00FE0182 /* Build configuration list for PBXNativeTarget "Relista" */;
+			buildConfigurationList = 0ABA50BA2EB7DE3C00FE0182 /* Build configuration list for PBXNativeTarget "Bisquid" */;
 			buildPhases = (
 				0ABA50AB2EB7DE3A00FE0182 /* Sources */,
 				0ABA50AC2EB7DE3A00FE0182 /* Frameworks */,
@@ -81,12 +81,12 @@
 			fileSystemSynchronizedGroups = (
 				0ABA50B12EB7DE3A00FE0182 /* Relista */,
 			);
-			name = Relista;
+			name = Bisquid;
 			packageProductDependencies = (
-				0A886BC42F16DC5500169EFB /* Textual */,
+				0A2BD90C2F26771500C9C5D7 /* Textual */,
 			);
 			productName = Relista;
-			productReference = 0ABA50AF2EB7DE3A00FE0182 /* Relista.app */;
+			productReference = 0ABA50AF2EB7DE3A00FE0182 /* Bisquid.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -114,14 +114,14 @@
 			mainGroup = 0ABA50A62EB7DE3A00FE0182;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				0A886BC32F16DC5500169EFB /* XCRemoteSwiftPackageReference "textual" */,
+				0A2BD90B2F26771500C9C5D7 /* XCRemoteSwiftPackageReference "textual" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0ABA50B02EB7DE3A00FE0182 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				0ABA50AE2EB7DE3A00FE0182 /* Relista */,
+				0ABA50AE2EB7DE3A00FE0182 /* Bisquid */,
 			);
 		};
 /* End PBXProject section */
@@ -393,7 +393,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		0ABA50BA2EB7DE3C00FE0182 /* Build configuration list for PBXNativeTarget "Relista" */ = {
+		0ABA50BA2EB7DE3C00FE0182 /* Build configuration list for PBXNativeTarget "Bisquid" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0ABA50BB2EB7DE3C00FE0182 /* Debug */,
@@ -405,20 +405,20 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		0A886BC32F16DC5500169EFB /* XCRemoteSwiftPackageReference "textual" */ = {
+		0A2BD90B2F26771500C9C5D7 /* XCRemoteSwiftPackageReference "textual" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/gonzalezreal/textual";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.2.0;
+				minimumVersion = 0.3.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		0A886BC42F16DC5500169EFB /* Textual */ = {
+		0A2BD90C2F26771500C9C5D7 /* Textual */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0A886BC32F16DC5500169EFB /* XCRemoteSwiftPackageReference "textual" */;
+			package = 0A2BD90B2F26771500C9C5D7 /* XCRemoteSwiftPackageReference "textual" */;
 			productName = Textual;
 		};
 /* End XCSwiftPackageProductDependency section */
