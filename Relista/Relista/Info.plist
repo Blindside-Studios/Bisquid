@@ -4,5 +4,9 @@
 <dict>
 	<key>CFBundleIconFile</key>
 	<string>BisquidAppIcon</string>
+	<key>CFBundleDisplayName</key>
+	<string>Bisquid</string>
+	<key>CFBundleName</key>
+	<string>Bisquid</string>
 </dict>
 </plist>
