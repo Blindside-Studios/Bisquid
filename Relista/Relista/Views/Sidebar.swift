@@ -261,6 +261,16 @@ struct Sidebar: View {
         .safeAreaBar(edge: .bottom, spacing: 0){
             HStack{
                 Spacer()
+                /*Button {
+                    migrateDataToiCloud()
+                } label: {
+                    Label("Migrate", systemImage: "arrow.right.doc.on.clipboard")
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding()
+                .glassEffect()
+                 */
                 Button {
                     showingSettings.toggle()
                 } label: {
@@ -302,8 +312,6 @@ struct Sidebar: View {
         // Always update to the new conversation
         selectedConversationID = id
         chatCache.setViewing(id: id, isViewing: true)
-        // Pull latest messages from CloudKit in background
-        chatCache.pullMessagesIfNeeded(for: id)
     }
     
     func renameConversation() {
@@ -323,13 +331,52 @@ struct Sidebar: View {
     }
     
     func performSync() async {
+        print("🔄 Manual refresh triggered (Sidebar)")
+        await AgentManager.shared.refreshFromStorage()
+        await ConversationManager.refreshConversationsFromStorage()
+    }
+
+    func migrateDataToiCloud() {
+        let fileManager = FileManager.default
+
+        // Source: old local Documents/Relista folder
+        let localDocuments = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let localRelista = localDocuments.appendingPathComponent("Relista")
+
+        // Destination: iCloud container
+        guard let iCloudURL = fileManager.url(forUbiquityContainerIdentifier: "iCloud.Blindside-Studios.Relista") else {
+            print("❌ iCloud container not available")
+            return
+        }
+        let iCloudRelista = iCloudURL.appendingPathComponent("Documents").appendingPathComponent("Relista")
+
+        print("📦 Migrating data...")
+        print("  From: \(localRelista.path)")
+        print("  To: \(iCloudRelista.path)")
+
         do {
-            // Use new sync system
-            print("🔄 Manual refresh triggered (Sidebar)")
-            try await AgentManager.shared.refreshFromCloud()
-            try await ConversationManager.refreshConversationsFromCloud()
+            // Create destination if needed
+            if !fileManager.fileExists(atPath: iCloudRelista.path) {
+                try fileManager.createDirectory(at: iCloudRelista, withIntermediateDirectories: true)
+            }
+
+            // Copy all contents
+            let contents = try fileManager.contentsOfDirectory(at: localRelista, includingPropertiesForKeys: nil)
+            for item in contents {
+                let destURL = iCloudRelista.appendingPathComponent(item.lastPathComponent)
+
+                // Remove existing if present
+                if fileManager.fileExists(atPath: destURL.path) {
+                    try fileManager.removeItem(at: destURL)
+                }
+
+                try fileManager.copyItem(at: item, to: destURL)
+                print("  ✓ Copied: \(item.lastPathComponent)")
+            }
+
+            print("✅ Migration complete! Refresh to see your data.")
         } catch {
-            print("❌ Sync error: \(error)")
+            print("❌ Migration failed: \(error)")
         }
     }
 }

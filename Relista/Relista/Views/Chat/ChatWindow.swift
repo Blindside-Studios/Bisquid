@@ -88,8 +88,6 @@ struct ChatWindow: View {
         .task(id: conversationID) {
             // Load the chat when the view appears or conversation changes
             _ = chatCache.getChat(for: conversationID)
-            // Pull latest messages from CloudKit in background
-            chatCache.pullMessagesIfNeeded(for: conversationID)
         }
         .navigationTitle(chatCache.getConversation(for: conversationID)?.title ?? "New chat")
         #if os(iOS)

@@ -216,8 +216,8 @@ struct PromptField: View {
         chat.messages.append(msg18)
         newMessageIDs.append(msg18.id)
 
-        // Save the dummy messages (mark only the new messages for push)
-        chatCache.saveMessages(for: conversationID, changedMessageIDs: Set(newMessageIDs))
+        // Save the dummy messages
+        chatCache.saveMessages(for: conversationID)
         chatCache.syncConversation(id: conversationID)
     }
     

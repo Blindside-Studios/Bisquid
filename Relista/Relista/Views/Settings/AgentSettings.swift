@@ -137,7 +137,7 @@ struct AgentSettings: View {
     
     private func moveAgents(from source: IndexSet, to destination: Int) {
         manager.customAgents.move(fromOffsets: source, toOffset: destination)
-        try? AgentManager.shared.saveAgents()
+        try? AgentManager.shared.saveToDisk()
     }
     
     private func binding(for agent: Agent) -> Binding<Agent> {
@@ -293,10 +293,9 @@ struct AgentDetailView: View {
             }
         }
         .onDisappear {
-            // Use new updateAgent() API to properly track timestamp and sync
+            // Use updateAgent() to properly save with timestamp update
             try? AgentManager.shared.updateAgent(agent.id) { _ in
                 // Agent is already updated via binding
-                // This ensures timestamp update and CloudKit sync tracking
             }
         }
         .navigationTitle(agent.name)

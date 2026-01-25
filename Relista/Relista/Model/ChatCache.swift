@@ -46,9 +46,6 @@ class ChatCache {
     /// Dictionary tracking cancellation requests for conversations
     private var cancellationFlags: [UUID: Bool] = [:]
 
-    /// Set tracking conversations currently being pulled from CloudKit to prevent duplicate pulls
-    private var activeCloudKitPulls: Set<UUID> = []
-
     private init() {
         // Load conversations from disk on init
         do {
@@ -91,14 +88,13 @@ class ChatCache {
     /// Syncs a conversation (saves index and updates metadata)
     func syncConversation(id: UUID) {
         guard let conversation = getConversation(for: id) else { return }
-        //let chat = getChat(for: id)
 
         // Update lastModified before saving
         conversation.lastModified = Date.now
 
         // Save index
         do {
-            try ConversationManager.saveIndex(conversations: conversations, changedConversationID: id)
+            try ConversationManager.saveIndex(conversations: conversations)
         } catch {
             print("Error saving conversation index: \(error)")
         }
@@ -111,7 +107,7 @@ class ChatCache {
         conversation.lastModified = Date.now
 
         do {
-            try ConversationManager.saveIndex(conversations: conversations, changedConversationID: id)
+            try ConversationManager.saveIndex(conversations: conversations)
         } catch {
             print("Error saving renamed conversation: \(error)")
         }
@@ -127,11 +123,10 @@ class ChatCache {
             conversations.remove(at: index)
         }
 
-        // Delete from disk and sync to CloudKit
+        // Delete from disk
         do {
             try ConversationManager.deleteConversation(id: id)
-            // Don't sync to CloudKit here - deleteConversation() already handles CloudKit deletion
-            try ConversationManager.saveIndex(conversations: conversations, syncToCloudKit: false)
+            try ConversationManager.saveIndex(conversations: conversations)
         } catch {
             print("Error deleting conversation: \(error)")
         }
@@ -140,7 +135,6 @@ class ChatCache {
     // MARK: - Chat Loading/Unloading
 
     /// Loads or retrieves a chat from cache
-    /// Loads from local disk only - call pullMessagesIfNeeded() separately to sync from CloudKit
     func getChat(for id: UUID) -> LoadedChat {
         if let existing = loadedChats[id] {
             // Already loaded - return it
@@ -169,25 +163,6 @@ class ChatCache {
         }
     }
 
-    /// Pulls messages from CloudKit for a conversation if not already pulling
-    /// Safe to call multiple times - will only pull once
-    func pullMessagesIfNeeded(for id: UUID) {
-        guard !activeCloudKitPulls.contains(id) else {
-            return // Already pulling
-        }
-
-        activeCloudKitPulls.insert(id)
-        Task {
-            do {
-                try await ConversationManager.refreshMessagesFromCloud(for: id)
-            } catch {
-                print("Failed to pull messages from CloudKit: \(error)")
-            }
-            await _ = MainActor.run {
-                activeCloudKitPulls.remove(id)
-            }
-        }
-    }
 
     /// Marks a chat as being actively viewed
     func setViewing(id: UUID, isViewing: Bool) {
@@ -262,7 +237,7 @@ class ChatCache {
             chat.isBeingViewed = true
             // Save index immediately so it appears in sidebar
             do {
-                try ConversationManager.saveIndex(conversations: conversations, changedConversationID: conversationID)
+                try ConversationManager.saveIndex(conversations: conversations)
                 print("  ✓ Index saved (hasMessages now true)")
             } catch {
                 print("  ❌ Error saving conversation index: \(error)")
@@ -287,8 +262,8 @@ class ChatCache {
         conversation.agentUsed = agent
         conversation.modelUsed = modelName
 
-        // Save user message immediately (only mark this new message for push)
-        saveMessages(for: conversationID, changedMessageIDs: [userMsg.id])
+        // Save user message immediately
+        saveMessages(for: conversationID)
         print("  ✓ Message saved to disk (now \(chat.messages.count) total messages)")
 
         // Debug: Verify message was actually written to disk
@@ -380,8 +355,7 @@ class ChatCache {
                     conversation.lastInteracted = Date.now
                     conversation.lastModified = Date.now
 
-                    // Only mark the assistant message for push (it's the only one that changed)
-                    saveMessages(for: conversationID, changedMessageIDs: [assistantMessageID])
+                    saveMessages(for: conversationID)
                     syncConversation(id: conversationID)
                     onCompletion?()
 
@@ -391,7 +365,7 @@ class ChatCache {
                 
                 if isChatNew { try? conversation.title = await service.generateChatName(messages: chat.messages) }
                 // save again to make sure it saves our chat title
-                try? ConversationManager.saveIndex(conversations: conversations, changedConversationID: conversationID)
+                try? ConversationManager.saveIndex(conversations: conversations)
                 
                 #if os(iOS)
                 // provide haptic feedback that message is done generating
@@ -440,19 +414,19 @@ class ChatCache {
         conversation.lastInteracted = Date.now
         conversation.lastModified = Date.now
 
-        // Save system message immediately (only mark this new message for push)
+        // Save system message immediately
         if conversation.hasMessages {
-            saveMessages(for: conversationID, changedMessageIDs: [userMsg.id])
+            saveMessages(for: conversationID)
         }
     }
 
     // MARK: - Persistence
 
-    func saveMessages(for id: UUID, changedMessageIDs: Set<UUID>? = nil) {
+    func saveMessages(for id: UUID) {
         guard let chat = loadedChats[id] else { return }
 
         do {
-            try ConversationManager.saveMessages(for: id, messages: chat.messages, changedMessageIDs: changedMessageIDs)
+            try ConversationManager.saveMessages(for: id, messages: chat.messages)
         } catch {
             print("Error saving messages for \(id): \(error)")
         }
@@ -482,60 +456,23 @@ class ChatCache {
     }
     #endif
 
-    // MARK: - CloudKit Sync Support
+    // MARK: - Sync Support
 
-    /// Remove deleted conversations from ChatCache
-    /// Called when CloudKit sync detects conversations were deleted on another device
-    /// - Parameter deletedIDs: Set of conversation IDs that were deleted
-    @MainActor
-    func removeDeletedConversations(_ deletedIDs: Set<UUID>) {
-        print("  🔄 Removing \(deletedIDs.count) deleted conversation(s) from ChatCache")
-
-        // Remove from conversations array
-        conversations.removeAll { deletedIDs.contains($0.id) }
-
-        // Remove from loaded chats
-        for id in deletedIDs {
-            loadedChats.removeValue(forKey: id)
-        }
-
-        // Clear selection if deleted
-        if let activeID = activeConversationID, deletedIDs.contains(activeID) {
-            activeConversationID = nil
-        }
-    }
-
-    /// Update loaded conversations with newer versions from CloudKit
-    /// Called after refresh to swap out loaded chats with updated data
-    /// - Parameter updatedConversations: Array of conversations with latest data from CloudKit
+    /// Update loaded conversations with refreshed data from storage
+    /// Called after iCloud sync updates files
     @MainActor
     func updateLoadedConversations(_ updatedConversations: [Conversation]) {
-        print("  🔄 Updating loaded conversations in ChatCache")
-
-        var updatedCount = 0
-
         // Update conversations array with newest versions
         for (index, conversation) in conversations.enumerated() {
             if let updated = updatedConversations.first(where: { $0.id == conversation.id }),
                updated.lastModified > conversation.lastModified {
                 conversations[index] = updated
-                updatedCount += 1
             }
         }
 
-        // Add any new conversations from cloud that we don't have locally
+        // Add any new conversations that we don't have locally
         let localIDs = Set(conversations.map { $0.id })
         let newConversations = updatedConversations.filter { !localIDs.contains($0.id) }
         conversations.append(contentsOf: newConversations)
-
-        if updatedCount > 0 || !newConversations.isEmpty {
-            print("  ✅ Updated \(updatedCount) conversation(s), added \(newConversations.count) new")
-        }
-
-        // Note: LoadedChat doesn't store conversation metadata separately
-        // The conversations array has already been updated above, which is what the UI uses
-        // Messages in loadedChats are updated separately when conversations are opened
-
-        print("  ✅ ChatCache updated with latest conversation metadata")
     }
 }

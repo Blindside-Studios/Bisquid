@@ -16,7 +16,7 @@ struct Message: Identifiable, Codable{
     var timeStamp: Date
     var lastModified: Date
     var annotations: [MessageAnnotation]?
-    var conversationID: UUID  // Added for CloudKit sync
+    var conversationID: UUID
 
     // Custom Codable implementation for backwards compatibility
     enum CodingKeys: String, CodingKey {
