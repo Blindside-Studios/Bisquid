@@ -50,7 +50,7 @@ struct RemoteAIModel: Codable {
 }
 
 class ModelList{
-    @AppStorage("AppDefaultModel") static var placeHolderModel: String = "mistralai/mistral-medium-3.1"
+    @AppStorage("AppDefaultModel") static var placeHolderModel: String = "mistral-medium-latest"
     static var AllModels: [AIModel] = []
     static var areModelsLoaded = false
     

@@ -32,6 +32,7 @@ struct Sidebar: View {
     @Environment(\.horizontalSizeClass) private var hSizeClass
     
     let createNewChat: () -> Void
+    let reloadSidebar: () async -> Void
     
     var body: some View {
         let currentConversation = chatCache.conversations.first { $0.id == selectedConversationID }
@@ -129,12 +130,21 @@ struct Sidebar: View {
                         .font(.caption)
                         .opacity(0.5)
                     VStack{
-                        Divider()
-                            .padding(4)
+                        if !ChatCache.shared.isLoading{
+                            Divider()
+                                .padding(4)
+                        }
+                        else{
+                            ProgressView(value: ChatCache.shared.loadingProgress)
+                                .progressViewStyle(.linear)
+                                .padding(4)
+                        }
                     }
+                    .animation(.default, value: ChatCache.shared.isLoading)
                     Button {
                         Task {
-                            await performSync()
+                            await reloadSidebar()
+                            //await performSync()
                         }
                     } label: {
                         Label("Refresh", systemImage: "arrow.clockwise")

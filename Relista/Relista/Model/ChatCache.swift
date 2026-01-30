@@ -34,6 +34,10 @@ class LoadedChat: Identifiable {
 class ChatCache {    
     static let shared = ChatCache()
 
+    /// indicate loading state used in UI
+    var isLoading: Bool = false
+    var loadingProgress: Double = 0.0
+    
     /// All conversations (metadata only)
     var conversations: [Conversation] = []
 
@@ -166,8 +170,7 @@ class ChatCache {
 
     /// Marks a chat as being actively viewed
     func setViewing(id: UUID, isViewing: Bool) {
-        let chat = getChat(for: id)
-        chat.isBeingViewed = isViewing
+        getChat(for: id).isBeingViewed = isViewing
 
         if isViewing {
             activeConversationID = id
