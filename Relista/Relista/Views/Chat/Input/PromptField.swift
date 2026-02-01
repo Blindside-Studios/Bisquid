@@ -59,7 +59,7 @@ struct PromptField: View {
                         #if os(iOS)
                         isTryingToAddNewLine = true
                         #endif
-                        inputMessage += "\n"
+                        insertNewlineAtCursor()
                         return .handled
                     } else {
                         return .ignored
@@ -238,6 +238,22 @@ struct PromptField: View {
     func refreshPlaceHolder(){
         placeHolder = ChatPlaceHolders.returnAppropriatePlaceholder(agentUUID: selectedAgent)
     }
+
+    private func insertNewlineAtCursor() {
+        #if os(iOS)
+        if let textInput = UIResponder.currentFirstResponder as? UIKeyInput {
+            textInput.insertText("\n")
+        } else {
+            inputMessage += "\n"
+        }
+        #elseif os(macOS)
+        if let textView = NSApplication.shared.keyWindow?.firstResponder as? NSText {
+            textView.insertText("\n")
+        } else {
+            inputMessage += "\n"
+        }
+        #endif
+    }
 }
 
 class ChatPlaceHolders{
@@ -333,3 +349,21 @@ class ChatPlaceHolders{
 #Preview {
     //PromptField(conversation: .constant(Conversation(from: <#any Decoder#>)), inputMessage: .constant(""))
 }
+
+// MARK: - First Responder Helper
+
+#if os(iOS)
+extension UIResponder {
+    private static weak var _currentFirstResponder: UIResponder?
+
+    static var currentFirstResponder: UIResponder? {
+        _currentFirstResponder = nil
+        UIApplication.shared.sendAction(#selector(findFirstResponder(_:)), to: nil, from: nil, for: nil)
+        return _currentFirstResponder
+    }
+
+    @objc private func findFirstResponder(_ sender: Any) {
+        UIResponder._currentFirstResponder = self
+    }
+}
+#endif
