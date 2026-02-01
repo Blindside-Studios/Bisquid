@@ -69,7 +69,7 @@ struct OpenRouter {
     
     func streamMessage(messages: [Message], modelName: String, agent: UUID?, useSearch: Bool = false) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         var request = makeRequest()
-        @AppStorage("DefaultAssistantInstructions") var defaultInstructions: String = ""
+        let defaultInstructions = await MainActor.run { SyncedSettings.shared.defaultInstructions }
         
         let systemMessage = [
             "role": "system",

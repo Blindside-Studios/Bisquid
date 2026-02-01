@@ -19,7 +19,6 @@ struct InputUI: View {
     @Binding var secondaryAccentColor: Color
     
     // own logic
-    @AppStorage("APIKeyMistral") private var apiKey: String = ""
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     private var isChatBlank: Bool{
         ChatCache.shared.loadedChats[conversationID]?.messages.isEmpty ?? false
@@ -114,7 +113,7 @@ struct InputUI: View {
             displayedGreeting = ""
             
             do {
-                greetingBannerText = try await Mistral(apiKey: apiKey)
+                greetingBannerText = try await Mistral(apiKey: KeychainHelper.shared.mistralAPIKey)
                     .generateGreetingBanner(agent: selectedAgent)
                 
                 greetingTask = Task {

@@ -389,8 +389,7 @@ class ChatCache {
                     cleanupUnusedChats()
                 }
                 
-                @AppStorage("APIKeyMistral") var mistralApiKey: String = ""
-                if isChatNew { try? conversation.title = await Mistral(apiKey: mistralApiKey).generateChatName(messages: chat.messages) }
+                if isChatNew { try? conversation.title = await Mistral(apiKey: KeychainHelper.shared.mistralAPIKey).generateChatName(messages: chat.messages) }
                 // save again to make sure it saves our chat title
                 try? ConversationManager.saveIndex(conversations: conversations)
                 

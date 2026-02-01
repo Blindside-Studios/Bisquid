@@ -26,7 +26,7 @@ struct Claude {
 
     func streamMessage(messages: [Message], modelName: String, agent: UUID?, useSearch: Bool = false) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         var request = makeRequest()
-        @AppStorage("DefaultAssistantInstructions") var defaultInstructions: String = ""
+        let defaultInstructions = await MainActor.run { SyncedSettings.shared.defaultInstructions }
 
         let systemPrompt = agent == nil ? defaultInstructions : agent
             .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""

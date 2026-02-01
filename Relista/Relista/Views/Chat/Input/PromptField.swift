@@ -15,8 +15,6 @@ struct PromptField: View {
     @Binding var selectedAgent: UUID?
     @Binding var selectedModel: String
     @FocusState private var isTextFieldFocused: Bool
-    @AppStorage("APIKeyMistral") private var mistralApiKey: String = ""
-    @AppStorage("APIKeyClaude") private var claudeAPIKey: String = ""
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var chatCache = ChatCache.shared
     @State private var placeHolder = ChatPlaceHolders.returnRandomString()
@@ -81,9 +79,9 @@ struct PromptField: View {
 
         switch model.provider {
         case .mistral:
-            apiKey = mistralApiKey
+            apiKey = KeychainHelper.shared.mistralAPIKey
         case .anthropic:
-            apiKey = claudeAPIKey
+            apiKey = KeychainHelper.shared.claudeAPIKey
         default:
             return;
         }

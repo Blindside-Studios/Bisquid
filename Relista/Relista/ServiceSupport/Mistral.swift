@@ -64,8 +64,8 @@ struct Mistral {
     
     func generateGreetingBanner(agent: UUID?) async throws -> String {
         var request = makeRequest()
-        @AppStorage("DefaultAssistantInstructions") var defaultInstructions: String = ""
-        @AppStorage("UIUserName") var userName: String = ""
+        let defaultInstructions = await MainActor.run { SyncedSettings.shared.defaultInstructions }
+        let userName = await MainActor.run { SyncedSettings.shared.userName }
                 
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US")
@@ -169,7 +169,7 @@ struct Mistral {
 
     func streamMessage(messages: [Message], modelName: String, agent: UUID?, useSearch: Bool = false) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         var request = makeRequest()
-        @AppStorage("DefaultAssistantInstructions") var defaultInstructions: String = ""
+        let defaultInstructions = await MainActor.run { SyncedSettings.shared.defaultInstructions }
 
         let systemMessage = [
             "role": "system",

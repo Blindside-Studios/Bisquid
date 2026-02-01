@@ -49,8 +49,11 @@ struct RemoteAIModel: Codable {
     }
 }
 
-class ModelList{
-    @AppStorage("AppDefaultModel") static var placeHolderModel: String = "mistral-medium-latest"
+@MainActor
+class ModelList {
+    static var placeHolderModel: String {
+        SyncedSettings.shared.defaultModel
+    }
     static var AllModels: [AIModel] = []
     static var areModelsLoaded = false
     
