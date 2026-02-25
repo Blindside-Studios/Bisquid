@@ -186,28 +186,52 @@ struct Mistral {
             return ["role": message.role.toAPIString(), "content": content]
         }
 
-        // Note: Mistral API supports web searches but it's not yet implemented, like reasoning
-        // The useSearch parameter is kept for API compatibility but ignored
-        if useSearch {
-            print("⚠️ Web search requested not yet implemented for Mistral")
-        }
-
         print("🔍 Model being used: \(modelName)")
         print("📨 Request URL: \(request.url?.absoluteString ?? "nil")")
         print("📨 Request headers: \(request.allHTTPHeaderFields ?? [:])")
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": modelName,
             "messages": apiMessages,
             "stream": true
         ]
+
+        // Add web search tool if requested
+        if useSearch {
+            let webSearchTool: [String: Any] = [
+                "type": "function",
+                "function": [
+                    "name": "web_search",
+                    "description": "Search the web for current information",
+                    "parameters": [
+                        "type": "object",
+                        "properties": [
+                            "query": [
+                                "type": "string",
+                                "description": "The search query"
+                            ]
+                        ],
+                        "required": ["query"]
+                    ]
+                ]
+            ]
+            body["tools"] = [webSearchTool]
+            print("🔍 Web search enabled with function tool")
+        }
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (bytes, _) = try await URLSession.shared.bytes(for: request)
 
         return AsyncThrowingStream { continuation in
+            let capturedRequest = request // Capture for potential follow-up
+            let capturedMessages = apiMessages
+            let capturedModelName = modelName
+
             Task {
+                var accumulatedToolCalls: [String: [String: Any]] = [:] // indexed by tool call ID
+                var assistantMessage = "" // accumulate the assistant's message
+
                 do {
                     for try await line in bytes.lines {
                         // Log every line received for debugging
@@ -254,18 +278,147 @@ struct Mistral {
                         if let jsonData = data.data(using: .utf8),
                            let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
                            let choices = json["choices"] as? [[String: Any]],
-                           let delta = choices.first?["delta"] as? [String: Any] {
+                           let choice = choices.first {
 
-                            // yield content if present
-                            if let content = delta["content"] as? String {
+                            let delta = choice["delta"] as? [String: Any]
+                            let finishReason = choice["finish_reason"] as? String
+
+                            // Handle tool calls
+                            if let delta = delta, let toolCalls = delta["tool_calls"] as? [[String: Any]] {
+                                for toolCall in toolCalls {
+                                    if let index = toolCall["index"] as? Int {
+                                        let id = toolCall["id"] as? String ?? "\(index)"
+
+                                        // Initialize tool call if needed
+                                        if accumulatedToolCalls[id] == nil {
+                                            accumulatedToolCalls[id] = [
+                                                "id": id,
+                                                "type": toolCall["type"] as? String ?? "function",
+                                                "function": [
+                                                    "name": "",
+                                                    "arguments": ""
+                                                ]
+                                            ]
+                                        }
+
+                                        // Accumulate function data
+                                        if let function = toolCall["function"] as? [String: Any] {
+                                            var existingFunction = accumulatedToolCalls[id]?["function"] as? [String: String] ?? ["name": "", "arguments": ""]
+
+                                            if let name = function["name"] as? String {
+                                                existingFunction["name"] = name
+                                            }
+                                            if let arguments = function["arguments"] as? String {
+                                                existingFunction["arguments"]? += arguments
+                                            }
+
+                                            accumulatedToolCalls[id]?["function"] = existingFunction
+                                        }
+                                    }
+                                }
+                                print("🔧 Accumulating tool calls: \(accumulatedToolCalls.keys.count) total")
+                            }
+
+                            // Yield content if present
+                            if let delta = delta, let content = delta["content"] as? String {
+                                assistantMessage += content
                                 continuation.yield(.content(content))
                             }
 
-                            // yield annotations if present (though Mistral may not support this)
-                            if let annotationsData = delta["annotations"] as? [[String: Any]] {
+                            // Yield annotations if present
+                            if let delta = delta, let annotationsData = delta["annotations"] as? [[String: Any]] {
                                 let annotations = try? self.parseAnnotations(annotationsData)
                                 if let annotations = annotations {
                                     continuation.yield(.annotations(annotations))
+                                }
+                            }
+
+                            // Check if we need to execute tool calls
+                            if finishReason == "tool_calls" && !accumulatedToolCalls.isEmpty {
+                                print("🔧 Stream finished with tool calls, executing...")
+
+                                // Execute tool calls
+                                for (_, toolCall) in accumulatedToolCalls {
+                                    guard let function = toolCall["function"] as? [String: String],
+                                          let functionName = function["name"],
+                                          let argumentsString = function["arguments"] else {
+                                        continue
+                                    }
+
+                                    if functionName == "web_search" {
+                                        // Parse arguments
+                                        if let argsData = argumentsString.data(using: .utf8),
+                                           let args = try? JSONSerialization.jsonObject(with: argsData) as? [String: Any],
+                                           let query = args["query"] as? String {
+
+                                            print("🔍 Executing web search: \(query)")
+
+                                            // Execute search via Agents API
+                                            let mistralAgents = MistralAgents(apiKey: self.apiKey)
+                                            let searchResults = try await mistralAgents.executeSearch(query: query)
+
+                                            // Build new messages including tool call and result
+                                            // Convert to [[String: Any]] to accommodate tool calls
+                                            var newMessages: [[String: Any]] = capturedMessages.map { $0 as [String: Any] }
+
+                                            // Add assistant message with tool call
+                                            var toolCallMessage: [String: Any] = [
+                                                "role": "assistant",
+                                                "tool_calls": [toolCall]
+                                            ]
+                                            // Only add content if it's not empty
+                                            if !assistantMessage.isEmpty {
+                                                toolCallMessage["content"] = assistantMessage
+                                            }
+                                            newMessages.append(toolCallMessage)
+
+                                            // Add tool result message
+                                            let toolResultMessage: [String: Any] = [
+                                                "role": "tool",
+                                                "tool_call_id": toolCall["id"] as? String ?? "0",
+                                                "content": searchResults
+                                            ]
+                                            newMessages.append(toolResultMessage)
+
+                                            // Make new request with tool results
+                                            let newBody: [String: Any] = [
+                                                "model": capturedModelName,
+                                                "messages": newMessages,
+                                                "stream": true
+                                            ]
+
+                                            var newRequest = capturedRequest
+                                            newRequest.httpBody = try JSONSerialization.data(withJSONObject: newBody)
+
+                                            print("🔄 Sending follow-up request with search results...")
+                                            let (newBytes, _) = try await URLSession.shared.bytes(for: newRequest)
+
+                                            // Stream the final response
+                                            for try await newLine in newBytes.lines {
+                                                if !newLine.isEmpty {
+                                                    print("📥 Received follow-up line: \(newLine)")
+                                                }
+
+                                                guard newLine.hasPrefix("data: ") else { continue }
+                                                let newData = newLine.dropFirst(6)
+                                                if newData == "[DONE]" {
+                                                    continuation.finish()
+                                                    return
+                                                }
+
+                                                if let newJsonData = newData.data(using: .utf8),
+                                                   let newJson = try? JSONSerialization.jsonObject(with: newJsonData) as? [String: Any],
+                                                   let newChoices = newJson["choices"] as? [[String: Any]],
+                                                   let newDelta = newChoices.first?["delta"] as? [String: Any],
+                                                   let newContent = newDelta["content"] as? String {
+                                                    continuation.yield(.content(newContent))
+                                                }
+                                            }
+
+                                            continuation.finish()
+                                            return
+                                        }
+                                    }
                                 }
                             }
                         }
