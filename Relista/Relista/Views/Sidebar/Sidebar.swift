@@ -155,7 +155,7 @@ struct Sidebar: View {
             }
             .padding(10)
         }
-        .opacity(0.8)
+        .opacity(0.6)
         .contentShape(Rectangle())
         .buttonStyle(.plain)
         .labelStyle(.iconOnly)
@@ -200,7 +200,7 @@ struct Sidebar: View {
         }
         .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showChats)
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 
     @ViewBuilder
