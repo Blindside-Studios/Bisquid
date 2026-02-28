@@ -23,44 +23,28 @@ struct ToolUseView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                Spacer()
                 if toolBlock.isLoading {
                     ProgressView()
                         .controlSize(.mini)
                 } else {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                    Image(systemName: "chevron.right")
                         .imageScale(.small)
                 }
             }
-            .font(.footnote)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-
-            if !toolBlock.isLoading, let result = toolBlock.result {
-                Divider()
-                    .padding(.horizontal, 10)
-                DisclosureGroup(isExpanded: $isExpanded) {
-                    Text(result)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 10)
-                        .padding(.bottom, 8)
-                } label: {
-                    Text(isExpanded ? "Hide results" : "Show results")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+            .font(.body)
+            .opacity(0.8)
+            .animation(.default, value: toolBlock.isLoading)
+            .onTapGesture {
+                isExpanded.toggle()
             }
+            .popover(isPresented: $isExpanded){
+                Text(toolBlock.result ?? "Waiting for results…")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .padding()
+            }
+            .presentationCompactAdaptation(.popover)
         }
-        .background(.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(.secondary.opacity(0.2), lineWidth: 0.5)
-        )
-        .padding(.vertical, 2)
+        .padding(.vertical, 8)
     }
 }
