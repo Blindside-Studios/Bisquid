@@ -51,12 +51,15 @@ struct Mistral {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, _) = try await URLSession.shared.data(for: request)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        let choices = json["choices"] as! [[String: Any]]
-        let messageObj = choices[0]["message"] as! [String: Any]
-        return messageObj["content"] as! String
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let messageObj = choices.first?["message"] as? [String: Any],
+              let content = messageObj["content"] as? String else {
+            throw NSError(domain: "Mistral", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unexpected response format from chat name API"])
+        }
+        return content
     }
-    
+
     func generateGreetingBanner(agent: UUID?) async throws -> String {
         var request = makeRequest()
         let defaultInstructions = await MainActor.run { SyncedSettings.shared.defaultInstructions }
@@ -132,10 +135,12 @@ struct Mistral {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, _) = try await URLSession.shared.data(for: request)
-        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-        let choices = json["choices"] as! [[String: Any]]
-        let messageObj = choices[0]["message"] as! [String: Any]
-        let greeting = messageObj["content"] as! String
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let messageObj = choices.first?["message"] as? [String: Any],
+              let greeting = messageObj["content"] as? String else {
+            throw NSError(domain: "Mistral", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unexpected response format from greeting banner API"])
+        }
         
         // we will be sanitizing this content because depending on the user's instructions, the model may still try to markdown.
         var cleaned = greeting

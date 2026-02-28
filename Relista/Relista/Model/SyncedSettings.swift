@@ -93,6 +93,7 @@ final class SyncedSettings: ObservableObject {
         let agentMemories = agentID.flatMap { AgentManager.getAgent(fromUUID: $0)?.memories } ?? []
         let all = global + agentMemories
         guard !all.isEmpty else { return "" }
-        return "\n\n## What I remember\n" + all.map { "- \($0)" }.joined(separator: "\n")
+        let numbered = all.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
+        return "\n\n## What I remember\n\(numbered)"
     }
 }

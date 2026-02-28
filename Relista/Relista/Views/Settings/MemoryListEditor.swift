@@ -18,14 +18,23 @@ struct MemoryListEditor: View {
 
     var body: some View {
         ForEach(memories.indices, id: \.self) { index in
-            Button(action: {
-                draftText = memories[index]
-                editingIndex = index
-            }) {
-                Text(memories[index])
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .multilineTextAlignment(.leading)
+            HStack {
+                Button(action: {
+                    draftText = memories[index]
+                    editingIndex = index
+                }) {
+                    Text(memories[index])
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .multilineTextAlignment(.leading)
+                }
+                Button(role: .destructive, action: {
+                    memories.remove(at: index)
+                }) {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.red)
             }
         }
         .onDelete { offsets in

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Textual
 
 struct ToolUseView: View {
     let toolBlock: ToolUseBlock
@@ -38,9 +39,10 @@ struct ToolUseView: View {
                 isExpanded.toggle()
             }
             .popover(isPresented: $isExpanded){
-                Text(toolBlock.result ?? "Waiting for results…")
+                StructuredText(markdown: toolBlock.result ?? "Waiting for results…")
                     .font(.body)
                     .foregroundStyle(.secondary)
+                    .frame(width: 300)
                     .padding()
             }
             .presentationCompactAdaptation(.popover)

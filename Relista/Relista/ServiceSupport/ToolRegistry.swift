@@ -40,7 +40,7 @@ enum ToolRegistry {
         allTools
             .filter { isEnabled($0) }
             .map { tool in
-                if tool.name == WriteMemoryTool(agentID: nil).name {
+                if tool.name == "memory" {
                     return WriteMemoryTool(agentID: agentID)
                 }
                 return tool
