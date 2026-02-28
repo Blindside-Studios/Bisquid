@@ -8,12 +8,17 @@
 import SwiftUI
 
 struct ToolsButton: View {
+    @Namespace private var ToolsTransition
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+
     @State private var showPopover = false
+    @State private var showSheet = false
     @State private var anyEnabled = !ToolRegistry.enabledTools().isEmpty
 
     var body: some View {
         Button {
-            showPopover.toggle()
+            if horizontalSizeClass == .compact { showSheet = true }
+            else { showPopover.toggle() }
         } label: {
             Label("Tools", systemImage: anyEnabled ? "hammer.fill" : "hammer")
         }
@@ -23,20 +28,31 @@ struct ToolsButton: View {
         .buttonStyle(.plain)
         .contentShape(Rectangle())
         .animation(.default, value: anyEnabled)
+        .matchedTransitionSource(id: "tools", in: ToolsTransition)
         .popover(isPresented: $showPopover) {
-            ToolsPopover()
-                .onDisappear {
-                    anyEnabled = !ToolRegistry.enabledTools().isEmpty
-                }
+            ToolsPopoverContents()
+                .onDisappear { anyEnabled = !ToolRegistry.enabledTools().isEmpty }
         }
+        #if os(iOS)
+        .sheet(isPresented: $showSheet) {
+            ScrollView(.vertical){
+                ToolsPopoverContents()
+                    .onDisappear { anyEnabled = !ToolRegistry.enabledTools().isEmpty }
+                    .presentationDetents([.fraction(0.3), .medium])
+                    .navigationTransition(.zoom(sourceID: "tools", in: ToolsTransition))
+                    .padding(4)
+                Spacer()
+            }
+        }
+        #endif
     }
 }
 
-private struct ToolsPopover: View {
+private struct ToolsPopoverContents: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Tools")
-                .font(.headline)
+                .font(.title)
                 .padding(.bottom, 8)
 
             ForEach(ToolRegistry.allTools.indices, id: \.self) { i in
@@ -47,7 +63,6 @@ private struct ToolsPopover: View {
             }
         }
         .padding()
-        .presentationCompactAdaptation(.popover)
     }
 }
 

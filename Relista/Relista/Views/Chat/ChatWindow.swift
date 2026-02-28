@@ -14,7 +14,7 @@ struct ChatWindow: View {
     @Binding var selectedModel: String
     @State private var chatCache = ChatCache.shared
 
-    @AppStorage("chatFontSize") private var chatFontSize: Double = 13
+    @AppStorage("chatFontSize") private var chatFontSize: Double = Font.defaultBodySize
 
     @State private var scrollWithAnimation = true
     @State private var primaryAccentColor: Color = .clear

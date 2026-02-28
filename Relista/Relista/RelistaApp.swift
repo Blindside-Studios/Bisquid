@@ -10,7 +10,7 @@ import Foundation
 
 #if os(macOS)
 struct TextSizeCommands: Commands {
-    @AppStorage("chatFontSize") private var fontSize: Double = 13
+    @AppStorage("chatFontSize") private var fontSize: Double = Font.defaultBodySize
 
     var body: some Commands {
         CommandGroup(after: .sidebar) {
@@ -19,7 +19,7 @@ struct TextSizeCommands: Commands {
                 .keyboardShortcut("+", modifiers: .command)
             Button("Make Text Smaller", systemImage: "textformat.size.smaller") { fontSize = max(fontSize - 1, 9) }
                 .keyboardShortcut("-", modifiers: .command)
-            Button("Make Text Normal Size", systemImage: "textformat.size") { fontSize = 13 }
+            Button("Make Text Normal Size", systemImage: "textformat.size") { fontSize = Font.defaultBodySize }
                 .keyboardShortcut("0", modifiers: .command)
         }
     }
@@ -152,3 +152,13 @@ struct RelistaApp: App {
             try await Task.sleep(for: .milliseconds(100))
         }
     }}
+
+extension Font {
+    static var defaultBodySize: CGFloat {
+        #if os(macOS)
+        NSFont.preferredFont(forTextStyle: .body).pointSize
+        #else
+        UIFont.preferredFont(forTextStyle: .body).pointSize
+        #endif
+    }
+}
