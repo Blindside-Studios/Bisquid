@@ -1,5 +1,5 @@
 [
-    {
+  {
     "name": "Mistral Medium 3.1",
     "modelID": "mistral-medium-latest",
     "provider": "Mistral",
@@ -25,14 +25,16 @@
     "modelID": "magistral-small-latest",
     "provider": "Mistral",
     "family": "Magistral",
-    "specifier": "Small"
+    "specifier": "Small",
+    "supportsReasoning": true
   },
   {
     "name": "Magistral Medium",
     "modelID": "magistral-medium-latest",
     "provider": "Mistral",
     "family": "Magistral",
-    "specifier": "Medium"
+    "specifier": "Medium",
+    "supportsReasoning": true
   },
   {
     "name": "Mistral Small 3",
@@ -68,26 +70,5 @@
     "provider": "Mistral",
     "family": "Mistral",
     "specifier": "7B Instruct"
-  },
-  {
-    "name": "Claude Sonnet 4.5",
-    "modelID": "claude-sonnet-4-5",
-    "provider": "Anthropic",
-    "family": "Claude",
-    "specifier": "Sonnet 4.5"
-  },
-  {
-    "name": "Claude Opus 4.5",
-    "modelID": "claude-opus-4-5",
-    "provider": "Anthropic",
-    "family": "Claude",
-    "specifier": "Opus 4.5"
-  },
-  {
-    "name": "Claude Haiku 4.5",
-    "modelID": "claude-haiku-4-5",
-    "provider": "Anthropic",
-    "family": "Claude",
-    "specifier": "Haiku 4.5"
   }
 ]
