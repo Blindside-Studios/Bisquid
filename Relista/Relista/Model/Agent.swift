@@ -20,13 +20,14 @@ struct Agent: Identifiable, Hashable, Codable{
     var lastModified: Date
     var primaryAccentColor: String?
     var secondaryAccentColor: String?
+    var memories: [String]
 
     // Custom Codable implementation for backwards compatibility
     enum CodingKeys: String, CodingKey {
-        case id, name, description, icon, model, systemPrompt, temperature, shownInSidebar, lastModified, primaryAccentColor, secondaryAccentColor
+        case id, name, description, icon, model, systemPrompt, temperature, shownInSidebar, lastModified, primaryAccentColor, secondaryAccentColor, memories
     }
 
-    init(id: UUID = UUID(), name: String, description: String, icon: String, model: String, systemPrompt: String, temperature: Double, shownInSidebar: Bool, lastModified: Date = Date.now, primaryAccentColor: String? = nil, secondaryAccentColor: String? = nil) {
+    init(id: UUID = UUID(), name: String, description: String, icon: String, model: String, systemPrompt: String, temperature: Double, shownInSidebar: Bool, lastModified: Date = Date.now, primaryAccentColor: String? = nil, secondaryAccentColor: String? = nil, memories: [String] = []) {
         self.id = id
         self.name = name
         self.description = description
@@ -38,6 +39,7 @@ struct Agent: Identifiable, Hashable, Codable{
         self.lastModified = lastModified
         self.primaryAccentColor = primaryAccentColor
         self.secondaryAccentColor = secondaryAccentColor
+        self.memories = memories
     }
 
     init(from decoder: Decoder) throws {
@@ -55,6 +57,7 @@ struct Agent: Identifiable, Hashable, Codable{
         // Backwards compatible: default to nil if missing
         primaryAccentColor = try container.decodeIfPresent(String.self, forKey: .primaryAccentColor)
         secondaryAccentColor = try container.decodeIfPresent(String.self, forKey: .secondaryAccentColor)
+        memories = try container.decodeIfPresent([String].self, forKey: .memories) ?? []
     }
 
     func encode(to encoder: Encoder) throws {
@@ -70,6 +73,7 @@ struct Agent: Identifiable, Hashable, Codable{
         try container.encode(lastModified, forKey: .lastModified)
         try container.encodeIfPresent(primaryAccentColor, forKey: .primaryAccentColor)
         try container.encodeIfPresent(secondaryAccentColor, forKey: .secondaryAccentColor)
+        try container.encode(memories, forKey: .memories)
     }
 }
 

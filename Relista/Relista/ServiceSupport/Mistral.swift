@@ -164,13 +164,13 @@ struct Mistral {
 
     func streamMessage(messages: [Message], modelName: String, agent: UUID?, tools: [any ChatTool] = []) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         var request = makeRequest()
-        let defaultInstructions = await MainActor.run { SyncedSettings.shared.defaultInstructions }
+        let (defaultInstructions, memorySuffix) = await MainActor.run {
+            (SyncedSettings.shared.defaultInstructions, SyncedSettings.memoryContext(for: agent))
+        }
 
-        let systemMessage = [
-            "role": "system",
-            "content": agent == nil ? defaultInstructions : agent
-                .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""
-        ]
+        let baseContent = agent == nil ? defaultInstructions : agent
+            .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""
+        let systemMessage = ["role": "system", "content": baseContent + memorySuffix]
 
         let apiMessages = [systemMessage] + messages.map { message in
             var content = message.text

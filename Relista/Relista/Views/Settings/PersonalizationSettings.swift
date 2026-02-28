@@ -23,6 +23,10 @@ struct PersonalizationSettings: View {
                 TextEditor(text: $settings.defaultInstructions)
                     .frame(minHeight: 150)
             }
+
+            Section("Memories") {
+                MemoryListEditor(memories: $settings.memories)
+            }
         }
     }
 }

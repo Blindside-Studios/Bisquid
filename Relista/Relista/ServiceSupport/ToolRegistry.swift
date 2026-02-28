@@ -13,6 +13,7 @@ import Foundation
 enum ToolRegistry {
     static let allTools: [any ChatTool] = [
         WebSearchTool(),
+        WriteMemoryTool(agentID: nil),
         RandomFruitTool(),
         UserNameTool()
     ]
@@ -33,8 +34,16 @@ enum ToolRegistry {
         UserDefaults.standard.set(enabled, forKey: key(for: tool))
     }
 
-    /// Returns only the tools that are currently enabled by the user.
-    static func enabledTools() -> [any ChatTool] {
-        allTools.filter { isEnabled($0) }
+    /// Returns only the tools that are currently enabled, with context-sensitive tools
+    /// (like WriteMemoryTool) configured for the active agent.
+    static func enabledTools(for agentID: UUID? = nil) -> [any ChatTool] {
+        allTools
+            .filter { isEnabled($0) }
+            .map { tool in
+                if tool.name == WriteMemoryTool(agentID: nil).name {
+                    return WriteMemoryTool(agentID: agentID)
+                }
+                return tool
+            }
     }
 }

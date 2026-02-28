@@ -26,10 +26,12 @@ struct Claude {
 
     func streamMessage(messages: [Message], modelName: String, agent: UUID?, tools: [any ChatTool] = []) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         var request = makeRequest()
-        let defaultInstructions = await MainActor.run { SyncedSettings.shared.defaultInstructions }
+        let (defaultInstructions, memorySuffix) = await MainActor.run {
+            (SyncedSettings.shared.defaultInstructions, SyncedSettings.memoryContext(for: agent))
+        }
 
-        let systemPrompt = agent == nil ? defaultInstructions : agent
-            .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""
+        let systemPrompt = (agent == nil ? defaultInstructions : agent
+            .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? "") + memorySuffix
 
         // Claude uses a different message format - system is separate, not in messages array
         let apiMessages: [[String: Any]] = messages.map { message in

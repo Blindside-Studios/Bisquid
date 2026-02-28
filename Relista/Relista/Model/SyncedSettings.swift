@@ -18,6 +18,7 @@ final class SyncedSettings: ObservableObject {
         static let defaultModel = "AppDefaultModel"
         static let defaultInstructions = "DefaultAssistantInstructions"
         static let userName = "UIUserName"
+        static let memories = "GlobalMemories"
     }
 
     @Published var defaultModel: String {
@@ -41,11 +42,19 @@ final class SyncedSettings: ObservableObject {
         }
     }
 
+    @Published var memories: [String] {
+        didSet {
+            store.set(memories, forKey: Keys.memories)
+            store.synchronize()
+        }
+    }
+
     private init() {
         // Load initial values from iCloud KVS, with defaults
         self.defaultModel = store.string(forKey: Keys.defaultModel) ?? "mistralai/mistral-medium-3.1"
         self.defaultInstructions = store.string(forKey: Keys.defaultInstructions) ?? ""
         self.userName = store.string(forKey: Keys.userName) ?? ""
+        self.memories = store.array(forKey: Keys.memories) as? [String] ?? []
 
         // Listen for external changes (from other devices)
         NotificationCenter.default.addObserver(
@@ -71,6 +80,19 @@ final class SyncedSettings: ObservableObject {
             if let newUserName = store.string(forKey: Keys.userName), newUserName != userName {
                 userName = newUserName
             }
+            if let newMemories = store.array(forKey: Keys.memories) as? [String], newMemories != memories {
+                memories = newMemories
+            }
         }
+    }
+
+    /// Builds the memory suffix to append to a system message.
+    /// Combines global memories with the active agent's memories.
+    static func memoryContext(for agentID: UUID?) -> String {
+        let global = shared.memories
+        let agentMemories = agentID.flatMap { AgentManager.getAgent(fromUUID: $0)?.memories } ?? []
+        let all = global + agentMemories
+        guard !all.isEmpty else { return "" }
+        return "\n\n## What I remember\n" + all.map { "- \($0)" }.joined(separator: "\n")
     }
 }

@@ -112,7 +112,7 @@ struct PromptField: View {
                     to: conversationID,
                     apiKey: apiKey,
                     withHapticFeedback: vibrateOnTokensReceived,
-                    tools: ToolRegistry.enabledTools()
+                    tools: ToolRegistry.enabledTools(for: selectedAgent)
                 )
             }
         }

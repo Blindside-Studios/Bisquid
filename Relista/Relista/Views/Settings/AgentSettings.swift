@@ -159,6 +159,7 @@ struct AgentCreateView: View {
     @State private var model: String = ModelList.placeHolderModel
     @State private var primaryAccentColor: Color = .blue
     @State private var secondaryAccentColor: Color = .purple
+    @State private var memories: [String] = []
 
     @State private var showModelPickerPopOver: Bool = false
     
@@ -189,6 +190,10 @@ struct AgentCreateView: View {
                 Section("Model") {
                     ModelPicker(selectedModel: $model)
                 }
+
+                Section("Memories") {
+                    MemoryListEditor(memories: $memories)
+                }
             }
             .navigationTitle("New Agent")
             .toolbar {
@@ -214,7 +219,8 @@ struct AgentCreateView: View {
             temperature: temperature,
             shownInSidebar: true,
             primaryAccentColor: primaryAccentColor.toHex(),
-            secondaryAccentColor: secondaryAccentColor.toHex()
+            secondaryAccentColor: secondaryAccentColor.toHex(),
+            memories: memories
         )
 
         // Use new createAgent() API for proper timestamp and sync
@@ -290,6 +296,10 @@ struct AgentDetailView: View {
 
             Section("Sidebar") {
                 Toggle("Show in Sidebar", isOn: $agent.shownInSidebar)
+            }
+
+            Section("Memories") {
+                MemoryListEditor(memories: $agent.memories)
             }
         }
         .onDisappear {
