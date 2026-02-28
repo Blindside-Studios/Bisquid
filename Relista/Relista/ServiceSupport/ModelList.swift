@@ -26,6 +26,7 @@ struct AIModel: Identifiable, Hashable {
 
     let family: String?
     let specifier: String?
+    let supportsReasoning: Bool
 }
 
 struct RemoteAIModel: Codable {
@@ -34,6 +35,7 @@ struct RemoteAIModel: Codable {
     let provider: String
     let family: String?
     let specifier: String?
+    let supportsReasoning: Bool?
 
     func toLocal() -> AIModel? {
         let providerEnum = ModelProvider(rawValue: provider) ?? .uncategorized
@@ -44,7 +46,8 @@ struct RemoteAIModel: Codable {
             modelID: modelID,
             provider: providerEnum,
             family: family,
-            specifier: specifier
+            specifier: specifier,
+            supportsReasoning: supportsReasoning ?? false
         )
     }
 }
@@ -141,7 +144,8 @@ class ModelList {
                 modelID: slug,
                 provider: .uncategorized,
                 family: parsedSlug.family,
-                specifier: parsedSlug.specifier
+                specifier: parsedSlug.specifier,
+                supportsReasoning: false
             )
         }
     }
