@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct PromptField: View {
     @State var showModelPickerSheet = false
@@ -15,7 +14,9 @@ struct PromptField: View {
     @Binding var inputMessage: String
     @Binding var selectedAgent: UUID?
     @Binding var selectedModel: String
+    #if os(macOS)
     @FocusState private var isTextFieldFocused: Bool
+    #endif
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @State private var chatCache = ChatCache.shared
     @State private var placeHolder = ChatPlaceHolders.returnRandomString()
@@ -23,13 +24,12 @@ struct PromptField: View {
     @Binding var primaryAccentColor: Color
     @Binding var secondaryAccentColor: Color
     
-    @State private var isTryingToAddNewLine = false // workaround for .handled because iPadOS 26 is garbage
     @State private var pendingAttachments: [PendingAttachment] = []
     #if os(iOS)
-    // Tracks whether the pasteboard has an image but no text, so we can register
-    // a Cmd+V shortcut that only fires when there's nothing for the TextField to paste.
-    @State private var pasteboardHasImageOnly: Bool = false
-    @Environment(\.scenePhase) private var scenePhase
+    @State private var textFieldFocusRequest: Bool = false
+    #endif
+    #if os(macOS)
+    @State private var macPasteMonitor = MacOSPasteMonitor()
     #endif
 
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
@@ -56,6 +56,18 @@ struct PromptField: View {
                 PendingImageStrip(pendingAttachments: $pendingAttachments)
                     .transition(.blurFade.combined(with: .opacity))
             }
+            #if os(iOS)
+            PasteAwareTextField(
+                text: $inputMessage,
+                placeholder: placeHolder,
+                onSubmit: sendMessage,
+                onImagePaste: { attachment in
+                    withAnimation(.bouncy(duration: 0.3)) { pendingAttachments.append(attachment) }
+                },
+                focusRequest: $textFieldFocusRequest
+            )
+            .blocksHorizontalSidebarGesture()
+            #else
             TextField(placeHolder, text: $inputMessage, axis: .vertical)
                 .lineLimit(1...10)
                 .textFieldStyle(.plain)
@@ -63,33 +75,16 @@ struct PromptField: View {
                 .blocksHorizontalSidebarGesture()
                 .onSubmit(sendMessage)
                 .onKeyPress { keyPress in
-                    if keyPress.modifiers == .shift
-                        && keyPress.key == .return
-                    {
-                        #if os(iOS)
-                        isTryingToAddNewLine = true
-                        #endif
+                    if keyPress.modifiers == .shift && keyPress.key == .return {
                         insertNewlineAtCursor()
                         return .handled
                     } else {
                         return .ignored
                     }
                 }
+            #endif
             //.padding(spacing)
             CommandBar(selectedModel: $selectedModel, conversationID: $conversationID, secondaryAccentColor: $secondaryAccentColor, pendingAttachments: $pendingAttachments, sendMessage: sendMessage, sendMessageAsSystem: sendMessageAsSystem, appendDummyMessages: appendDummyMessages)
-
-            #if os(iOS)
-            // Hidden zero-size button that catches Cmd+V on iPadOS hardware keyboards,
-            // but only when the pasteboard contains an image with no text — that way
-            // normal text paste still goes straight to the TextField.
-            if pasteboardHasImageOnly {
-                Button("Paste Image") { pasteImageFromClipboard() }
-                    .keyboardShortcut("v", modifiers: .command)
-                    .frame(width: 0, height: 0)
-                    .opacity(0)
-                    .accessibilityHidden(true)
-            }
-            #endif
         }
         .animation(.bouncy(duration: 0.3), value: pendingAttachments.isEmpty)
         .padding(spacing)
@@ -105,28 +100,12 @@ struct PromptField: View {
             return true
         }
         #if os(macOS)
-        // Paste images from clipboard on macOS.
-        // loadObject(ofClass: NSImage.self) forces the system to coerce whatever is
-        // on the pasteboard (file URL, TIFF blob, PNG, HEIC, web image) into an actual
-        // NSImage, so the Finder "file name takes priority" problem never happens.
-        .onPasteCommand(of: [.png, .jpeg, .tiff, .gif, .webP, .heic, .image]) { providers in
-            guard let provider = providers.first else { return }
-            _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
-                guard let attachment = (image as? NSImage).flatMap({ normalizedAttachment(from: $0) })
-                else { return }
-                DispatchQueue.main.async {
-                    withAnimation(.bouncy(duration: 0.3)) { pendingAttachments.append(attachment) }
-                }
+        .onAppear {
+            macPasteMonitor.start { attachment in
+                withAnimation(.bouncy(duration: 0.3)) { pendingAttachments.append(attachment) }
             }
         }
-        #endif
-        #if os(iOS)
-        // Refresh pasteboard state whenever the app comes back to the foreground
-        // so the hidden Cmd+V button appears/disappears appropriately.
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active { updatePasteboardState() }
-        }
-        .onAppear { updatePasteboardState() }
+        .onDisappear { macPasteMonitor.stop() }
         #endif
         .onChange(of: selectedAgent, refreshPlaceHolder)
         #if os(macOS)
@@ -160,20 +139,6 @@ struct PromptField: View {
     }
     #endif
 
-    #if os(iOS)
-    private func pasteImageFromClipboard() {
-        guard let image = UIPasteboard.general.image,
-              let jpeg = image.jpegData(compressionQuality: 0.9) else { return }
-        withAnimation(.bouncy(duration: 0.3)) {
-            pendingAttachments.append(PendingAttachment(data: jpeg, fileExtension: "jpg"))
-        }
-    }
-
-    private func updatePasteboardState() {
-        pasteboardHasImageOnly = UIPasteboard.general.hasImages && !UIPasteboard.general.hasStrings
-    }
-    #endif
-    
     func sendMessage(){
         let model = ModelList.getModelFromSlug(slug: selectedModel)
         var apiKey = ""
@@ -188,7 +153,7 @@ struct PromptField: View {
         }
         
         let chat = chatCache.getChat(for: conversationID)
-        if !chat.isGenerating && !isTryingToAddNewLine {
+        if !chat.isGenerating {
             placeHolder = ChatPlaceHolders.returnAppropriatePlaceholder(agentUUID: selectedAgent)
             if (inputMessage != ""){
                 // Dismiss software keyboard while keeping hardware keyboard functional
@@ -223,16 +188,8 @@ struct PromptField: View {
                 )
             }
         }
-        else{
-            #if os(iOS)
-            DispatchQueue.main.async {
-                isTextFieldFocused = true
-                isTryingToAddNewLine = false
-            }
-            #endif
-        }
     }
-    
+
     func sendMessageAsSystem(){
         let chat = chatCache.getChat(for: conversationID)
         if !chat.isGenerating{
@@ -344,13 +301,7 @@ struct PromptField: View {
     }
 
     private func insertNewlineAtCursor() {
-        #if os(iOS)
-        if let textInput = UIResponder.currentFirstResponder as? UIKeyInput {
-            textInput.insertText("\n")
-        } else {
-            inputMessage += "\n"
-        }
-        #elseif os(macOS)
+        #if os(macOS)
         if let textView = NSApplication.shared.keyWindow?.firstResponder as? NSText {
             textView.insertText("\n")
         } else {
