@@ -8,9 +8,14 @@
 import SwiftUI
 
 struct GeneralSettings: View {
+    #if os(macOS)
+    @AppStorage("AddPaddingToTypingBar") private var typingBarPaddingMacOS: Bool = true
+    #endif
     @AppStorage("ShowUserMessageToolbars") private var showUserMessageToolbars: Bool = false
     @AppStorage("AlwaysShowFullModelMessageToolbar") private var alwaysShowFullModelMessageToolbar: Bool = false
+    #if os(iOS)
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
+    #endif
     
     var body: some View {
         List{
@@ -26,6 +31,8 @@ struct GeneralSettings: View {
                     Toggle("Haptic feedback during response generation", isOn: $vibrateOnTokensReceived)
                 }
             }
+            #elseif os(macOS)
+                Toggle("Add extra padding to the input bar", isOn: $typingBarPaddingMacOS)
             #endif
         }
     }

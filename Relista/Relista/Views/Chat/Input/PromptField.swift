@@ -25,10 +25,13 @@ struct PromptField: View {
     @State private var isTryingToAddNewLine = false // workaround for .handled because iPadOS 26 is garbage
 
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
+    #if os(macOS)
+    @AppStorage("AddPaddingToTypingBar") private var typingBarPaddingMacOS: Bool = true
+    #endif
     
     private var cornerRadius: Int{
         #if os(macOS)
-        18
+        typingBarPaddingMacOS ? 22 : 18
         #else
         22
         #endif
@@ -36,7 +39,7 @@ struct PromptField: View {
 
     var body: some View {
         #if os(macOS)
-        let spacing: CGFloat = 12
+        let spacing: CGFloat = typingBarPaddingMacOS ? 16 : 12
         #else
         let spacing: CGFloat = 16
         #endif
@@ -68,6 +71,9 @@ struct PromptField: View {
         //.shadow(color: primaryAccentColor.opacity(0.4), radius: 20)
         .padding(8)
         .onChange(of: selectedAgent, refreshPlaceHolder)
+        #if os(macOS)
+        .animation(.default, value: typingBarPaddingMacOS)
+        #endif
     }
     
     func sendMessage(){

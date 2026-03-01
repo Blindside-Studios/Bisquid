@@ -32,6 +32,10 @@ struct InputUI: View {
     @State private var displayedGreeting: String = ""
     @State private var greetingTask: Task<Void, Never>?
     
+    #if os(macOS)
+    @AppStorage("AddPaddingToTypingBar") private var typingBarPaddingMacOS: Bool = true
+    #endif
+    
     var body: some View {
         Group{
             if horizontalSizeClass == .compact {
@@ -86,6 +90,9 @@ struct InputUI: View {
                         )
                     }
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor)
+                        #if os(macOS)
+                        .padding(typingBarPaddingMacOS && !isChatBlank ? 16 : 0)
+                        #endif
                     if isChatBlank {
                         NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
                             .transition(
@@ -101,6 +108,9 @@ struct InputUI: View {
                 .frame(maxWidth: 750)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, isChatBlank ? 50 : 0)
+                #if os(macOS)
+                .animation(.default, value: typingBarPaddingMacOS)
+                #endif
             }
         }
         .task(id: conversationID){
