@@ -6,9 +6,6 @@
 //
 
 import SwiftUI
-#if os(iOS)
-import QuickLook
-#endif
 
 struct MessageUser: View {
     let message: Message
@@ -125,13 +122,11 @@ struct MessageUser: View {
 
 private struct AttachmentThumbnailStrip: View {
     let message: Message
-    @State private var quickLookURL: URL? = nil
-    @State private var showQuickLook: Bool = false
 
     var body: some View {
         GeometryReader { geo in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack() {
+                HStack {
                     ForEach(message.attachmentLinks, id: \.self) { filename in
                         let url = AttachmentManager.imageURL(filename: filename, for: message.conversationID)
                         AttachmentThumb(url: url)
@@ -139,12 +134,7 @@ private struct AttachmentThumbnailStrip: View {
                             .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                             .padding(.horizontal, 4)
                             .onTapGesture {
-                                //#if os(macOS)
-                                //NSWorkspace.shared.open(url)
-                                //#else
-                                quickLookURL = url
-                                showQuickLook = true
-                                //#endif
+                                QuickLookHelper.open(url: url)
                             }
                     }
                 }
@@ -154,14 +144,6 @@ private struct AttachmentThumbnailStrip: View {
             }
         }
         .frame(height: 136)
-        #if os(iOS)
-        .sheet(isPresented: $showQuickLook) {
-            if let url = quickLookURL {
-                QuickLookPreview(url: url)
-                    .ignoresSafeArea()
-            }
-        }
-        #endif
     }
 }
 
@@ -201,34 +183,6 @@ private struct AttachmentThumb: View {
         }.value
     }
 }
-
-// MARK: - Quick Look (iOS)
-
-#if os(iOS)
-private struct QuickLookPreview: UIViewControllerRepresentable {
-    let url: URL
-
-    func makeUIViewController(context: Context) -> QLPreviewController {
-        let controller = QLPreviewController()
-        controller.dataSource = context.coordinator
-        return controller
-    }
-
-    func updateUIViewController(_ uiViewController: QLPreviewController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator { Coordinator(url: url) }
-
-    class Coordinator: NSObject, QLPreviewControllerDataSource {
-        let url: URL
-        init(url: URL) { self.url = url }
-
-        func numberOfPreviewItems(in controller: QLPreviewController) -> Int { 1 }
-        func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
-            url as QLPreviewItem
-        }
-    }
-}
-#endif
 
 // MARK: - Height measurement
 

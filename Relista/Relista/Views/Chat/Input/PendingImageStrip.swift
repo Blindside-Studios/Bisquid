@@ -20,6 +20,9 @@ struct PendingImageStrip: View {
                         LocalThumbnail(data: attachment.data)
                             .frame(width: 64, height: 64)
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .onTapGesture {
+                                QuickLookHelper.open(data: attachment.data, fileExtension: attachment.fileExtension)
+                            }
 
                         Button {
                             withAnimation(.bouncy(duration: 0.25)) {

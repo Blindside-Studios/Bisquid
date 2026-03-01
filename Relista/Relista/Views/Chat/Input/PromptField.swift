@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct PromptField: View {
     @State var showModelPickerSheet = false
@@ -76,10 +77,62 @@ struct PromptField: View {
         .glassEffect(in: .rect(cornerRadius: CGFloat(cornerRadius)))
         //.shadow(color: primaryAccentColor.opacity(0.4), radius: 20)
         .padding(8)
+        // Drag & drop images onto the input bar
+        .dropDestination(for: Data.self) { items, _ in
+            let images = items.compactMap { data -> PendingAttachment? in
+                guard isImageData(data) else { return nil }
+                let ext = imageExtension(for: data)
+                return PendingAttachment(data: data, fileExtension: ext)
+            }
+            guard !images.isEmpty else { return false }
+            withAnimation(.bouncy(duration: 0.3)) { pendingAttachments.append(contentsOf: images) }
+            return true
+        }
+        #if os(macOS)
+        // Paste images from clipboard on macOS
+        .onPasteCommand(of: [.png, .jpeg, .tiff, .image]) { providers in
+            for provider in providers {
+                _ = provider.loadDataRepresentation(for: .image) { data, _ in
+                    guard let data else { return }
+                    let ext = imageExtension(for: data)
+                    DispatchQueue.main.async {
+                        withAnimation(.bouncy(duration: 0.3)) {
+                            pendingAttachments.append(PendingAttachment(data: data, fileExtension: ext))
+                        }
+                    }
+                }
+            }
+        }
+        #endif
         .onChange(of: selectedAgent, refreshPlaceHolder)
         #if os(macOS)
         .animation(.default, value: typingBarPaddingMacOS)
         #endif
+    }
+
+    // MARK: - Image data helpers
+
+    private func isImageData(_ data: Data) -> Bool {
+        guard data.count >= 4 else { return false }
+        let bytes = [UInt8](data.prefix(4))
+        // JPEG: FF D8 FF
+        if bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF { return true }
+        // PNG: 89 50 4E 47
+        if bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 { return true }
+        // GIF: 47 49 46 38
+        if bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38 { return true }
+        // WebP: starts with RIFF (52 49 46 46)
+        if bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 { return true }
+        return false
+    }
+
+    private func imageExtension(for data: Data) -> String {
+        guard data.count >= 4 else { return "jpg" }
+        let bytes = [UInt8](data.prefix(4))
+        if bytes[0] == 0x89 && bytes[1] == 0x50 { return "png" }
+        if bytes[0] == 0x47 && bytes[1] == 0x49 { return "gif" }
+        if bytes[0] == 0x52 && bytes[1] == 0x49 { return "webp" }
+        return "jpg"
     }
     
     func sendMessage(){

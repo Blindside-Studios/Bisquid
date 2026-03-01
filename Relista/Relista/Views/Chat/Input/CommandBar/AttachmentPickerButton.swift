@@ -42,6 +42,12 @@ struct AttachmentPickerButton: View {
             Button("Take Photo", systemImage: "camera") {
                 showCamera = true
             }
+
+            if UIPasteboard.general.hasImages {
+                Button("Paste Image", systemImage: "doc.on.clipboard") {
+                    pasteFromClipboard()
+                }
+            }
             #else
             Button("Choose Image…", systemImage: "photo") {
                 openImagePanel()
@@ -73,6 +79,14 @@ struct AttachmentPickerButton: View {
         }
         #endif
     }
+
+    #if os(iOS)
+    private func pasteFromClipboard() {
+        guard let image = UIPasteboard.general.image,
+              let data = image.jpegData(compressionQuality: 0.9) else { return }
+        pendingAttachments.append(PendingAttachment(data: data, fileExtension: "jpg"))
+    }
+    #endif
 
     #if os(macOS)
     private func openImagePanel() {

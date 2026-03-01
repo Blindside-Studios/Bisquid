@@ -14,6 +14,7 @@ enum ToolRegistry {
     static let allTools: [any ChatTool] = [
         WebSearchTool(),
         WriteMemoryTool(agentID: nil),
+        AnalyzeImageTool(conversationID: UUID()), // placeholder; real UUID injected by enabledTools
         RandomFruitTool(),
         UserNameTool()
     ]
@@ -37,21 +38,17 @@ enum ToolRegistry {
     /// Returns only the tools that are currently enabled, with context-sensitive tools
     /// (like WriteMemoryTool and AnalyzeImageTool) configured for the active context.
     static func enabledTools(for agentID: UUID? = nil, conversationID: UUID? = nil) -> [any ChatTool] {
-        var tools = allTools
+        allTools
             .filter { isEnabled($0) }
             .map { tool -> any ChatTool in
                 if tool.name == "memory" {
                     return WriteMemoryTool(agentID: agentID)
                 }
+                if tool.name == "analyze_image" {
+                    // Substitute the real conversation ID; fall back to placeholder if unavailable
+                    return AnalyzeImageTool(conversationID: conversationID ?? UUID())
+                }
                 return tool
             }
-
-        // AnalyzeImageTool is always available when we have a conversation context;
-        // it does not appear in allTools because it is not user-toggleable.
-        if let conversationID {
-            tools.append(AnalyzeImageTool(conversationID: conversationID))
-        }
-
-        return tools
     }
 }
