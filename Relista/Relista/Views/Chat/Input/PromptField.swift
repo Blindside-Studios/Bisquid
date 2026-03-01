@@ -25,6 +25,12 @@ struct PromptField: View {
     
     @State private var isTryingToAddNewLine = false // workaround for .handled because iPadOS 26 is garbage
     @State private var pendingAttachments: [PendingAttachment] = []
+    #if os(iOS)
+    // Tracks whether the pasteboard has an image but no text, so we can register
+    // a Cmd+V shortcut that only fires when there's nothing for the TextField to paste.
+    @State private var pasteboardHasImageOnly: Bool = false
+    @Environment(\.scenePhase) private var scenePhase
+    #endif
 
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
     #if os(macOS)
@@ -71,38 +77,56 @@ struct PromptField: View {
                 }
             //.padding(spacing)
             CommandBar(selectedModel: $selectedModel, conversationID: $conversationID, secondaryAccentColor: $secondaryAccentColor, pendingAttachments: $pendingAttachments, sendMessage: sendMessage, sendMessageAsSystem: sendMessageAsSystem, appendDummyMessages: appendDummyMessages)
+
+            #if os(iOS)
+            // Hidden zero-size button that catches Cmd+V on iPadOS hardware keyboards,
+            // but only when the pasteboard contains an image with no text — that way
+            // normal text paste still goes straight to the TextField.
+            if pasteboardHasImageOnly {
+                Button("Paste Image") { pasteImageFromClipboard() }
+                    .keyboardShortcut("v", modifiers: .command)
+                    .frame(width: 0, height: 0)
+                    .opacity(0)
+                    .accessibilityHidden(true)
+            }
+            #endif
         }
         .animation(.bouncy(duration: 0.3), value: pendingAttachments.isEmpty)
         .padding(spacing)
         .glassEffect(in: .rect(cornerRadius: CGFloat(cornerRadius)))
         //.shadow(color: primaryAccentColor.opacity(0.4), radius: 20)
         .padding(8)
-        // Drag & drop images onto the input bar
+        // Drag & drop: pass through the image framework so HEIC and any other
+        // OS-decodable format is accepted and normalized to JPEG.
         .dropDestination(for: Data.self) { items, _ in
-            let images = items.compactMap { data -> PendingAttachment? in
-                guard isImageData(data) else { return nil }
-                let ext = imageExtension(for: data)
-                return PendingAttachment(data: data, fileExtension: ext)
-            }
-            guard !images.isEmpty else { return false }
-            withAnimation(.bouncy(duration: 0.3)) { pendingAttachments.append(contentsOf: images) }
+            let attachments = items.compactMap { normalizedAttachment(from: $0) }
+            guard !attachments.isEmpty else { return false }
+            withAnimation(.bouncy(duration: 0.3)) { pendingAttachments.append(contentsOf: attachments) }
             return true
         }
         #if os(macOS)
-        // Paste images from clipboard on macOS
-        .onPasteCommand(of: [.png, .jpeg, .tiff, .image]) { providers in
-            for provider in providers {
-                _ = provider.loadDataRepresentation(for: .image) { data, _ in
-                    guard let data else { return }
-                    let ext = imageExtension(for: data)
-                    DispatchQueue.main.async {
-                        withAnimation(.bouncy(duration: 0.3)) {
-                            pendingAttachments.append(PendingAttachment(data: data, fileExtension: ext))
-                        }
-                    }
+        // Paste images from clipboard on macOS.
+        // loadObject(ofClass: NSImage.self) forces the system to coerce whatever is
+        // on the pasteboard (file URL, TIFF blob, PNG, HEIC, web image) into an actual
+        // NSImage, so the Finder "file name takes priority" problem never happens.
+        .onPasteCommand(of: [.png, .jpeg, .tiff, .gif, .webP, .heic, .image]) { providers in
+            guard let provider = providers.first else { return }
+            _ = provider.loadObject(ofClass: NSImage.self) { image, _ in
+                guard let attachment = (image as? NSImage).flatMap({ normalizedAttachment(from: $0) })
+                else { return }
+                DispatchQueue.main.async {
+                    withAnimation(.bouncy(duration: 0.3)) { pendingAttachments.append(attachment) }
                 }
             }
         }
+        #endif
+        #if os(iOS)
+        // Refresh pasteboard state whenever the app comes back to the foreground
+        // so the hidden Cmd+V button appears/disappears appropriately.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { updatePasteboardState() }
+        }
+        .onAppear { updatePasteboardState() }
         #endif
         .onChange(of: selectedAgent, refreshPlaceHolder)
         #if os(macOS)
@@ -110,30 +134,45 @@ struct PromptField: View {
         #endif
     }
 
-    // MARK: - Image data helpers
+    // MARK: - Image normalization helpers
 
-    private func isImageData(_ data: Data) -> Bool {
-        guard data.count >= 4 else { return false }
-        let bytes = [UInt8](data.prefix(4))
-        // JPEG: FF D8 FF
-        if bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF { return true }
-        // PNG: 89 50 4E 47
-        if bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 { return true }
-        // GIF: 47 49 46 38
-        if bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38 { return true }
-        // WebP: starts with RIFF (52 49 46 46)
-        if bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 { return true }
-        return false
+    /// Decodes image data through the OS image framework (handles JPEG, PNG, GIF, WebP,
+    /// HEIC, TIFF, BMP, etc.) and re-encodes to JPEG for consistent Pixtral compatibility.
+    /// Returns nil if the data is not a recognized image format.
+    private func normalizedAttachment(from data: Data) -> PendingAttachment? {
+        #if os(iOS)
+        guard let ui = UIImage(data: data),
+              let jpeg = ui.jpegData(compressionQuality: 0.9) else { return nil }
+        return PendingAttachment(data: jpeg, fileExtension: "jpg")
+        #elseif os(macOS)
+        guard let ns = NSImage(data: data) else { return nil }
+        return normalizedAttachment(from: ns)
+        #endif
     }
 
-    private func imageExtension(for data: Data) -> String {
-        guard data.count >= 4 else { return "jpg" }
-        let bytes = [UInt8](data.prefix(4))
-        if bytes[0] == 0x89 && bytes[1] == 0x50 { return "png" }
-        if bytes[0] == 0x47 && bytes[1] == 0x49 { return "gif" }
-        if bytes[0] == 0x52 && bytes[1] == 0x49 { return "webp" }
-        return "jpg"
+    #if os(macOS)
+    private func normalizedAttachment(from ns: NSImage) -> PendingAttachment? {
+        guard let tiff = ns.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let jpeg = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.9])
+        else { return nil }
+        return PendingAttachment(data: jpeg, fileExtension: "jpg")
     }
+    #endif
+
+    #if os(iOS)
+    private func pasteImageFromClipboard() {
+        guard let image = UIPasteboard.general.image,
+              let jpeg = image.jpegData(compressionQuality: 0.9) else { return }
+        withAnimation(.bouncy(duration: 0.3)) {
+            pendingAttachments.append(PendingAttachment(data: jpeg, fileExtension: "jpg"))
+        }
+    }
+
+    private func updatePasteboardState() {
+        pasteboardHasImageOnly = UIPasteboard.general.hasImages && !UIPasteboard.general.hasStrings
+    }
+    #endif
     
     func sendMessage(){
         let model = ModelList.getModelFromSlug(slug: selectedModel)

@@ -92,17 +92,21 @@ struct AttachmentPickerButton: View {
     private func openImagePanel() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [
-            UTType.jpeg, UTType.png, UTType.gif, UTType.webP, UTType.heic
+            UTType.jpeg, UTType.png, UTType.gif, UTType.webP, UTType.heic, UTType.tiff, UTType.image
         ]
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
 
         guard panel.runModal() == .OK else { return }
         for url in panel.urls {
-            if let data = try? Data(contentsOf: url) {
-                let ext = url.pathExtension.lowercased().isEmpty ? "jpg" : url.pathExtension.lowercased()
-                pendingAttachments.append(PendingAttachment(data: data, fileExtension: ext))
-            }
+            // Load through NSImage so HEIC and TIFF are decoded and re-encoded to JPEG,
+            // ensuring every format Pixtral can't read natively gets normalized.
+            guard let ns = NSImage(contentsOf: url),
+                  let tiff = ns.tiffRepresentation,
+                  let rep = NSBitmapImageRep(data: tiff),
+                  let jpeg = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.9])
+            else { continue }
+            pendingAttachments.append(PendingAttachment(data: jpeg, fileExtension: "jpg"))
         }
     }
     #endif
