@@ -212,7 +212,21 @@ final class MacOSPasteMonitor {
     private func imageFromPasteboard() -> PendingAttachment? {
         let pb = NSPasteboard.general
 
-        // 1. Direct pixel data — covers screenshots, web-copied images, etc.
+        // 1. File URLs — checked FIRST because Finder also puts a low-res TIFF
+        //    thumbnail of the file icon on the pasteboard. If we read pixel data
+        //    first we'd get that tiny icon rather than the actual image file.
+        let opts: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
+        if let urls = pb.readObjects(forClasses: [NSURL.self], options: opts) as? [URL] {
+            for url in urls where url.isImageFile {
+                if let ns = NSImage(contentsOf: url),
+                   let attachment = normalizedAttachment(from: ns) {
+                    return attachment
+                }
+            }
+        }
+
+        // 2. Direct pixel data — covers screenshots, web-copied images, etc.
+        //    These have no file URL so they always reach this branch correctly.
         let pixelTypes: [NSPasteboard.PasteboardType] = [
             .tiff,
             NSPasteboard.PasteboardType("public.png"),
@@ -222,17 +236,6 @@ final class MacOSPasteMonitor {
             if let data = pb.data(forType: type),
                let attachment = normalizedAttachment(from: data) {
                 return attachment
-            }
-        }
-
-        // 2. File URLs — covers image files copied from Finder.
-        let opts: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
-        if let urls = pb.readObjects(forClasses: [NSURL.self], options: opts) as? [URL] {
-            for url in urls where url.isImageFile {
-                if let ns = NSImage(contentsOf: url),
-                   let attachment = normalizedAttachment(from: ns) {
-                    return attachment
-                }
             }
         }
 
