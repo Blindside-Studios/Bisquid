@@ -36,28 +36,17 @@ struct PasteAwareTextField: UIViewRepresentable {
         tv.textContainerInset = .zero
         tv.textContainer.lineFragmentPadding = 0
         tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        // Show placeholder on first render
-        tv.text = placeholder
-        tv.textColor = UIColor.placeholderText
-        tv.isShowingPlaceholder = true
+        tv.text = ""
+        tv.setupPlaceholder(placeholder)
         return tv
     }
 
     func updateUIView(_ tv: PasteInterceptingTextView, context: Context) {
-        // Sync an externally changed binding into the view (e.g. cleared after send),
-        // but never overwrite the placeholder text — that's the correct idle state.
-        if !tv.isShowingPlaceholder, tv.text != text {
+        if tv.text != text {
             tv.text = text
+            tv.updatePlaceholderVisibility()
             tv.invalidateIntrinsicContentSize()
         }
-        // If binding was cleared while the view is not focused, show placeholder.
-        if text.isEmpty, !tv.isFirstResponder, !tv.isShowingPlaceholder {
-            tv.text = placeholder
-            tv.textColor = UIColor.placeholderText
-            tv.isShowingPlaceholder = true
-            tv.invalidateIntrinsicContentSize()
-        }
-        // Honour one-shot focus request.
         if focusRequest {
             tv.becomeFirstResponder()
             DispatchQueue.main.async { focusRequest = false }
@@ -91,28 +80,10 @@ struct PasteAwareTextField: UIViewRepresentable {
 
         init(parent: PasteAwareTextField) { self.parent = parent }
 
-        func textViewDidBeginEditing(_ textView: UITextView) {
-            guard let tv = textView as? PasteInterceptingTextView,
-                  tv.isShowingPlaceholder else { return }
-            tv.text = ""
-            tv.textColor = UIColor.label
-            tv.isShowingPlaceholder = false
-        }
-
-        func textViewDidEndEditing(_ textView: UITextView) {
-            guard let tv = textView as? PasteInterceptingTextView else { return }
-            if tv.text.isEmpty {
-                tv.text = parent.placeholder
-                tv.textColor = UIColor.placeholderText
-                tv.isShowingPlaceholder = true
-                tv.invalidateIntrinsicContentSize()
-            }
-        }
-
         func textViewDidChange(_ textView: UITextView) {
-            guard let tv = textView as? PasteInterceptingTextView,
-                  !tv.isShowingPlaceholder else { return }
+            guard let tv = textView as? PasteInterceptingTextView else { return }
             parent.text = textView.text
+            tv.updatePlaceholderVisibility()
             textView.invalidateIntrinsicContentSize()
         }
 
@@ -137,7 +108,30 @@ struct PasteAwareTextField: UIViewRepresentable {
 final class PasteInterceptingTextView: UITextView {
     var onImagePaste: ((PendingAttachment) -> Void)?
     var onSubmit: (() -> Void)?
-    var isShowingPlaceholder: Bool = false
+    private weak var placeholderLabel: UILabel?
+
+    /// Adds a UILabel overlay that stays visible while the text view is empty,
+    /// regardless of whether it has focus — identical to native placeholder behaviour.
+    func setupPlaceholder(_ placeholder: String) {
+        let label = UILabel()
+        label.text = placeholder
+        label.font = font
+        label.textColor = .placeholderText
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(label)
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: topAnchor),
+            label.leadingAnchor.constraint(equalTo: leadingAnchor),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor),
+        ])
+        placeholderLabel = label
+        updatePlaceholderVisibility()
+    }
+
+    func updatePlaceholderVisibility() {
+        placeholderLabel?.isHidden = !text.isEmpty
+    }
 
     // MARK: Hardware keyboard commands
 
