@@ -49,7 +49,7 @@ struct ToolUseView: View {
             }
             .popover(isPresented: $showPopover) {
                 ToolUseContent(toolBlock: toolBlock)
-                    .frame(width: 300)
+                    .frame(width: 300, height: 400)
                     .presentationCompactAdaptation(.popover)
             }
             #if os(iOS)
