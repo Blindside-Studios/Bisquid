@@ -87,17 +87,6 @@ struct PasteAwareTextField: UIViewRepresentable {
             textView.invalidateIntrinsicContentSize()
         }
 
-        /// Intercepts the soft keyboard's Return key and submits instead of
-        /// inserting a newline.  Hardware Return is handled by UIKeyCommand.
-        func textView(_ textView: UITextView,
-                      shouldChangeTextIn range: NSRange,
-                      replacementText text: String) -> Bool {
-            if text == "\n" {
-                parent.onSubmit()
-                return false
-            }
-            return true
-        }
     }
 }
 
