@@ -226,7 +226,7 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                         // On first change, check if it's a horizontal gesture
                         if !isGestureActive {
                             let t = value.translation
-                            guard abs(t.width) > abs(t.height) else { return }
+                            guard abs(t.width) > abs(t.height) * 2.5 else { return }
                             isGestureActive = true
                         }
 
