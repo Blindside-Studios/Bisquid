@@ -27,21 +27,21 @@ struct MistralAgents {
     }
 
     // Create or reuse a web search agent
-    func getOrCreateSearchAgent() async throws -> String {
+    func getOrCreateSearchAgent(searchType: String, isPremium: Bool = false) async throws -> String {
         // For now, we'll create a new agent each time
         // TODO: Cache the agent ID for reuse
-        return try await createSearchAgent()
+        return try await createSearchAgent(searchType: searchType, isPremium: isPremium)
     }
 
-    private func createSearchAgent() async throws -> String {
+    private func createSearchAgent(searchType: String, isPremium: Bool = false) async throws -> String {
         var request = makeRequest(url: agentsUrl)
 
         let body: [String: Any] = [
-            "model": "mistral-small-latest",
+            "model": isPremium ? "mistral-medium-latest" : "mistral-small-latest",
             "name": "Web Search Agent",
             "description": "Agent for performing web searches",
             "instructions": "You are a web search assistant. Perform searches to answer user queries accurately.",
-            "tools": [["type": "web_search"]]
+            "tools": [["type": searchType]]
         ]
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -72,8 +72,8 @@ struct MistralAgents {
     }
 
     // Execute a web search using the agent
-    func executeSearch(query: String) async throws -> String {
-        let agentId = try await getOrCreateSearchAgent()
+    func executeSearch(query: String, searchType: String = "web_search") async throws -> String {
+        let agentId = try await getOrCreateSearchAgent(searchType: searchType, isPremium: searchType == "web_search_premium")
 
         var request = makeRequest(url: conversationsUrl)
 
@@ -85,7 +85,7 @@ struct MistralAgents {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        print("🔍 Executing search: \(query)")
+        print("🔍 Executing search with \(searchType): \(query)")
         let (data, response) = try await URLSession.shared.data(for: request)
 
         // Log the response for debugging
