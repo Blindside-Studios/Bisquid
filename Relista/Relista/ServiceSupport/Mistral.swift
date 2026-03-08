@@ -168,7 +168,7 @@ struct Mistral {
     }
 
     func streamMessage(messages: [Message], modelName: String, agent: UUID?, tools: [any ChatTool] = []) async throws -> AsyncThrowingStream<StreamChunk, Error> {
-        var request = makeRequest()
+        let baseRequest = makeRequest()
         let (defaultInstructions, memorySuffix) = await MainActor.run {
             (SyncedSettings.shared.defaultInstructions, SyncedSettings.memoryContext(for: agent))
         }
@@ -194,200 +194,202 @@ struct Mistral {
 
         let supportsReasoning = ModelList.getModelFromSlug(slug: modelName).supportsReasoning
 
-        var body: [String: Any] = [
-            "model": modelName,
-            "messages": apiMessages,
-            "stream": true
-        ]
-
-        if supportsReasoning {
-            body["prompt_mode"] = "reasoning"
-        }
-
         if !tools.isEmpty {
-            body["tools"] = tools.map { $0.definition }
             print("🔧 Tools enabled: \(tools.map { $0.name }.joined(separator: ", "))")
         }
 
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-        let (bytes, _) = try await URLSession.shared.bytes(for: request)
-
         return AsyncThrowingStream { continuation in
-            let capturedRequest = request
-            let capturedMessages = apiMessages
-            let capturedModelName = modelName
-            let capturedTools = tools
-            let capturedSupportsReasoning = supportsReasoning
-
             Task {
-                var accumulatedToolCalls: [String: [String: Any]] = [:]
-                var assistantMessage = ""
-
                 do {
-                    for try await line in bytes.lines {
-                        if !line.isEmpty {
-                            print("📥 Received line: \(line)")
-                        }
-
-                        if line.hasPrefix("{") && line.contains("\"error\"") {
-                            if let jsonData = line.data(using: .utf8),
-                               let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                               let errorDict = json["error"] as? [String: Any] {
-                                let error = NSError(domain: "Mistral", code: 1, userInfo: [
-                                    NSLocalizedDescriptionKey: errorDict["message"] as? String ?? "Unknown error",
-                                    "type": errorDict["type"] as? String ?? "unknown",
-                                    "code": errorDict["code"] as? String ?? "unknown"
-                                ])
-                                continuation.finish(throwing: error)
-                                return
-                            }
-                        }
-
-                        guard line.hasPrefix("data: ") else { continue }
-                        let data = line.dropFirst(6)
-                        if data == "[DONE]" { continuation.finish(); return }
-
-                        if let jsonData = data.data(using: .utf8),
-                           let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                           let choices = json["choices"] as? [[String: Any]],
-                           let choice = choices.first {
-
-                            let delta = choice["delta"] as? [String: Any]
-                            let finishReason = choice["finish_reason"] as? String
-
-                            // Accumulate tool call deltas
-                            if let delta = delta, let toolCalls = delta["tool_calls"] as? [[String: Any]] {
-                                for toolCall in toolCalls {
-                                    if let index = toolCall["index"] as? Int {
-                                        let id = toolCall["id"] as? String ?? "\(index)"
-                                        if accumulatedToolCalls[id] == nil {
-                                            accumulatedToolCalls[id] = [
-                                                "id": id,
-                                                "type": toolCall["type"] as? String ?? "function",
-                                                "function": ["name": "", "arguments": ""]
-                                            ]
-                                        }
-                                        if let function = toolCall["function"] as? [String: Any] {
-                                            var fn = accumulatedToolCalls[id]?["function"] as? [String: String] ?? ["name": "", "arguments": ""]
-                                            if let name = function["name"] as? String { fn["name"] = name }
-                                            if let args = function["arguments"] as? String { fn["arguments"]? += args }
-                                            accumulatedToolCalls[id]?["function"] = fn
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Yield content/thinking chunks
-                            // Magistral returns delta.content as an array of typed blocks;
-                            // standard models return it as a plain string.
-                            if let delta = delta {
-                                if let contentArray = delta["content"] as? [[String: Any]] {
-                                    for block in contentArray {
-                                        let blockType = block["type"] as? String
-                                        if blockType == "thinking" {
-                                            if let thinkingItems = block["thinking"] as? [[String: Any]] {
-                                                for item in thinkingItems {
-                                                    if let text = item["text"] as? String, !text.isEmpty {
-                                                        continuation.yield(.thinkingChunk(text))
-                                                    }
-                                                }
-                                            }
-                                        } else if blockType == "text" {
-                                            if let text = block["text"] as? String, !text.isEmpty {
-                                                assistantMessage += text
-                                                continuation.yield(.content(text))
-                                            }
-                                        }
-                                    }
-                                } else if let content = delta["content"] as? String, !content.isEmpty {
-                                    assistantMessage += content
-                                    continuation.yield(.content(content))
-                                }
-                            }
-
-                            // Yield annotations
-                            if let delta = delta, let annotationsData = delta["annotations"] as? [[String: Any]],
-                               let annotations = try? self.parseAnnotations(annotationsData) {
-                                continuation.yield(.annotations(annotations))
-                            }
-
-                            // Execute tool calls when stream signals completion
-                            if finishReason == "tool_calls" && !accumulatedToolCalls.isEmpty {
-                                print("🔧 Stream finished with \(accumulatedToolCalls.count) tool call(s), executing...")
-
-                                for (_, toolCall) in accumulatedToolCalls {
-                                    guard let function = toolCall["function"] as? [String: String],
-                                          let functionName = function["name"],
-                                          let argumentsString = function["arguments"],
-                                          let tool = capturedTools.first(where: { $0.name == functionName }) else {
-                                        print("⚠️ Unknown or malformed tool call: \(toolCall)")
-                                        continue
-                                    }
-
-                                    let args = (try? JSONSerialization.jsonObject(
-                                        with: Data(argumentsString.utf8)
-                                    ) as? [String: Any]) ?? [:]
-                                    let toolCallID = toolCall["id"] as? String ?? "0"
-
-                                    print("🔧 Executing tool: \(functionName)")
-                                    continuation.yield(.toolUseStarted(
-                                        id: toolCallID,
-                                        toolName: tool.name,
-                                        displayName: tool.displayName,
-                                        icon: tool.icon,
-                                        inputSummary: tool.inputSummary(from: args)
-                                    ))
-
-                                    let result = try await tool.execute(arguments: args)
-                                    continuation.yield(.toolResultReceived(id: toolCallID, result: result))
-
-                                    // Build follow-up request with the tool result
-                                    var newMessages: [[String: Any]] = capturedMessages.map { $0 as [String: Any] }
-                                    var toolCallMessage: [String: Any] = ["role": "assistant", "tool_calls": [toolCall]]
-                                    if !assistantMessage.isEmpty { toolCallMessage["content"] = assistantMessage }
-                                    newMessages.append(toolCallMessage)
-                                    newMessages.append([
-                                        "role": "tool",
-                                        "tool_call_id": toolCallID,
-                                        "content": result
-                                    ])
-
-                                    var newRequest = capturedRequest
-                                    var newBody: [String: Any] = [
-                                        "model": capturedModelName,
-                                        "messages": newMessages,
-                                        "stream": true
-                                    ]
-                                    if capturedSupportsReasoning {
-                                        newBody["prompt_mode"] = "reasoning"
-                                    }
-                                    newRequest.httpBody = try JSONSerialization.data(withJSONObject: newBody)
-
-                                    print("🔄 Sending follow-up request...")
-                                    let (newBytes, _) = try await URLSession.shared.bytes(for: newRequest)
-                                    for try await newLine in newBytes.lines {
-                                        guard newLine.hasPrefix("data: ") else { continue }
-                                        let newData = newLine.dropFirst(6)
-                                        if newData == "[DONE]" { continuation.finish(); return }
-                                        if let newJsonData = newData.data(using: .utf8),
-                                           let newJson = try? JSONSerialization.jsonObject(with: newJsonData) as? [String: Any],
-                                           let newChoices = newJson["choices"] as? [[String: Any]],
-                                           let newContent = newChoices.first?["delta"] as? [String: Any],
-                                           let text = newContent["content"] as? String {
-                                            continuation.yield(.content(text))
-                                        }
-                                    }
-                                    continuation.finish()
-                                    return
-                                }
-                            }
-                        }
-                    }
+                    try await self.streamLoop(
+                        baseRequest: baseRequest,
+                        messages: apiMessages,
+                        modelName: modelName,
+                        tools: tools,
+                        supportsReasoning: supportsReasoning,
+                        continuation: continuation
+                    )
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
                 }
+            }
+        }
+    }
+
+    /// Recursive streaming loop. Handles tool calls by executing all of them, then
+    /// recursing with the full tool results appended — supporting both parallel tool
+    /// calls and chained multi-turn tool use.
+    private func streamLoop(
+        baseRequest: URLRequest,
+        messages: [[String: Any]],
+        modelName: String,
+        tools: [any ChatTool],
+        supportsReasoning: Bool,
+        continuation: AsyncThrowingStream<StreamChunk, Error>.Continuation
+    ) async throws {
+        var body: [String: Any] = [
+            "model": modelName,
+            "messages": messages,
+            "stream": true
+        ]
+        if supportsReasoning { body["prompt_mode"] = "reasoning" }
+        if !tools.isEmpty { body["tools"] = tools.map { $0.definition } }
+
+        var request = baseRequest
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (bytes, _) = try await URLSession.shared.bytes(for: request)
+
+        // index → accumulated tool call dict, preserving insertion order
+        var toolCallsByIndex: [Int: [String: Any]] = [:]
+        var toolCallIndexOrder: [Int] = []
+        var assistantMessage = ""
+
+        for try await line in bytes.lines {
+            if !line.isEmpty { print("📥 Received line: \(line)") }
+
+            if line.hasPrefix("{") && line.contains("\"error\"") {
+                if let jsonData = line.data(using: .utf8),
+                   let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                   let errorDict = json["error"] as? [String: Any] {
+                    throw NSError(domain: "Mistral", code: 1, userInfo: [
+                        NSLocalizedDescriptionKey: errorDict["message"] as? String ?? "Unknown error",
+                        "type": errorDict["type"] as? String ?? "unknown",
+                        "code": errorDict["code"] as? String ?? "unknown"
+                    ])
+                }
+            }
+
+            guard line.hasPrefix("data: ") else { continue }
+            let data = line.dropFirst(6)
+            if data == "[DONE]" { return }
+
+            guard let jsonData = data.data(using: .utf8),
+                  let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                  let choices = json["choices"] as? [[String: Any]],
+                  let choice = choices.first else { continue }
+
+            let delta = choice["delta"] as? [String: Any]
+            let finishReason = choice["finish_reason"] as? String
+
+            // Accumulate tool call deltas keyed by index
+            if let delta = delta, let toolCalls = delta["tool_calls"] as? [[String: Any]] {
+                for toolCall in toolCalls {
+                    guard let index = toolCall["index"] as? Int else { continue }
+                    if toolCallsByIndex[index] == nil {
+                        toolCallIndexOrder.append(index)
+                        toolCallsByIndex[index] = [
+                            "id": toolCall["id"] as? String ?? "\(index)",
+                            "type": toolCall["type"] as? String ?? "function",
+                            "function": ["name": "", "arguments": ""] as [String: String]
+                        ]
+                    }
+                    if let function = toolCall["function"] as? [String: Any] {
+                        var fn = toolCallsByIndex[index]?["function"] as? [String: String] ?? ["name": "", "arguments": ""]
+                        if let name = function["name"] as? String, !name.isEmpty { fn["name"] = name }
+                        if let args = function["arguments"] as? String { fn["arguments"] = (fn["arguments"] ?? "") + args }
+                        toolCallsByIndex[index]?["function"] = fn
+                    }
+                }
+            }
+
+            // Yield content/thinking chunks.
+            // Magistral returns delta.content as an array of typed blocks;
+            // standard models return it as a plain string.
+            if let delta = delta {
+                if let contentArray = delta["content"] as? [[String: Any]] {
+                    for block in contentArray {
+                        let blockType = block["type"] as? String
+                        if blockType == "thinking" {
+                            if let thinkingItems = block["thinking"] as? [[String: Any]] {
+                                for item in thinkingItems {
+                                    if let text = item["text"] as? String, !text.isEmpty {
+                                        continuation.yield(.thinkingChunk(text))
+                                    }
+                                }
+                            }
+                        } else if blockType == "text" {
+                            if let text = block["text"] as? String, !text.isEmpty {
+                                assistantMessage += text
+                                continuation.yield(.content(text))
+                            }
+                        }
+                    }
+                } else if let content = delta["content"] as? String, !content.isEmpty {
+                    assistantMessage += content
+                    continuation.yield(.content(content))
+                }
+            }
+
+            // Yield annotations
+            if let delta = delta, let annotationsData = delta["annotations"] as? [[String: Any]],
+               let annotations = try? self.parseAnnotations(annotationsData) {
+                continuation.yield(.annotations(annotations))
+            }
+
+            // When all tool calls are known, execute them all, then recurse
+            if finishReason == "tool_calls" && !toolCallsByIndex.isEmpty {
+                let orderedCalls = toolCallIndexOrder.map { toolCallsByIndex[$0]! }
+                print("🔧 Stream finished with \(orderedCalls.count) tool call(s), executing...")
+
+                // Execute every tool call and collect results before sending the follow-up.
+                // All calls go into a single assistant message and all results follow as
+                // individual tool messages — this is what Mistral's API requires.
+                var toolResults: [(toolCall: [String: Any], result: String)] = []
+
+                for toolCall in orderedCalls {
+                    guard let function = toolCall["function"] as? [String: String],
+                          let functionName = function["name"],
+                          let argumentsString = function["arguments"],
+                          let tool = tools.first(where: { $0.name == functionName }) else {
+                        print("⚠️ Unknown or malformed tool call: \(toolCall)")
+                        continue
+                    }
+
+                    let args = (try? JSONSerialization.jsonObject(
+                        with: Data(argumentsString.utf8)
+                    ) as? [String: Any]) ?? [:]
+                    let toolCallID = toolCall["id"] as? String ?? "0"
+
+                    print("🔧 Executing tool: \(functionName)")
+                    continuation.yield(.toolUseStarted(
+                        id: toolCallID,
+                        toolName: tool.name,
+                        displayName: tool.displayName,
+                        icon: tool.icon,
+                        inputSummary: tool.inputSummary(from: args)
+                    ))
+
+                    let result = try await tool.execute(arguments: args)
+                    continuation.yield(.toolResultReceived(id: toolCallID, result: result))
+                    toolResults.append((toolCall: toolCall, result: result))
+                }
+
+                // Build follow-up: one assistant message with all tool_calls,
+                // then one tool message per result
+                var newMessages = messages
+                var assistantMsg: [String: Any] = ["role": "assistant", "tool_calls": orderedCalls]
+                if !assistantMessage.isEmpty { assistantMsg["content"] = assistantMessage }
+                newMessages.append(assistantMsg)
+                for item in toolResults {
+                    newMessages.append([
+                        "role": "tool",
+                        "tool_call_id": item.toolCall["id"] as? String ?? "0",
+                        "content": item.result
+                    ])
+                }
+
+                print("🔄 Sending follow-up with \(toolResults.count) tool result(s)...")
+                try await streamLoop(
+                    baseRequest: baseRequest,
+                    messages: newMessages,
+                    modelName: modelName,
+                    tools: tools,
+                    supportsReasoning: supportsReasoning,
+                    continuation: continuation
+                )
+                return
             }
         }
     }

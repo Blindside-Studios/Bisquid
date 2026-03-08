@@ -71,7 +71,7 @@ struct ToolUseView: View {
             }
             #endif
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 1)
     }
 }
 

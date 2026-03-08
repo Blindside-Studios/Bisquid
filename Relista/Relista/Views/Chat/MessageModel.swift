@@ -28,6 +28,7 @@ struct MessageModel: View {
                                 StructuredText(markdown: text,
                                                patternOptions: .init(mathExpressions: true))
                                 .textual.textSelection(.enabled)
+                                .padding(.vertical, 8)
                             case .toolUse(let toolBlock):
                                 ToolUseView(toolBlock: toolBlock)
                             case .thinking(let thinkingBlock):
@@ -40,7 +41,8 @@ struct MessageModel: View {
                         .textual.textSelection(.enabled)
                     }
                 }
-                .padding()
+                .padding(.horizontal)
+                .padding(.vertical, 8)
 
                 Spacer()
             }

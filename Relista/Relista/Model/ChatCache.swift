@@ -398,10 +398,14 @@ class ChatCache {
                             #endif
 
                         case .toolUseStarted(let id, let toolName, let displayName, let icon, let inputSummary):
-                            // Flush current text into a text block, then add the tool block
-                            let preToolText = updatedMessage.text
-                            updatedMessage.contentBlocks = [.text(preToolText),
-                                .toolUse(ToolUseBlock(id: id, toolName: toolName, displayName: displayName, icon: icon, inputSummary: inputSummary, result: nil, isLoading: true))]
+                            let newToolBlock = MessageContentBlock.toolUse(ToolUseBlock(id: id, toolName: toolName, displayName: displayName, icon: icon, inputSummary: inputSummary, result: nil, isLoading: true))
+                            if updatedMessage.contentBlocks == nil {
+                                // First tool block — seed with any pre-tool text
+                                updatedMessage.contentBlocks = [.text(updatedMessage.text), newToolBlock]
+                            } else {
+                                // Additional tool block — append without overwriting existing blocks
+                                updatedMessage.contentBlocks!.append(newToolBlock)
+                            }
                             updatedMessage.lastModified = Date.now
                             print("🔧 Tool use started: \(toolName) — \(inputSummary)")
 
