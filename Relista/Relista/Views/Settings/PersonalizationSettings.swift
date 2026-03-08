@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PersonalizationSettings: View {
     @ObservedObject private var settings = SyncedSettings.shared
+    @AppStorage("ReplaceEMDashesWithHyphens") private var suppressEmDashes: Bool = false
 
     var body: some View {
         Form {
@@ -26,6 +27,10 @@ struct PersonalizationSettings: View {
 
             Section("Memories") {
                 MemoryListEditor(memories: $settings.memories)
+            }
+            
+            Section("Modifications"){
+                Toggle("Replace em-dashes with spaced hyphens", isOn: $suppressEmDashes)
             }
         }
     }

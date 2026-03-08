@@ -370,7 +370,10 @@ class ChatCache {
                             }
                             updatedMessage.lastModified = Date.now
 
-                        case .content(let text):
+                        case .content(let rawText):
+                            let text = UserDefaults.standard.bool(forKey: "ReplaceEMDashesWithHyphens")
+                            ? rawText.replacingOccurrences(of: " — ", with: " - ").replacingOccurrences(of: "—", with: " - ")
+                                : rawText
                             updatedMessage.text += text
                             updatedMessage.lastModified = Date.now
 
