@@ -25,7 +25,7 @@ struct MessageUser: View {
         VStack(spacing: 0){
             HStack(alignment: .top) {
                 Spacer(minLength: availableWidth * 0.2)
-                VStack(alignment: .leading, spacing: 4){
+                VStack(alignment: .trailing, spacing: 4){
                     if !message.attachmentLinks.isEmpty {
                         AttachmentThumbnailStrip(message: message)
                     }
