@@ -65,7 +65,7 @@ struct NewChatAgentPicker: View {
                     .padding(6)
                     .background {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(.ultraThickMaterial)
+                            .fill(.ultraThinMaterial)
                             .overlay {
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .fill(primaryAccentColor.opacity(isCurrentAgent ? 0.5 : 0))

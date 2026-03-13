@@ -18,6 +18,9 @@ struct InputUI: View {
     
     // own logic
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #if os(macOS)
+    @Environment(\.controlActiveState) private var focused
+    #endif
     private var isChatBlank: Bool{
         ChatCache.shared.loadedChats[conversationID]?.messages.isEmpty ?? false
     }
@@ -39,6 +42,7 @@ struct InputUI: View {
     var body: some View {
         Group{
             if horizontalSizeClass == .compact {
+                #if os(iOS)
                 VStack (alignment: .center){
                     VStack{
                         if isChatBlank{
@@ -64,10 +68,12 @@ struct InputUI: View {
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 50)).combined(with: .opacity)
                             )
+                            .shadow(color: .black.opacity(0.175), radius: 12)
                     }
                     
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor)
                 }
+                #endif
             } else {
                 VStack{
                     if isChatBlank {
@@ -98,6 +104,11 @@ struct InputUI: View {
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 350)).combined(with: .opacity)
                             )
+                            #if os(macOS)
+                            .shadow(color: focused == .inactive ? .clear : .black.opacity(0.175), radius: focused == .inactive ? 0 : 12)
+                            #else
+                            .shadow(color: .black.opacity(0.175), radius: 12)
+                            #endif
                         // double spacer so the actual content is above center
                         Spacer()
                         Spacer()
