@@ -23,7 +23,8 @@ struct PromptField: View {
 
     @Binding var primaryAccentColor: Color
     @Binding var secondaryAccentColor: Color
-    
+    @Binding var editingMessage: Message?
+
     @State private var pendingAttachments: [PendingAttachment] = []
     #if os(iOS)
     @State private var textFieldFocusRequest: Bool = false
@@ -52,6 +53,30 @@ struct PromptField: View {
         let spacing: CGFloat = 16
         #endif
         VStack(spacing: spacing) {
+            if editingMessage != nil {
+                HStack(spacing: 8) {
+                    Image(systemName: "pencil.circle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Sending will restart the conversation from this message")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button {
+                        withAnimation(.bouncy(duration: 0.3)) {
+                            editingMessage = nil
+                            inputMessage = ""
+                            pendingAttachments = []
+                        }
+                    } label: {
+                        Image(systemName: "xmark")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 4)
+                Divider()
+            }
             if !pendingAttachments.isEmpty {
                 PendingImageStrip(pendingAttachments: $pendingAttachments)
                     .transition(.blurFade.combined(with: .opacity))
@@ -87,6 +112,7 @@ struct PromptField: View {
             CommandBar(selectedModel: $selectedModel, conversationID: $conversationID, secondaryAccentColor: $secondaryAccentColor, pendingAttachments: $pendingAttachments, sendMessage: sendMessage, sendMessageAsSystem: sendMessageAsSystem, appendDummyMessages: appendDummyMessages)
         }
         .animation(.bouncy(duration: 0.3), value: pendingAttachments.isEmpty)
+        .animation(.bouncy(duration: 0.3), value: editingMessage == nil)
         .padding(spacing)
         .glassEffect(in: .rect(cornerRadius: CGFloat(cornerRadius)))
         //.shadow(color: primaryAccentColor.opacity(0.4), radius: 20)
@@ -108,6 +134,18 @@ struct PromptField: View {
         .onDisappear { macPasteMonitor.stop() }
         #endif
         .onChange(of: selectedAgent, refreshPlaceHolder)
+        .onChange(of: editingMessage) { _, newValue in
+            guard let msg = newValue else { return }
+            inputMessage = msg.text
+            let attachments = msg.attachmentLinks.compactMap { filename -> PendingAttachment? in
+                guard let data = AttachmentManager.loadImage(filename: filename, for: conversationID) else { return nil }
+                let ext = (filename as NSString).pathExtension.isEmpty ? "jpg" : (filename as NSString).pathExtension
+                return PendingAttachment(data: data, fileExtension: ext)
+            }
+            withAnimation(.bouncy(duration: 0.3)) {
+                pendingAttachments = attachments
+            }
+        }
         #if os(macOS)
         .animation(.default, value: typingBarPaddingMacOS)
         #endif
@@ -174,6 +212,12 @@ struct PromptField: View {
                 // Capture and clear pending attachments before the async send
                 let attachmentsToSend = pendingAttachments.map { ($0.data, $0.fileExtension) }
                 pendingAttachments = []
+
+                // If editing, truncate from the edited message onward before sending
+                if let editing = editingMessage {
+                    chatCache.truncateMessages(for: conversationID, from: editing.id)
+                    editingMessage = nil
+                }
 
                 // Use ChatCache to send message and handle generation
                 chatCache.sendMessage(

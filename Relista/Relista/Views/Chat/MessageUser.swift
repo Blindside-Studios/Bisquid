@@ -10,11 +10,12 @@ import SwiftUI
 struct MessageUser: View {
     let message: Message
     let availableWidth: CGFloat
+    let onEdit: () -> Void
     @State private var isExpanded: Bool = false
     @State private var naturalHeight: CGFloat = 0
-    
+
     @Binding var primaryAccentColor: Color
-    
+
     @AppStorage("ShowUserMessageToolbars") private var showUserMessageToolbars: Bool = false
     
     private var needsTruncation: Bool {
@@ -66,6 +67,11 @@ struct MessageUser: View {
                                 #endif
                             } label: {
                                 Label("Copy", systemImage: "doc.on.doc")
+                            }
+                            Button {
+                                onEdit()
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
                             }
                         }
                     

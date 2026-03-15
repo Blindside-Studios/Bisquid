@@ -10,7 +10,8 @@ import Textual
 
 struct MessageModel: View {
     let message: Message
-    
+    let onRegenerate: () -> Void
+
     @AppStorage("AlwaysShowFullModelMessageToolbar") private var toolbarExpansionPreference: Bool = false
     @State private var isToolbarExpanded: Bool = false
     @State private var showInfoPopOver: Bool = false
@@ -63,7 +64,7 @@ struct MessageModel: View {
                 .labelStyle(.iconOnly)
                 
                 Button {
-                    // regrenerate
+                    onRegenerate()
                 } label: {
                     Label("Regenerate", systemImage: "arrow.clockwise")
                         .contentShape(Rectangle())

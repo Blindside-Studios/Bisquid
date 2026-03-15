@@ -19,6 +19,7 @@ struct ChatWindow: View {
     @State private var scrollWithAnimation = true
     @State private var primaryAccentColor: Color = .clear
     @State private var secondaryAccentColor: Color = .primary
+    @State private var editingMessage: Message? = nil
 
     var body: some View {
         ZStack{
@@ -35,14 +36,32 @@ struct ChatWindow: View {
                             LazyVStack{
                                 ForEach(sortedMessages){ message in
                                     if(message.role == .assistant){
-                                        MessageModel(message: message)
-                                            .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height * 0.8 : 0)
-                                            .id(message.id)
+                                        MessageModel(message: message, onRegenerate: {
+                                            let model = ModelList.getModelFromSlug(slug: message.modelUsed)
+                                            var apiKey = ""
+                                            switch model.provider {
+                                            case .mistral: apiKey = KeychainHelper.shared.mistralAPIKey
+                                            case .anthropic: apiKey = KeychainHelper.shared.claudeAPIKey
+                                            default: return
+                                            }
+                                            chatCache.regenerateMessage(
+                                                messageID: message.id,
+                                                modelName: message.modelUsed,
+                                                agent: chatCache.getConversation(for: conversationID)?.agentUsed,
+                                                apiKey: apiKey,
+                                                for: conversationID,
+                                                tools: ToolRegistry.enabledTools(for: chatCache.getConversation(for: conversationID)?.agentUsed, conversationID: conversationID)
+                                            )
+                                        })
+                                        .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height * 0.8 : 0)
+                                        .id(message.id)
                                     }
                                     else if (message.role == .user || message.role == .system){
-                                        MessageUser(message: message, availableWidth: geo.size.width, primaryAccentColor: $primaryAccentColor)
-                                            .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height : 0)
-                                            .id(message.id)
+                                        MessageUser(message: message, availableWidth: geo.size.width, onEdit: {
+                                            editingMessage = message
+                                        }, primaryAccentColor: $primaryAccentColor)
+                                        .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height : 0)
+                                        .id(message.id)
                                     }
                                 }
                             }
@@ -60,7 +79,7 @@ struct ChatWindow: View {
                             #endif
                         }
                         .safeAreaBar(edge: .bottom, spacing: 0){
-                            InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor)
+                            InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
                         }
                         .onChange(of: conversationID) { _, _ in
                             // scroll to last user/system message when switching conversations

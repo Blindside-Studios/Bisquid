@@ -31,13 +31,13 @@ class LoadedChat: Identifiable {
 /// Manages chat state and message generation for all conversations
 /// This centralizes chat data so it can be accessed and modified even when not actively displayed
 @Observable
-class ChatCache {    
+class ChatCache {
     static let shared = ChatCache()
 
     /// indicate loading state used in UI
     var isLoading: Bool = false
     var loadingProgress: Double = 0.0
-    
+
     /// All conversations (metadata only)
     var conversations: [Conversation] = []
 
@@ -49,7 +49,7 @@ class ChatCache {
 
     /// Dictionary tracking cancellation requests for conversations
     private var cancellationFlags: [UUID: Bool] = [:]
-    
+
     private init() {
         // Load conversations from disk on init
         do {
@@ -74,7 +74,7 @@ class ChatCache {
             let newModel = AgentManager.getAgent(fromUUID: agentUsed!)!.model
             model = newModel
         }
-        
+
         let newConversation = Conversation(
             id: UUID(),
             title: "New Conversation",
@@ -116,7 +116,7 @@ class ChatCache {
             print("Error saving renamed conversation: \(error)")
         }
     }
-    
+
     func setArchiveStatus(id: UUID, to status: Bool){
         guard let conversation = getConversation(for: id) else { return }
         conversation.isArchived = status
@@ -301,9 +301,98 @@ class ChatCache {
             }
         }
 
-        // Start generation
+        startGeneration(
+            chat: chat,
+            conversationID: conversationID,
+            modelName: modelName,
+            agent: agent,
+            apiKey: apiKey,
+            withHapticFeedback: withHapticFeedback,
+            isChatNew: isChatNew,
+            onCompletion: onCompletion,
+            tools: tools
+        )
+    }
+
+    func sendMessageAsSystem(
+        inputText: String,
+        to conversationID: UUID,
+        ) {
+        let chat = getChat(for: conversationID)
+        guard let conversation = getConversation(for: conversationID) else { return }
+
+        // Add user message
+        let userMsg = Message(
+            id: UUID(),
+            text: inputText,
+            role: .system,
+            attachmentLinks: [],
+            timeStamp: .now,
+            lastModified: Date.now,
+            conversationID: conversationID
+        )
+        chat.messages.append(userMsg)
+        conversation.lastInteracted = Date.now
+        conversation.lastModified = Date.now
+
+        // Save system message immediately
+        if conversation.hasMessages {
+            saveMessages(for: conversationID)
+        }
+    }
+
+    // MARK: - Regenerate & Edit
+
+    /// Removes all messages from the given message ID onward (inclusive) and saves to disk.
+    func truncateMessages(for conversationID: UUID, from messageID: UUID) {
+        let chat = getChat(for: conversationID)
+        guard let index = chat.messages.firstIndex(where: { $0.id == messageID }) else { return }
+        chat.messages.removeSubrange(index...)
+        saveMessages(for: conversationID)
+    }
+
+    /// Removes the target assistant message (and all subsequent messages) then regenerates.
+    func regenerateMessage(
+        messageID: UUID,
+        modelName: String,
+        agent: UUID?,
+        apiKey: String,
+        for conversationID: UUID,
+        withHapticFeedback: Bool = true,
+        tools: [any ChatTool] = []
+    ) {
+        let chat = getChat(for: conversationID)
+        guard !chat.isGenerating else { return }
+        guard let index = chat.messages.firstIndex(where: { $0.id == messageID }),
+              chat.messages[index].role == .assistant else { return }
+        chat.messages.removeSubrange(index...)
+        saveMessages(for: conversationID)
+        startGeneration(
+            chat: chat,
+            conversationID: conversationID,
+            modelName: modelName,
+            agent: agent,
+            apiKey: apiKey,
+            withHapticFeedback: withHapticFeedback,
+            isChatNew: false,
+            tools: tools
+        )
+    }
+
+    /// Core generation loop — shared by sendMessage and regenerateMessage.
+    private func startGeneration(
+        chat: LoadedChat,
+        conversationID: UUID,
+        modelName: String,
+        agent: UUID?,
+        apiKey: String,
+        withHapticFeedback: Bool,
+        isChatNew: Bool,
+        onCompletion: (() -> Void)? = nil,
+        tools: [any ChatTool]
+    ) {
         chat.isGenerating = true
-        cancellationFlags[conversationID] = false // Clear any previous cancellation flag
+        cancellationFlags[conversationID] = false
 
         Task {
             do {
@@ -439,26 +528,27 @@ class ChatCache {
                 // Generation complete - save and cleanup
                 await MainActor.run {
                     chat.isGenerating = false
-                    cancellationFlags[conversationID] = false // Clear cancellation flag
+                    cancellationFlags[conversationID] = false
 
-                    // Update conversation metadata
-                    let assistantMessageID = chat.messages[chat.messages.count - 1].id
                     chat.messages[chat.messages.count - 1].timeStamp = .now
-                    conversation.lastInteracted = Date.now
-                    conversation.lastModified = Date.now
+                    getConversation(for: conversationID)?.lastInteracted = Date.now
+                    getConversation(for: conversationID)?.lastModified = Date.now
 
                     saveMessages(for: conversationID)
                     syncConversation(id: conversationID)
                     onCompletion?()
 
-                    // Clean up if chat is no longer needed
                     cleanupUnusedChats()
                 }
-                
-                if isChatNew { try? conversation.title = await Mistral(apiKey: KeychainHelper.shared.mistralAPIKey).generateChatName(messages: chat.messages) }
+
+                if isChatNew {
+                    if let conv = getConversation(for: conversationID) {
+                        conv.title = (try? await Mistral(apiKey: KeychainHelper.shared.mistralAPIKey).generateChatName(messages: chat.messages)) ?? conv.title
+                    }
+                }
                 // save again to make sure it saves our chat title
                 try? ConversationManager.saveIndex(conversations: conversations)
-                
+
                 #if os(iOS)
                 // provide haptic feedback that message is done generating
                 if withHapticFeedback {
@@ -470,7 +560,7 @@ class ChatCache {
             } catch {
                 await MainActor.run {
                     chat.isGenerating = false
-                    cancellationFlags[conversationID] = false // Clear cancellation flag
+                    cancellationFlags[conversationID] = false
                     print("Error generating message: \(error)")
                     #if os(iOS)
                     // provide haptic feedback that message failed generating
@@ -482,33 +572,6 @@ class ChatCache {
                     cleanupUnusedChats()
                 }
             }
-        }
-    }
-    
-    func sendMessageAsSystem(
-        inputText: String,
-        to conversationID: UUID,
-        ) {
-        let chat = getChat(for: conversationID)
-        guard let conversation = getConversation(for: conversationID) else { return }
-
-        // Add user message
-        let userMsg = Message(
-            id: UUID(),
-            text: inputText,
-            role: .system,
-            attachmentLinks: [],
-            timeStamp: .now,
-            lastModified: Date.now,
-            conversationID: conversationID
-        )
-        chat.messages.append(userMsg)
-        conversation.lastInteracted = Date.now
-        conversation.lastModified = Date.now
-
-        // Save system message immediately
-        if conversation.hasMessages {
-            saveMessages(for: conversationID)
         }
     }
 
