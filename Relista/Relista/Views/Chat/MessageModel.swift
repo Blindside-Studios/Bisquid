@@ -15,6 +15,7 @@ struct MessageModel: View {
     @AppStorage("AlwaysShowFullModelMessageToolbar") private var toolbarExpansionPreference: Bool = false
     @State private var isToolbarExpanded: Bool = false
     @State private var showInfoPopOver: Bool = false
+    @State private var showRegenerateConfirmation: Bool = false
     
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     
@@ -64,7 +65,7 @@ struct MessageModel: View {
                 .labelStyle(.iconOnly)
                 
                 Button {
-                    onRegenerate()
+                    showRegenerateConfirmation.toggle()
                 } label: {
                     Label("Regenerate", systemImage: "arrow.clockwise")
                         .contentShape(Rectangle())
@@ -72,6 +73,25 @@ struct MessageModel: View {
                 }
                 .buttonStyle(.plain)
                 .labelStyle(.iconOnly)
+                #if os(iOS)
+                .confirmationDialog("Regenerate this response?", isPresented: $showRegenerateConfirmation) {
+                    Button("Regenerate", role: .destructive) { onRegenerate() }
+                    } message: {
+                        Text("Regenerating will delete this message and restart the chat from here")
+                }
+                #else
+                .popover(isPresented: $showRegenerateConfirmation) {
+                    VStack{
+                        Text("Regenerating will delete this message and restart the chat from here")
+                            .lineLimit(nil)
+                            .multilineTextAlignment(.center)
+                        Button("Regenerate") { onRegenerate() }
+                    }
+                    .frame(width: 250, height: 70)
+                    .padding()
+                }
+                #endif
+                
                 
                 if horizontalSizeClass == .compact{
                     Button {
