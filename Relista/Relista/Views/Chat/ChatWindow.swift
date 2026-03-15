@@ -73,11 +73,11 @@ struct ChatWindow: View {
                         }
                         .scrollDismissesKeyboard(.interactively)
                         .contentShape(Rectangle())
-                        .onTapGesture {
+                        .simultaneousGesture(TapGesture().onEnded {
                             #if os(iOS)
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             #endif
-                        }
+                        })
                         .safeAreaBar(edge: .bottom, spacing: 0){
                             InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
                         }
