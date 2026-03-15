@@ -108,6 +108,9 @@ struct ChatWindow: View {
             // Load the chat when the view appears or conversation changes
             _ = chatCache.getChat(for: conversationID)
         }
+        .onChange(of: conversationID) { _, _ in
+            editingMessage = nil
+        }
         .navigationTitle(chatCache.getConversation(for: conversationID)?.title ?? "New chat")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

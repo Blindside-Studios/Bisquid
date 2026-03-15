@@ -55,8 +55,6 @@ struct PromptField: View {
         VStack(spacing: spacing) {
             if editingMessage != nil {
                 HStack(spacing: 8) {
-                    Image(systemName: "pencil.circle.fill")
-                        .foregroundStyle(.orange)
                     Text("Sending will restart the conversation from this message")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -64,7 +62,7 @@ struct PromptField: View {
                     Button {
                         withAnimation(.bouncy(duration: 0.3)) {
                             editingMessage = nil
-                            inputMessage = ""
+                            inputMessage.removeAll()
                             pendingAttachments = []
                         }
                     } label: {
