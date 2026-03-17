@@ -12,6 +12,8 @@ struct NewChatAgentPicker: View {
     @Binding var selectedAgent: UUID?
     @Binding var selectedModel: String
     
+    @Environment(\.colorScheme) var colorScheme
+    
     @ObservedObject private var agentManager = AgentManager.shared
     
     var body: some View {
@@ -23,19 +25,7 @@ struct NewChatAgentPicker: View {
                         .frame(width: 2)
                 }
                 .padding(6)
-                .background {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(.ultraThickMaterial)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(Color.blue.opacity(selectedAgent == nil ? 0.5 : 0))
-                        }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .strokeBorder(.white.opacity(0.15), lineWidth: 1)
-                        }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .glassEffect(.regular.tint(.accentColor.opacity(selectedAgent == nil ? 0.5 : 0)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
                 .animation(.default, value: selectedAgent)
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -44,7 +34,6 @@ struct NewChatAgentPicker: View {
                     ).newChatUUID
                     selectedAgent = nil
                 }
-                
                 
                 ForEach(agentManager.customAgents.filter { $0.shownInSidebar }) { agent in
                     let isCurrentAgent = selectedAgent == Optional(agent.id)
@@ -63,19 +52,7 @@ struct NewChatAgentPicker: View {
                             .frame(width: 2)
                     }
                     .padding(6)
-                    .background {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(primaryAccentColor.opacity(isCurrentAgent ? 0.5 : 0))
-                            }
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .strokeBorder(.white.opacity(0.15), lineWidth: 1)
-                            }
-                    }
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .glassEffect(.regular.tint(primaryAccentColor.opacity(isCurrentAgent ? 0.5 : 0)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
                     .animation(.default, value: isCurrentAgent)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -90,11 +67,12 @@ struct NewChatAgentPicker: View {
                 }
             }
             .font(.callout)
-            .padding(.horizontal, 12)
+            .padding(.vertical, 100) // ensure the shadow is rendered fully
+            .padding(.horizontal, 12 + 100)
         }
-        //.scrollClipDisabled()
         .scrollIndicators(.hidden)
         .blocksHorizontalSidebarGesture()
+        .padding(-100) // ensure shadow rendering won't affect layout... this is very buggy but Apple may fix it at some point
     }
 }
 

@@ -102,11 +102,11 @@ struct InputUI: View {
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 350)).combined(with: .opacity)
                             )
-                            #if os(macOS)
+                            /*#if os(macOS)
                             .shadow(color: focused == .inactive ? .clear : .black.opacity(0.175), radius: focused == .inactive ? 0 : 12)
                             #else
                             .shadow(color: .black.opacity(0.175), radius: 12)
-                            #endif
+                            #endif*/
                         // double spacer so the actual content is above center
                         Spacer()
                         Spacer()
