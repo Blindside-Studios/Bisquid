@@ -99,6 +99,7 @@ struct InputUI: View {
                         #endif
                     if isChatBlank {
                         NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
+                            .zIndex(-1) // to place it behind the PromptField, otherwise it would just constantly overlap and we couldn't click anything anymore
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 350)).combined(with: .opacity)
                             )
