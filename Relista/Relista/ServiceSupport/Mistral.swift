@@ -250,7 +250,7 @@ struct Mistral {
             "stream": true
         ]
         if supportsReasoning /*|| reasoningEffort != "none"*/ { body["prompt_mode"] = "reasoning" } // remove when retiring magistral models... like the entire line, we do not need prompt mode for reasoning with the new reasoning_effort parameter
-        body["reasoning_effort"] = reasoningEffort
+        if reasoningEffort != "none" { body["reasoning_effort"] = reasoningEffort } // can't specify this on any other model
         if !tools.isEmpty { body["tools"] = tools.map { $0.definition } }
 
         var request = baseRequest

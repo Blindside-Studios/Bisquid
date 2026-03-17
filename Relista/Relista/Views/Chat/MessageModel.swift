@@ -45,111 +45,113 @@ struct MessageModel: View {
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 8)
-
+                
                 Spacer()
             }
             HStack(spacing: 8) {
-                Button {
-                    #if os(macOS)
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(message.text, forType: .string)
-                    #else
-                    UIPasteboard.general.string = message.text
-                    #endif
-                } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
-                        .contentShape(Rectangle())
-                        .scaleEffect(0.8)
-                }
-                .buttonStyle(.plain)
-                .labelStyle(.iconOnly)
-                
-                Button {
-                    showRegenerateConfirmation.toggle()
-                } label: {
-                    Label("Regenerate", systemImage: "arrow.clockwise")
-                        .contentShape(Rectangle())
-                        .scaleEffect(0.8)
-                }
-                .buttonStyle(.plain)
-                .labelStyle(.iconOnly)
-                #if os(iOS)
-                .confirmationDialog("Regenerate this response?", isPresented: $showRegenerateConfirmation) {
-                    Button("Regenerate", role: .destructive) { onRegenerate() }
+                if !message.text.isEmpty{
+                    Button {
+                        #if os(macOS)
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(message.text, forType: .string)
+                        #else
+                        UIPasteboard.general.string = message.text
+                        #endif
+                    } label: {
+                        Label("Copy", systemImage: "doc.on.doc")
+                            .contentShape(Rectangle())
+                            .scaleEffect(0.8)
+                    }
+                    .buttonStyle(.plain)
+                    .labelStyle(.iconOnly)
+                    
+                    Button {
+                        showRegenerateConfirmation.toggle()
+                    } label: {
+                        Label("Regenerate", systemImage: "arrow.clockwise")
+                            .contentShape(Rectangle())
+                            .scaleEffect(0.8)
+                    }
+                    .buttonStyle(.plain)
+                    .labelStyle(.iconOnly)
+                    #if os(iOS)
+                    .confirmationDialog("Regenerate this response?", isPresented: $showRegenerateConfirmation) {
+                        Button("Regenerate", role: .destructive) { onRegenerate() }
                     } message: {
                         Text("Regenerating will delete this message and restart the chat from here")
-                }
-                #else
-                .popover(isPresented: $showRegenerateConfirmation) {
-                    VStack{
-                        Text("Regenerating will delete this message and restart the chat from here")
-                            .lineLimit(nil)
-                            .multilineTextAlignment(.center)
-                        Button("Regenerate") { onRegenerate() }
                     }
-                    .frame(width: 250, height: 70)
-                    .padding()
-                }
-                #endif
-                
-                
-                if horizontalSizeClass == .compact{
-                    Button {
-                        showInfoPopOver.toggle()
-                    } label: {
-                        Label("Show message info", systemImage: "info.circle")
-                            .contentShape(Rectangle())
-                            .scaleEffect(0.8)
-                            .rotationEffect(showInfoPopOver ? Angle(degrees: 0) : Angle(degrees: -360))
+                    #else
+                    .popover(isPresented: $showRegenerateConfirmation) {
+                        VStack{
+                            Text("Regenerating will delete this message and restart the chat from here")
+                                .lineLimit(nil)
+                                .multilineTextAlignment(.center)
+                            Button("Regenerate") { onRegenerate() }
+                        }
+                        .frame(width: 250, height: 70)
+                        .padding()
                     }
-                    .popover(isPresented: $showInfoPopOver) {
-                        let modelUsed = ModelList.getModelFromSlug(slug: message.modelUsed)
-                        VStack(alignment: .leading) {
-                            Text(formatMessageTimestamp(message.timeStamp))
-                            Text(message.timeStamp.formatted())
-                                .font(.caption)
-                                .opacity(0.7)
-                            Divider()
-                            Text(modelUsed.name)
-                            if modelUsed.name != modelUsed.modelID{
-                                Text(modelUsed.modelID)
+                    #endif
+                    
+                    
+                    if horizontalSizeClass == .compact{
+                        Button {
+                            showInfoPopOver.toggle()
+                        } label: {
+                            Label("Show message info", systemImage: "info.circle")
+                                .contentShape(Rectangle())
+                                .scaleEffect(0.8)
+                                .rotationEffect(showInfoPopOver ? Angle(degrees: 0) : Angle(degrees: -360))
+                        }
+                        .popover(isPresented: $showInfoPopOver) {
+                            let modelUsed = ModelList.getModelFromSlug(slug: message.modelUsed)
+                            VStack(alignment: .leading) {
+                                Text(formatMessageTimestamp(message.timeStamp))
+                                Text(message.timeStamp.formatted())
                                     .font(.caption)
                                     .opacity(0.7)
+                                Divider()
+                                Text(modelUsed.name)
+                                if modelUsed.name != modelUsed.modelID{
+                                    Text(modelUsed.modelID)
+                                        .font(.caption)
+                                        .opacity(0.7)
+                                }
                             }
+                            .padding()
+                            .presentationCompactAdaptation(.popover)
                         }
-                        .padding()
-                        .presentationCompactAdaptation(.popover)
+                        .buttonStyle(.plain)
+                        .labelStyle(.iconOnly)
                     }
-                    .buttonStyle(.plain)
-                    .labelStyle(.iconOnly)
-                }
-                else{
-                    if (isToolbarExpanded){
-                        Divider()
-                            .frame(height:12)
-                        Text(formatMessageTimestamp(message.timeStamp))
-                            .help(message.timeStamp.formatted())
-                        Divider()
-                            .frame(height:12)
-                        Text(ModelList.getModelFromSlug(slug: message.modelUsed).name)
-                            .help(message.modelUsed)
-                    }
-                    
-                    Button {
-                        withAnimation(.bouncy(duration: 0.3, extraBounce: 0.05)) {
-                            isToolbarExpanded.toggle()
+                    else{
+                        if (isToolbarExpanded){
+                            Divider()
+                                .frame(height:12)
+                            Text(formatMessageTimestamp(message.timeStamp))
+                                .help(message.timeStamp.formatted())
+                            Divider()
+                                .frame(height:12)
+                            Text(ModelList.getModelFromSlug(slug: message.modelUsed).name)
+                                .help(message.modelUsed)
                         }
-                    } label: {
-                        Label("Expand/Collapse toolbar", systemImage: "chevron.forward")
-                            .contentShape(Rectangle())
-                            .scaleEffect(0.8)
-                            .rotationEffect(isToolbarExpanded ? Angle(degrees: -180) : Angle(degrees: 0))
+                        
+                        Button {
+                            withAnimation(.bouncy(duration: 0.3, extraBounce: 0.05)) {
+                                isToolbarExpanded.toggle()
+                            }
+                        } label: {
+                            Label("Expand/Collapse toolbar", systemImage: "chevron.forward")
+                                .contentShape(Rectangle())
+                                .scaleEffect(0.8)
+                                .rotationEffect(isToolbarExpanded ? Angle(degrees: -180) : Angle(degrees: 0))
+                        }
+                        .buttonStyle(.plain)
+                        .labelStyle(.iconOnly)
+                        
                     }
-                    .buttonStyle(.plain)
-                    .labelStyle(.iconOnly)
-                    
+                    Spacer()
                 }
-                Spacer()
             }
             .padding(.leading, 15)
             .opacity(0.5)
