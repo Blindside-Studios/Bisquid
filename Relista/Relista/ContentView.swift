@@ -64,6 +64,12 @@ struct ContentView: View {
             if agent != nil {
                 selectedModel = agent!.model
             }
+            else{
+                selectedModel = SyncedSettings.shared.defaultModel
+            }
+        }
+        else{
+            selectedModel = SyncedSettings.shared.defaultModel
         }
     }
 }

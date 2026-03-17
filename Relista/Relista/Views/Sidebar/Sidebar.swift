@@ -114,6 +114,7 @@ struct Sidebar: View {
                 fromID: selectedConversationID
             ).newChatUUID
             selectedAgent = nil
+            selectedModel = SyncedSettings.shared.defaultModel
             onSidebarSelection?()
         }
     }
