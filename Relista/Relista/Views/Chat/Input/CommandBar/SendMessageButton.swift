@@ -68,6 +68,10 @@ struct SendMessageButton: View {
         .foregroundStyle(accentColor == .primary ? colorScheme == .dark ? .black : .white : .white) // black if dark mode (white circle around), white if light mode (black circle), white if agent override
         .animation(.default, value: accentColor)
         .labelStyle(.iconOnly)
+        .contentShape(Circle())
+        #if os(iOS)
+        .hoverEffect(.lift)
+        #endif
         // weirdly these seem to be interpreted differently across platforms
         #if os(macOS)
         .offset(x: 0, y: 2)

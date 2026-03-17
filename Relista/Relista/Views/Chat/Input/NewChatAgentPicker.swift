@@ -27,7 +27,9 @@ struct NewChatAgentPicker: View {
                 .padding(6)
                 .glassEffect(.regular.tint(.accentColor.opacity(selectedAgent == nil ? 0.5 : 0)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
                 .animation(.default, value: selectedAgent)
-                .contentShape(Rectangle())
+                #if os(iOS)
+                .hoverEffect(.lift)
+                #endif
                 .onTapGesture {
                     conversationID = ConversationManager.createNewConversation(
                         fromID: conversationID
@@ -54,7 +56,9 @@ struct NewChatAgentPicker: View {
                     .padding(6)
                     .glassEffect(.regular.tint(primaryAccentColor.opacity(isCurrentAgent ? 0.5 : 0)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
                     .animation(.default, value: isCurrentAgent)
-                    .contentShape(Rectangle())
+                    #if os(iOS)
+                    .hoverEffect(.lift)
+                    #endif
                     .onTapGesture {
                         let result = ConversationManager.createNewConversation(
                             fromID: conversationID,

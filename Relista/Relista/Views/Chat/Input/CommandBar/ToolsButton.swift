@@ -43,12 +43,16 @@ struct ToolsButton: View {
                         }
                     }
             }
+            .frame(minWidth: 36, minHeight: 36)
+            .contentShape(Rectangle())
         }
-        .frame(maxHeight: .infinity)
+        //.frame(maxHeight: .infinity)
         .background(Color.clear)
         .labelStyle(.iconOnly)
         .buttonStyle(.plain)
-        .contentShape(Rectangle())
+        #if os(iOS)
+        .hoverEffect(.highlight)
+        #endif
         //.animation(.default, value: anyEnabled)
         .matchedTransitionSource(id: "tools", in: ToolsTransition)
         .popover(isPresented: $showPopover) {

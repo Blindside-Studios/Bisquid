@@ -50,7 +50,7 @@ struct MessageModel: View {
                 
                 Spacer()
             }
-            HStack(spacing: 8) {
+            HStack(spacing: 0) {
                 if !message.text.isEmpty{
                     Button {
                         #if os(macOS)
@@ -67,8 +67,12 @@ struct MessageModel: View {
                         }
                     } label: {
                         Label("Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
+                            .frame(minWidth: 18, minHeight: 18)
+                            .padding(3)
                             .contentShape(Rectangle())
-                            .frame(width: 20, height: 20)
+                            #if os(iOS)
+                            .hoverEffect(.highlight)
+                            #endif
                             .scaleEffect(0.8)
                     }
                     .disabled(copied)
@@ -79,7 +83,11 @@ struct MessageModel: View {
                         showRegenerateConfirmation.toggle()
                     } label: {
                         Label("Regenerate", systemImage: "arrow.clockwise")
+                            .frame(minWidth: 28, minHeight: 28)
                             .contentShape(Rectangle())
+                            #if os(iOS)
+                            .hoverEffect(.highlight)
+                            #endif
                             .scaleEffect(0.8)
                     }
                     .buttonStyle(.plain)
@@ -113,7 +121,11 @@ struct MessageModel: View {
                             showInfoPopOver.toggle()
                         } label: {
                             Label("Show message info", systemImage: "info.circle")
+                                .frame(minWidth: 28, minHeight: 28)
                                 .contentShape(Rectangle())
+                                #if os(iOS)
+                                .hoverEffect(.highlight)
+                                #endif
                                 .scaleEffect(0.8)
                                 .rotationEffect(showInfoPopOver ? Angle(degrees: 0) : Angle(degrees: -360))
                         }
@@ -156,7 +168,11 @@ struct MessageModel: View {
                             }
                         } label: {
                             Label("Expand/Collapse toolbar", systemImage: "chevron.forward")
+                                .frame(minWidth: 28, minHeight: 28)
                                 .contentShape(Rectangle())
+                                #if os(iOS)
+                                .hoverEffect(.highlight)
+                                #endif
                                 .scaleEffect(0.8)
                                 .rotationEffect(isToolbarExpanded ? Angle(degrees: -180) : Angle(degrees: 0))
                         }
@@ -167,9 +183,9 @@ struct MessageModel: View {
                     Spacer()
                 }
             }
-            .padding(.leading, 15)
-            .opacity(0.5)
-            .padding(.top, -10)
+            .padding(.leading, 10)
+            .opacity(0.4)
+            .padding(.top, -5)
             
             Spacer()
                 .frame(minHeight: 0)

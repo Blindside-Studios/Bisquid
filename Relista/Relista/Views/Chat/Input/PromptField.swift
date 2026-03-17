@@ -109,6 +109,7 @@ struct PromptField: View {
             #endif
             //.padding(spacing)
             CommandBar(selectedModel: $selectedModel, conversationID: $conversationID, secondaryAccentColor: $secondaryAccentColor, pendingAttachments: $pendingAttachments, sendMessage: sendMessage, sendMessageAsSystem: sendMessageAsSystem, appendDummyMessages: appendDummyMessages)
+                .padding(.top, 4)
         }
         .animation(.bouncy(duration: 0.3), value: pendingAttachments.isEmpty)
         .animation(.bouncy(duration: 0.3), value: editingMessage == nil)

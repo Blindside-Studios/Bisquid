@@ -32,6 +32,14 @@ struct ThinkingView: View {
             .opacity(0.7)
             .animation(.default, value: thinkingBlock.isLoading)
             .matchedTransitionSource(id: "thinking", in: ThinkingTransition)
+            #if os(iOS)
+            .padding(8)
+            .contentShape(Rectangle())
+            .hoverEffect(.highlight)
+            .padding(-8)
+            #else
+            .contentShape(Rectangle())
+            #endif
             .onTapGesture {
                 withAnimation{
                     expandCOT.toggle()

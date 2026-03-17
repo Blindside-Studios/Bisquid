@@ -28,7 +28,7 @@ struct CommandBar: View {
         #endif
 
         HStack {
-            HStack(alignment: .center, spacing: spacing){
+            HStack(alignment: .center, spacing: 0){
                 AttachmentPickerButton(pendingAttachments: $pendingAttachments)
 
                 ToolsButton()
@@ -48,6 +48,7 @@ struct CommandBar: View {
             SendMessageButton(conversationID: $conversationID, sendMessage: sendMessage, sendMessageAsSystem: sendMessageAsSystem, accentColor: $secondaryAccentColor)
         }
         .frame(maxHeight: 16)
+        .padding(.leading, -8)
     }
 }
 

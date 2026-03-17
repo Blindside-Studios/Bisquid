@@ -61,6 +61,9 @@ struct ModelPicker: View {
                 }
             }
             .bold()
+            .frame(minHeight: 36)
+            .padding(.horizontal, 12)
+            .contentShape(Rectangle())
             .onAppear(perform: refreshModelDisplay)
             .onChange(of: ModelList.areModelsLoaded, refreshModelDisplay)
             .onChange(of: selectedModel, refreshModelDisplay)
@@ -70,6 +73,9 @@ struct ModelPicker: View {
         .matchedTransitionSource(
             id: "model", in: ModelPickerTransition
         )
+        #if os(iOS)
+        .hoverEffect(.highlight)
+        #endif
         .popover(isPresented: $showModelPickerPopOver) {
             ModelPickerContents(
                 selectedModelSlug: $selectedModel,
@@ -218,7 +224,7 @@ struct ModelPickerContents: View {
                                         .fill(.gray.opacity(0.2))
                                 }
                             }
-                            .contentShape(Rectangle())
+                            .contentShape(RoundedRectangle(cornerRadius: cornerRounding, style: .continuous))
                             .onTapGesture {
                                 selectedModelSlug = model.modelID
                                 isOpen = false

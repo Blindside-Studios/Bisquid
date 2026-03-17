@@ -61,7 +61,13 @@ struct AttachmentPickerButton: View {
             #endif
         } label: {
             Image(systemName: "plus")
+                .frame(minWidth: 36, minHeight: 36)
+                .contentShape(Rectangle())
+
         }
+        #if os(iOS)
+        .hoverEffect(.highlight)
+        #endif
         .buttonStyle(.plain)
         // Presented as a modifier so the sheet has a stable host in the view hierarchy.
         .photosPicker(isPresented: $showPhotoPicker,

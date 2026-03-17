@@ -43,13 +43,22 @@ struct ChatFilterMenu: View {
                 }
             }
         } label: {
-            HStack {
+            HStack(spacing: 4) {
                 Text(filterLabel)
                     .lineLimit(1)
                     .minimumScaleFactor(1)
                 Image(systemName: "chevron.up.chevron.down")
+                    .scaleEffect(0.7)
             }
             .opacity(0.7)
+            #if os(iOS)
+            .padding(8)
+            .contentShape(Rectangle())
+            .hoverEffect(.highlight)
+            .padding(-8)
+            #else
+            .contentShape(Rectangle())
+            #endif
         }
         .menuStyle(.button)
         .buttonStyle(.plain)

@@ -80,7 +80,7 @@ struct Sidebar: View {
             await performSync()
         }
         #if os(iOS)
-        .safeAreaBar(edge: .bottom, spacing: 0) {
+        .safeAreaBar(edge: .bottom, alignment: .leading, spacing: 0) {
             settingsBar
         }
         #endif
@@ -240,12 +240,15 @@ struct Sidebar: View {
     @ViewBuilder
     private var settingsBar: some View {
         HStack {
-            Spacer()
             Button {
                 showingSettings.toggle()
             } label: {
                 Label("Settings", systemImage: "gear")
+                    .padding(4)
                     .contentShape(Rectangle())
+                    .hoverEffect(.highlight)
+                    .padding(4)
+                    .padding(.leading, 12)
             }
             .sheet(isPresented: $showingSettings) {
                 NavigationStack {
@@ -261,9 +264,6 @@ struct Sidebar: View {
                 }
             }
             .buttonStyle(.plain)
-            .padding()
-            .glassEffect()
-            Spacer()
         }
     }
     #endif

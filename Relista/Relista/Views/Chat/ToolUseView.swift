@@ -43,6 +43,14 @@ struct ToolUseView: View {
             .animation(.default, value: showPopover)
             .animation(.default, value: showSheet)
             .matchedTransitionSource(id: toolBlock.id, in: ToolUseTransition)
+            #if os(iOS)
+            .padding(8)
+            .contentShape(Rectangle())
+            .hoverEffect(.lift)
+            .padding(-8)
+            #else
+            .contentShape(Rectangle())
+            #endif
             .onTapGesture {
                 if horizontalSizeClass == .compact && isWebSearch { showSheet = true }
                 else { showPopover.toggle() }
