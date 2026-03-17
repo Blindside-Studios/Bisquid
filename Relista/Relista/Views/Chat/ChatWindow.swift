@@ -111,6 +111,13 @@ struct ChatWindow: View {
         .onChange(of: conversationID) { _, _ in
             editingMessage = nil
         }
+        #if os(iOS)
+        .onChange(of: chatCache.getConversation(for: conversationID)?.title, initial: true) { _, title in
+            if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                scene.title = title ?? "New chat"
+            }
+        }
+        #endif
         .navigationTitle(chatCache.getConversation(for: conversationID)?.title ?? "New chat")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
