@@ -45,8 +45,8 @@ struct InputUI: View {
             if horizontalSizeClass == .compact {
                 #if os(iOS)
                 VStack (alignment: .center){
-                    VStack{
-                        if isChatBlank{
+                    if isChatBlank{
+                        VStack{
                             Spacer()
                             Text(agentIcon)
                                 .font(.system(size: 72))
@@ -58,13 +58,10 @@ struct InputUI: View {
                             Spacer()
                             Spacer()
                         }
-                    }
-                    .padding()
-                    .transition(
-                        AnyTransition.blurFade.combined(with: .offset(y: -150)).combined(with: .opacity)
-                    )
-                    
-                    if isChatBlank {
+                        .padding()
+                        .transition(
+                            AnyTransition.blurFade.combined(with: .offset(y: -150)).combined(with: .opacity)
+                        )
                         NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 50)).combined(with: .opacity)
