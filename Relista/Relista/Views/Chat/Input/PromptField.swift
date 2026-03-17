@@ -52,7 +52,7 @@ struct PromptField: View {
         #else
         let spacing: CGFloat = 16
         #endif
-        VStack(spacing: spacing) {
+        VStack(alignment: .leading, spacing: spacing) {
             if editingMessage != nil {
                 HStack(spacing: 8) {
                     Text("Sending will restart the conversation from this message")
