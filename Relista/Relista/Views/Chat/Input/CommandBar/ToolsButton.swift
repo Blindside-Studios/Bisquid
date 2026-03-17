@@ -13,32 +13,52 @@ struct ToolsButton: View {
 
     @State private var showPopover = false
     @State private var showSheet = false
+    
     @State private var anyEnabled = !ToolRegistry.enabledTools().isEmpty
+    @State private var allEnabled = ToolRegistry.enabledTools().count < ToolRegistry.allTools.count
 
     var body: some View {
         Button {
             if horizontalSizeClass == .compact { showSheet = true }
             else { showPopover.toggle() }
         } label: {
-            Label("Tools", systemImage: anyEnabled ? "hammer.fill" : "hammer")
+            ZStack{
+                // top switch is disabled, bottom switch is enabled
+                Label("Tools", systemImage: "switch.2")
+                // flip to enable top switch
+                    .scaleEffect(y: anyEnabled ? -1 : 1)
+                    .mask{
+                        VStack(spacing: 0){
+                            Color.black
+                            Color.clear
+                        }
+                    }
+                Label("Tools", systemImage: "switch.2")
+                // flip to disable bottom switch
+                    .scaleEffect(y: allEnabled ? -1 : 1)
+                    .mask{
+                        VStack(spacing: 0){
+                            Color.clear
+                            Color.black
+                        }
+                    }
+            }
         }
         .frame(maxHeight: .infinity)
         .background(Color.clear)
         .labelStyle(.iconOnly)
         .buttonStyle(.plain)
         .contentShape(Rectangle())
-        .animation(.default, value: anyEnabled)
+        //.animation(.default, value: anyEnabled)
         .matchedTransitionSource(id: "tools", in: ToolsTransition)
         .popover(isPresented: $showPopover) {
-            ToolsPopoverContents()
-                .onDisappear { anyEnabled = !ToolRegistry.enabledTools().isEmpty }
+            ToolsPopoverContents(onToggle: reevaluateIcon)
                 .presentationCompactAdaptation(.popover)
         }
         #if os(iOS)
         .sheet(isPresented: $showSheet) {
             ScrollView(.vertical){
                 ToolsPopoverContents()
-                    .onDisappear { anyEnabled = !ToolRegistry.enabledTools().isEmpty }
                     .presentationDetents([.fraction(0.3), .medium])
                     .navigationTransition(.zoom(sourceID: "tools", in: ToolsTransition))
                     .padding(4)
@@ -46,10 +66,19 @@ struct ToolsButton: View {
             }
         }
         #endif
+        .onChange(of: showPopover, reevaluateIcon)
+        .onChange(of: showSheet, reevaluateIcon)
+    }
+    
+    private func reevaluateIcon(){
+        anyEnabled = !ToolRegistry.enabledTools().isEmpty
+        allEnabled = ToolRegistry.enabledTools().count < ToolRegistry.allTools.count
     }
 }
 
 private struct ToolsPopoverContents: View {
+    let onToggle: () -> Void
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Tools")
@@ -57,7 +86,7 @@ private struct ToolsPopoverContents: View {
                 .padding(.bottom, 8)
 
             ForEach(ToolRegistry.allTools.indices, id: \.self) { i in
-                ToolToggleRow(tool: ToolRegistry.allTools[i])
+                ToolToggleRow(tool: ToolRegistry.allTools[i], onToggle: onToggle)
                 if i < ToolRegistry.allTools.count - 1 {
                     Divider()
                 }
@@ -69,10 +98,12 @@ private struct ToolsPopoverContents: View {
 
 private struct ToolToggleRow: View {
     let tool: any ChatTool
+    let onToggle: () -> Void
     @State private var isEnabled: Bool
 
-    init(tool: any ChatTool) {
+    init(tool: any ChatTool, onToggle: @escaping () -> Void) {
         self.tool = tool
+        self.onToggle = onToggle
         self._isEnabled = State(initialValue: ToolRegistry.isEnabled(tool))
     }
 
@@ -96,6 +127,7 @@ private struct ToolToggleRow: View {
         .padding(.vertical, 6)
         .onChange(of: isEnabled) { _, newValue in
             ToolRegistry.setEnabled(newValue, for: tool)
+            onToggle()
         }
     }
 }
