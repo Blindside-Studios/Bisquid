@@ -93,6 +93,7 @@ struct PromptField: View {
             #else
             TextField(placeHolder, text: $inputMessage, axis: .vertical)
                 .lineLimit(1...10)
+                .frame(width: .infinity)
                 .textFieldStyle(.plain)
                 .focused($isTextFieldFocused)
                 .blocksHorizontalSidebarGesture()
