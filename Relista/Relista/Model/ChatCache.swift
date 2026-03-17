@@ -397,7 +397,8 @@ class ChatCache {
         Task {
             do {
                 // Determine provider from model
-                let model = ModelList.getModelFromSlug(slug: modelName)
+                // Deactivated because we only support Mistral now - if we ever want to reactivate this, check ModelPicker.swift because we need to resolve hardcoded Mistral models
+                /*let model = ModelList.getModelFromSlug(slug: modelName)
                 let stream: AsyncThrowingStream<StreamChunk, Error>
 
                 switch model.provider {
@@ -407,7 +408,10 @@ class ChatCache {
                 default:
                     let service = Mistral(apiKey: apiKey)
                     stream = try await service.streamMessage(messages: chat.messages, modelName: modelName, agent: agent, tools: tools)
-                }
+                }*/
+                
+                let service = Mistral(apiKey: apiKey)
+                let stream = try await service.streamMessage(messages: chat.messages, modelName: modelName, agent: agent, tools: tools)
 
                 // Create blank assistant message
                 let assistantMsg = Message(

@@ -32,6 +32,7 @@ struct ToolsButton: View {
         .popover(isPresented: $showPopover) {
             ToolsPopoverContents()
                 .onDisappear { anyEnabled = !ToolRegistry.enabledTools().isEmpty }
+                .presentationCompactAdaptation(.popover)
         }
         #if os(iOS)
         .sheet(isPresented: $showSheet) {

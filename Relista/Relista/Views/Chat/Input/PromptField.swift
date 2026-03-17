@@ -176,7 +176,8 @@ struct PromptField: View {
     #endif
 
     func sendMessage(){
-        let model = ModelList.getModelFromSlug(slug: selectedModel)
+        // this is disabled because we only support Mistral now
+        /*let model = ModelList.getModelFromSlug(slug: selectedModel)
         var apiKey = ""
 
         switch model.provider {
@@ -186,7 +187,8 @@ struct PromptField: View {
             apiKey = KeychainHelper.shared.claudeAPIKey
         default:
             return;
-        }
+        }*/
+        let apiKey = KeychainHelper.shared.mistralAPIKey
         
         let chat = chatCache.getChat(for: conversationID)
         if !chat.isGenerating {

@@ -192,7 +192,8 @@ struct Mistral {
             return ["role": message.role.toAPIString(), "content": content]
         }
 
-        let supportsReasoning = ModelList.getModelFromSlug(slug: modelName).supportsReasoning
+        //let supportsReasoning = ModelList.getModelFromSlug(slug: modelName).supportsReasoning
+        let supportsReasoning = modelName.contains("magistral") // update this logic when Magistral is retired for Mistral 4
 
         if !tools.isEmpty {
             print("🔧 Tools enabled: \(tools.map { $0.name }.joined(separator: ", "))")
@@ -228,12 +229,28 @@ struct Mistral {
         supportsReasoning: Bool,
         continuation: AsyncThrowingStream<StreamChunk, Error>.Continuation
     ) async throws {
+        var reasoningEffort = "none"
+        var modelSlug = modelName
+        switch(modelName){
+        case "[t]mistral-small-latest":
+            reasoningEffort = "high"
+            modelSlug = "mistral-small-latest"
+        case "[t]mistral-medium-latest":
+            modelSlug = "none" // change when Mistral Medium 4 launches
+            modelSlug = "mistral-medium-latest"
+        case "[t]mistral-large-latest":
+            reasoningEffort = "none" // change when Mistral Large 4 launches
+            modelSlug = "mistral-large-latest"
+        default:
+            reasoningEffort = "none"
+        }
         var body: [String: Any] = [
-            "model": modelName,
+            "model": modelSlug,
             "messages": messages,
             "stream": true
         ]
-        if supportsReasoning { body["prompt_mode"] = "reasoning" }
+        if supportsReasoning /*|| reasoningEffort != "none"*/ { body["prompt_mode"] = "reasoning" } // remove when retiring magistral models... like the entire line, we do not need prompt mode for reasoning with the new reasoning_effort parameter
+        body["reasoning_effort"] = reasoningEffort
         if !tools.isEmpty { body["tools"] = tools.map { $0.definition } }
 
         var request = baseRequest
