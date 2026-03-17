@@ -13,6 +13,7 @@ struct GeneralSettings: View {
     #endif
     @AppStorage("ShowUserMessageToolbars") private var showUserMessageToolbars: Bool = false
     @AppStorage("AlwaysShowFullModelMessageToolbar") private var alwaysShowFullModelMessageToolbar: Bool = false
+    @AppStorage("AlwaysShowChainOfThought") private var alwaysShowCOT: Bool = true
     #if os(iOS)
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
     #endif
@@ -21,6 +22,7 @@ struct GeneralSettings: View {
         List{
             Section(header: Text("Response Display"), footer: Text("Only applies to bigger screens where information is displayed in-line")){
                 Toggle("Show user message toolbars", isOn: $showUserMessageToolbars)
+                Toggle("Always show Chain of Thought", isOn: $alwaysShowCOT)
                 Toggle("Always show time and model", isOn: $alwaysShowFullModelMessageToolbar)
             }
             
