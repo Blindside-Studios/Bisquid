@@ -15,6 +15,7 @@ struct SendMessageButton: View {
     let sendMessageAsSystem: () -> Void
     
     @Binding var accentColor: Color
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         Button {
@@ -62,11 +63,9 @@ struct SendMessageButton: View {
             .animation(.bouncy(duration: 0.3, extraBounce: 0.15), value: isGenerating)
         }
         .buttonBorderShape(.circle)
-        .buttonStyle(.glassProminent)
-        .tint(accentColor)
-        #if os(iOS)
-        .foregroundStyle(accentColor == .primary ? Color(uiColor: .systemBackground) : Color(uiColor: .label)) // fix for iOS making background and label white... bruh iOS, macOS does this properly... but this won't compile on macOS... SwiftUI...
-        #endif
+        .buttonStyle(.borderedProminent)
+        .tint(accentColor == .primary ? colorScheme == .dark ? .white : .black : accentColor) // white in dark mode, black in light mode
+        .foregroundStyle(accentColor == .primary ? colorScheme == .dark ? .black : .white : .white) // black if dark mode (white circle around), white if light mode (black circle), white if agent override
         .animation(.default, value: accentColor)
         .labelStyle(.iconOnly)
         // weirdly these seem to be interpreted differently across platforms

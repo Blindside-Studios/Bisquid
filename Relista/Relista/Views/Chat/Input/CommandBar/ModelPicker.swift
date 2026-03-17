@@ -168,7 +168,7 @@ struct ModelPickerContents: View {
                                 }
                                 .onTapGesture{
                                     selectedModelSlug = models[index]
-                                    //isOpen = false
+                                    isOpen = false
                                 }
                                 
                                 HStack{
@@ -187,7 +187,7 @@ struct ModelPickerContents: View {
                                 }
                                 .onTapGesture{
                                     selectedModelSlug = "[t]\(models[index])"
-                                    //isOpen = false
+                                    isOpen = false
                                 }
                             }
                             .frame(width: (geo.size.width - (cardSpacing * 2) - (interfacePadding * 2)) * widthDistributions[index])
