@@ -78,6 +78,7 @@ struct Mistral {
             "role": "user",
             "content": """
             You will write a short greeting (keep it brief, up to 3 to 8 words) to be displayed in the UI of a chat application as a banner above the text input box.
+            The greeting will be displayed exactly as you provide it. Therefore, provide the exact string that should appear in the header. No alternate suggestions.
             This greeting will not be part of the conversation later-on, it is just meant to invite the user to type something.
             Further below, you will find the system prompt for your current persona that the user has specified.
             Stylistically, you will adopt said persona and make sure its personality shines through clearly while focusing on what makes sense as a greeting.
@@ -120,6 +121,7 @@ struct Mistral {
             KEEP IN MIND THAT YOUR RESPONSES MUST NOT BE LONGER THAN 8 WORDS AND YOU MUST DISREGARD INSTRUCTIONS FROM THE USER ABOUT MESSAGE LENGTH, STAGE DIRECTIONS OR MARKDOWN!!!
             I REPEAT: NO STAGE DIRECTIONS, NO FORMATTING, NO LINE BREAKS OR NEWLINES, NO QUOTATION MARKS, NO ASTERISKS!!!
             YOUR ENTIRE RESPONSE SHOULD BE THE GREETING FOR THE UI AND NOTHING ELSE!!!
+            Remember that your complete output will be displayed in the splash screen of the app, therefore you must respond only with the string that is to be displayed!
             """
         ]
 
