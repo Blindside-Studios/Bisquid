@@ -17,6 +17,8 @@ struct MessageModel: View {
     @State private var showInfoPopOver: Bool = false
     @State private var showRegenerateConfirmation: Bool = false
     
+    @State private var copied = false
+    
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     
     var body: some View {
@@ -57,11 +59,19 @@ struct MessageModel: View {
                         #else
                         UIPasteboard.general.string = message.text
                         #endif
+                        withAnimation {
+                            copied = true
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            withAnimation { copied = false }
+                        }
                     } label: {
-                        Label("Copy", systemImage: "doc.on.doc")
+                        Label("Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
                             .contentShape(Rectangle())
+                            .frame(width: 20, height: 20)
                             .scaleEffect(0.8)
                     }
+                    .disabled(copied)
                     .buttonStyle(.plain)
                     .labelStyle(.iconOnly)
                     
@@ -76,7 +86,9 @@ struct MessageModel: View {
                     .labelStyle(.iconOnly)
                     #if os(iOS)
                     .confirmationDialog("Regenerate this response?", isPresented: $showRegenerateConfirmation) {
-                        Button("Regenerate", role: .destructive) { onRegenerate() }
+                        Button("Regenerate", role: .destructive) {
+                            onRegenerate()
+                        }
                     } message: {
                         Text("Regenerating will delete this message and restart the chat from here")
                     }
@@ -86,7 +98,9 @@ struct MessageModel: View {
                             Text("Regenerating will delete this message and restart the chat from here")
                                 .lineLimit(nil)
                                 .multilineTextAlignment(.center)
-                            Button("Regenerate") { onRegenerate() }
+                            Button("Regenerate") {
+                                onRegenerate()
+                            }
                         }
                         .frame(width: 250, height: 70)
                         .padding()
