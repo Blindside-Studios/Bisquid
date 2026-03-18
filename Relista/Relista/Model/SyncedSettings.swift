@@ -91,7 +91,7 @@ final class SyncedSettings: ObservableObject {
     static func memoryContext(for agentID: UUID?) -> String {
         let global = shared.memories
         let agentMemories = agentID.flatMap { AgentManager.getAgent(fromUUID: $0)?.memories } ?? []
-        let all = global + agentMemories
+        let all = agentID == nil ? global : agentMemories
         guard !all.isEmpty else { return "" }
         let numbered = all.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
         return "\n\n## What I remember\n\(numbered)"
