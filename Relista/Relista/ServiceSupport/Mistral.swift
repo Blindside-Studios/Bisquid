@@ -106,12 +106,6 @@ struct Mistral {
             Good response: What's up now?
             Bad response: *smirks* What's up now?
             
-            Here is helpful data to allow you to make your answers more personalized (if a field is blank, do not mention it).
-            You may not use the name consistently as it would be creepy, only use it rarely and if you feel it adds to the greeting you wrote.
-            Use the time OCCASIONALLY to customize your greeting to fit a late evening vibe or even comment on the current date, wishing to use Merry Christmas etc.
-            User-specified name: \(userName)
-            Current date and time: \(timeString)
-            
             If the user-specified instructions are blank, you should fall back to general-purpose, friendly greetings, still with personality.
             Below is your persona's system prompt as given by the user.
             -- PERSONA SYSTEM PROMPT --
@@ -122,6 +116,12 @@ struct Mistral {
             I REPEAT: NO STAGE DIRECTIONS, NO FORMATTING, NO LINE BREAKS OR NEWLINES, NO QUOTATION MARKS, NO ASTERISKS!!!
             YOUR ENTIRE RESPONSE SHOULD BE THE GREETING FOR THE UI AND NOTHING ELSE!!!
             Remember that your complete output will be displayed in the splash screen of the app, therefore you must respond only with the string that is to be displayed!
+            
+            Here is helpful data to allow you to make your answers more personalized (if a field is blank, do not mention it).
+            You may not use the name consistently as it would be creepy, only use it rarely and if you feel it adds to the greeting you wrote.
+            Use the time OCCASIONALLY to customize your greeting to fit a late evening vibe or even comment on the current date, wishing to use Merry Christmas etc.
+            User-specified name: \(userName)
+            Current date and time: \(timeString)
             """
         ]
 
