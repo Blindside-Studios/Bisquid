@@ -26,6 +26,7 @@ struct NewChatAgentPicker: View {
                 }
                 .padding(6)
                 .glassEffect(.regular.tint(.accentColor.opacity(selectedAgent == nil ? 0.5 : 0)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous)) // removes shadows
                 .animation(.default, value: selectedAgent)
                 #if os(iOS)
                 .hoverEffect(.lift)
@@ -55,6 +56,7 @@ struct NewChatAgentPicker: View {
                     }
                     .padding(6)
                     .glassEffect(.regular.tint(primaryAccentColor.opacity(isCurrentAgent ? 0.5 : 0)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .animation(.default, value: isCurrentAgent)
                     #if os(iOS)
                     .hoverEffect(.lift)
@@ -71,12 +73,12 @@ struct NewChatAgentPicker: View {
                 }
             }
             .font(.callout)
-            .padding(.vertical, 100) // ensure the shadow is rendered fully
-            .padding(.horizontal, 12 + 100)
+            .padding(.vertical, 12) // ensure the shadow is rendered fully
+            .padding(.horizontal, 12 + 12)
         }
         .scrollIndicators(.hidden)
         .blocksHorizontalSidebarGesture()
-        .padding(-100) // ensure shadow rendering won't affect layout... this is very buggy but Apple may fix it at some point
+        .padding(-12) // ensure shadow rendering won't affect layout... this is very buggy but Apple may fix it at some point
     }
 }
 
