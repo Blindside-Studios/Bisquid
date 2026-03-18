@@ -62,6 +62,12 @@ struct InputUI: View {
                         .transition(
                             AnyTransition.blurFade.combined(with: .offset(y: -150)).combined(with: .opacity)
                         )
+                        .contentShape(Rectangle())
+                        .simultaneousGesture(TapGesture().onEnded {
+                            #if os(iOS)
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            #endif
+                        })
                         NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 50)).combined(with: .opacity)
