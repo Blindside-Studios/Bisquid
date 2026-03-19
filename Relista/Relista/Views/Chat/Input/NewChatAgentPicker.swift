@@ -25,8 +25,8 @@ struct NewChatAgentPicker: View {
                         .frame(width: 2)
                 }
                 .padding(6)
-                .glassEffect(.regular.tint(.accentColor.opacity(selectedAgent == nil ? 0.5 : 0)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous)) // removes shadows
+                .glassEffect(.clear.tint(selectedAgent == nil ? .accentColor.opacity(0.5) : .black.opacity(0.1)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
+                //.clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous)) // removes shadows
                 .animation(.default, value: selectedAgent)
                 #if os(iOS)
                 .hoverEffect(.lift)
@@ -55,8 +55,8 @@ struct NewChatAgentPicker: View {
                             .frame(width: 2)
                     }
                     .padding(6)
-                    .glassEffect(.regular.tint(primaryAccentColor.opacity(isCurrentAgent ? 0.5 : 0)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .glassEffect(.clear.tint(isCurrentAgent ? primaryAccentColor.opacity(0.5) : .black.opacity(0.1)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
+                    //.clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .animation(.default, value: isCurrentAgent)
                     #if os(iOS)
                     .hoverEffect(.lift)

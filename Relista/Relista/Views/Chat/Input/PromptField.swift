@@ -18,6 +18,7 @@ struct PromptField: View {
     @FocusState private var isTextFieldFocused: Bool
     #endif
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @Environment(\.colorScheme) var colorScheme
     @State private var chatCache = ChatCache.shared
     @State private var placeHolder = ChatPlaceHolders.returnRandomString()
 
@@ -44,6 +45,16 @@ struct PromptField: View {
         #else
         22
         #endif
+    }
+    
+    private var liquidGlassTint: Color{
+        switch (colorScheme, inputMessage.isEmpty) {
+            // YOU CAN HAVE MULTIPLE PROPERTIES IN A SWITCH STATEMENT?! Absolute cinema
+            case (.dark, true):  return Color.black.opacity(0)
+            case (.dark, false): return Color.black.opacity(0.7)
+            case (_, true):      return Color.black.opacity(0.1)
+            case (_, false):     return Color.white.opacity(0.7)
+        }
     }
 
     var body: some View {
@@ -114,7 +125,8 @@ struct PromptField: View {
         .animation(.bouncy(duration: 0.3), value: pendingAttachments.isEmpty)
         .animation(.bouncy(duration: 0.3), value: editingMessage == nil)
         .padding(spacing)
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: CGFloat(cornerRadius)))
+        .glassEffect(.clear.tint(liquidGlassTint).interactive(), in: .rect(cornerRadius: CGFloat(cornerRadius)))
+        .animation(.default, value: liquidGlassTint)
         //.shadow(color: primaryAccentColor.opacity(0.4), radius: 20)
         .padding(8)
         // Drag & drop: pass through the image framework so HEIC and any other

@@ -72,10 +72,11 @@ struct InputUI: View {
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 50)).combined(with: .opacity)
                             )
-                            .shadow(color: .black.opacity(0.175), radius: 12)
+                            .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                     }
                     
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
+                        .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                 }
                 #endif
             } else {
@@ -102,6 +103,9 @@ struct InputUI: View {
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
                         #if os(macOS)
                         .padding(typingBarPaddingMacOS && !isChatBlank ? 16 : 0)
+                        .shadow(color: focused == .inactive ? .clear : .black.opacity(isChatBlank ? 0.075 : 0.025), radius: focused == .inactive ? 0 : 12)
+                        #else
+                        .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                         #endif
                     if isChatBlank {
                         NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
@@ -110,9 +114,9 @@ struct InputUI: View {
                                 AnyTransition.blurFade.combined(with: .offset(y: 350)).combined(with: .opacity)
                             )
                             #if os(macOS)
-                            .shadow(color: focused == .inactive ? .clear : .black.opacity(0.175), radius: focused == .inactive ? 0 : 12)
+                            .shadow(color: focused == .inactive ? .clear : .black.opacity(isChatBlank ? 0.075 : 0.025), radius: focused == .inactive ? 0 : 12)
                             #else
-                            .shadow(color: .black.opacity(0.175), radius: 12)
+                            .shadow(color: .black.opacity(0.075), radius: 12)
                             #endif
                         // double spacer so the actual content is above center
                         Spacer()
