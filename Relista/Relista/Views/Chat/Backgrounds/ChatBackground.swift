@@ -14,9 +14,17 @@ struct ChatBackground: View {
     @Binding var secondaryAccentColor: Color
     @State var primaryColor: Color = .clear
     @State var secondaryColor: Color = .clear
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("ApplyBackgroundBisquidTheme") private var useBisquidBackground: Bool = true
     
     var body: some View {
         ZStack{
+            if useBisquidBackground{
+                Color(hex: colorScheme == .dark ? "12171F" : "EEEFF7")
+                    .ignoresSafeArea()
+                    .animation(.default, value: colorScheme)
+            }
+            
             if selectedAgent != nil{
                 Jellyfish(primaryColor: $primaryColor, secondaryColor: $secondaryColor, selectedChat: $selectedChat)
                     .transition(.opacity.combined(with: .scale(scale: 5)))
@@ -25,6 +33,7 @@ struct ChatBackground: View {
         .animation(.default, value: selectedAgent)
         .animation(.default, value: primaryColor)
         .animation(.default, value: secondaryColor)
+        .animation(.default, value: useBisquidBackground)
         .task(id: selectedChat){
             loadAgentColors()
         }
