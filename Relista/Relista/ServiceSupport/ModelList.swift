@@ -58,67 +58,34 @@ class ModelList {
         SyncedSettings.shared.defaultModel
     }
     static var AllModels: [AIModel] = []
-    static var areModelsLoaded = false
-    
+    static var loadIteration = 0
+
     @MainActor
     static func loadModels() async {
-        if await updateFromRemote() {
-            if let models = loadFromCache() {
-                AllModels = models.compactMap { $0.toLocal() }
-                areModelsLoaded = true
-                debugPrint("Models are loaded")
-                return
-            }
-        }
-
-        if let models = loadFromCache() {
-            AllModels = models.compactMap { $0.toLocal() }
-            areModelsLoaded = true
-            debugPrint("Models are loaded")
-            return
-        }
-
         AllModels = loadBundledDefaults()
-        // ChatCache.shared.selectedModel = Models.first ?? getModelFromSlug(slug: placeHolderModel)
-        areModelsLoaded = true
-        debugPrint("Models are loaded")
+        loadIteration += 1
+        debugPrint("Models loaded from bundle")
+
+        if let models = await fetchFromRemote() {
+            AllModels = models.compactMap { $0.toLocal() }
+            loadIteration += 1
+            debugPrint("Models updated from remote")
+        }
     }
-    
+
     private static let remoteModelURL = URL(string: "https://raw.githubusercontent.com/Blindside-Studios/Relista/refs/heads/main/featured_models.json")!
-    
-    private static var cacheFileURL: URL {
-        let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        return dir.appendingPathComponent("models.json")
-    }
-    
-    private static func updateFromRemote() async -> Bool {
+
+    private static func fetchFromRemote() async -> [RemoteAIModel]? {
         do {
             let (data, response) = try await URLSession.shared.data(from: remoteModelURL)
-            
             guard let http = response as? HTTPURLResponse,
-                  (200..<300).contains(http.statusCode) else {
-                return false
-            }
-            
-            _ = try JSONDecoder().decode([RemoteAIModel].self, from: data)
-            
-            try data.write(to: cacheFileURL, options: .atomic)
-            
-            return true
-        } catch {
-            return false
-        }
-    }
-    
-    private static func loadFromCache() -> [RemoteAIModel]? {
-        do {
-            let data = try Data(contentsOf: cacheFileURL)
+                  (200..<300).contains(http.statusCode) else { return nil }
             return try JSONDecoder().decode([RemoteAIModel].self, from: data)
         } catch {
             return nil
         }
     }
-    
+
     private static func loadBundledDefaults() -> [AIModel] {
         debugPrint("Loading Local Preset")
         guard let url = Bundle.main.url(forResource: "featured_models_default", withExtension: "json"),

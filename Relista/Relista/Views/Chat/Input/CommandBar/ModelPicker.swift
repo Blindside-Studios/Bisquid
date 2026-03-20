@@ -65,7 +65,7 @@ struct ModelPicker: View {
             .padding(.horizontal, 12)
             .contentShape(Rectangle())
             .onAppear(perform: refreshModelDisplay)
-            .onChange(of: ModelList.areModelsLoaded, refreshModelDisplay)
+            .onChange(of: ModelList.loadIteration, refreshModelDisplay)
             .onChange(of: selectedModel, refreshModelDisplay)
         }
         .buttonStyle(.plain)
