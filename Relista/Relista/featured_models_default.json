@@ -7,13 +7,6 @@
     "specifier": "Creative"
   },
   {
-    "name": "Mistral Small 3.2 24B",
-    "modelID": "mistral-small-latest",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "Small 3.2"
-  },
-  {
     "name": "Magistral Small",
     "modelID": "magistral-small-latest",
     "provider": "Mistral",
