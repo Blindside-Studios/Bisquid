@@ -1,17 +1,10 @@
 [
   {
-    "name": "Mistral Medium 3.1",
-    "modelID": "mistral-medium-latest",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "Medium 3.1"
-  },
-  {
     "name": "Mistral Small Creative",
     "modelID": "labs-mistral-small-creative",
     "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "Small Creative"
+    "family": "Mistral Small",
+    "specifier": "Creative"
   },
   {
     "name": "Mistral Small 3.2 24B",
@@ -37,18 +30,11 @@
     "supportsReasoning": true
   },
   {
-    "name": "Mistral Small 3",
-    "modelID": "mistral-small-latest",
+    "name": "Mistral NeMo",
+    "modelID": "open-mistral-nemo",
     "provider": "Mistral",
     "family": "Mistral",
-    "specifier": "Small 3"
-  },
-  {
-    "name": "Mistral Large 3",
-    "modelID": "mistral-large-latest",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "Large"
+    "specifier": "NeMo"
   },
   {
     "name": "Ministral 3B",
@@ -56,13 +42,6 @@
     "provider": "Mistral",
     "family": "Ministral",
     "specifier": "3B"
-  },
-  {
-    "name": "Mistral NeMo",
-    "modelID": "open-mistral-nemo",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "NeMo"
   },
   {
     "name": "Mistral 7B Instruct",
