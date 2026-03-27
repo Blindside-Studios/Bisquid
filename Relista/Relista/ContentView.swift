@@ -25,6 +25,8 @@ class ContentViewModel: ObservableObject {
 }
 
 struct ContentView: View {
+    @State var shownContentType: ContentType = .chat
+    
     @State var showingSettings: Bool = false
     @State var chatCache = ChatCache.shared
     @StateObject private var viewModel = ContentViewModel()
@@ -37,17 +39,31 @@ struct ContentView: View {
     
     var body: some View {
         UnifiedSplitView {
-            Sidebar(showingSettings: $showingSettings, chatCache: $chatCache, selectedConversationID: $viewModel.selectedConversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel, createNewChat: createNewChat, reloadSidebar: reloadSidebar)
+            Sidebar(showingSettings: $showingSettings, chatCache: $chatCache, selectedConversationID: $viewModel.selectedConversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel, createNewChat: createNewChat, reloadSidebar: reloadSidebar, shownContentType: $shownContentType)
         } content: {
-            ChatWindow(conversationID: $viewModel.selectedConversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
-                .toolbar(){
-                    ToolbarItemGroup() {
-                        Button("New chat", systemImage: "square.and.pencil"){
-                            createNewChat()
+            switch(shownContentType){
+            case .documentAI:
+                DocumentAI()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+            case .audioAI:
+                AudioAI()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+            default:
+                ChatWindow(conversationID: $viewModel.selectedConversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .toolbar(){
+                        ToolbarItemGroup() {
+                            Button("New chat", systemImage: "square.and.pencil"){
+                                createNewChat()
+                            }
                         }
                     }
-                }
+            }
         }
+        .animation(.default, value: shownContentType)
         .onReceive(NotificationCenter.default.publisher(for: .createNewChat)) { _ in
             createNewChat()
         }
@@ -72,6 +88,12 @@ struct ContentView: View {
             selectedModel = SyncedSettings.shared.defaultModel
         }
     }
+}
+
+public enum ContentType: String, Codable {
+    case chat
+    case documentAI
+    case audioAI
 }
 
 #Preview {

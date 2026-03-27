@@ -36,6 +36,8 @@ struct Sidebar: View {
     let createNewChat: () -> Void
     let reloadSidebar: () async -> Void
     
+    @Binding var shownContentType: ContentType
+    
     private var isCurrentEmpty: Bool {
         let currentConversation = chatCache.conversations.first { $0.id == selectedConversationID }
         return currentConversation?.hasMessages == false
@@ -47,9 +49,11 @@ struct Sidebar: View {
                 newChatRow
                 agentsList
                 squidletsToggle
+                SidebarToolSelector(shownContentType: $shownContentType)
                 filterHeader
                 conversationsList
             }
+            .padding(.top, hSizeClass == .compact ? 0 : -15)
             .animation(.default, value: showChats)
             .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showCustomAgents)
             .alert("Rename Conversation", isPresented: $showingRenameDialog) {
@@ -96,7 +100,7 @@ struct Sidebar: View {
         }
         .padding(10)
         .background {
-            if isCurrentEmpty && selectedAgent == nil {
+            if isCurrentEmpty && selectedAgent == nil && shownContentType == .chat {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .glassEffect(in: .rect(cornerRadius: 16.0))
                     .transition(
@@ -108,6 +112,7 @@ struct Sidebar: View {
         }
         .animation(.default, value: isCurrentEmpty)
         .animation(.default, value: selectedAgent)
+        .animation(.default, value: shownContentType)
         .contentShape(Rectangle())
         .onTapGesture {
             selectedConversationID = ConversationManager.createNewConversation(
@@ -116,6 +121,7 @@ struct Sidebar: View {
             selectedAgent = nil
             selectedModel = SyncedSettings.shared.defaultModel
             onSidebarSelection?()
+            shownContentType = .chat
         }
     }
 
@@ -125,7 +131,7 @@ struct Sidebar: View {
             ForEach(agentManager.customAgents.filter { $0.shownInSidebar }) { agent in
                 AgentRow(
                     agent: agent,
-                    isSelected: selectedAgent == agent.id,
+                    isSelected: selectedAgent == agent.id && shownContentType == .chat,
                     isCurrentEmpty: isCurrentEmpty
                 ) {
                     let result = ConversationManager.createNewConversation(
@@ -136,6 +142,7 @@ struct Sidebar: View {
                     selectedAgent = agent.id
                     if !agent.model.isEmpty { selectedModel = agent.model }
                     onSidebarSelection?()
+                    shownContentType = .chat
                 }
             }
         }
@@ -155,9 +162,10 @@ struct Sidebar: View {
                 Spacer()
             }
             .padding(10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
         }
         .opacity(0.6)
-        .contentShape(Rectangle())
         .buttonStyle(.plain)
         .labelStyle(.iconOnly)
         .backgroundStyle(.clear)
@@ -210,7 +218,7 @@ struct Sidebar: View {
             ForEach(filteredConversations, id: \.id) { conv in
                 ConversationRow(
                     conversation: conv,
-                    isSelected: selectedConversationID == conv.id,
+                    isSelected: selectedConversationID == conv.id && shownContentType == .chat,
                     onTap: {
                         loadConversation(conv.id)
                         if let agentUsed = conv.agentUsed,
@@ -221,6 +229,7 @@ struct Sidebar: View {
                         }
                         selectedModel = conv.modelUsed
                         onSidebarSelection?()
+                        shownContentType = .chat
                     },
                     onRename: {
                         conversationToRename = conv
