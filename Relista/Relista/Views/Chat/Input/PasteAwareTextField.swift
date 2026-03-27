@@ -122,6 +122,13 @@ final class PasteInterceptingTextView: UITextView {
         placeholderLabel?.isHidden = !text.isEmpty
     }
 
+    // Expand the hit-testable region so selection handles that extend outside
+    // the text view's frame (a consequence of textContainerInset = .zero) remain
+    // fully tappable. Without this, only the sliver at the frame edge is reachable.
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        bounds.insetBy(dx: -20, dy: -20).contains(point)
+    }
+
     // MARK: Hardware keyboard commands
 
     override var keyCommands: [UIKeyCommand]? {
