@@ -100,7 +100,8 @@ struct PromptField: View {
                 },
                 focusRequest: $textFieldFocusRequest
             )
-            .blocksHorizontalSidebarGesture()
+            .zIndex(1)
+            //.blocksHorizontalSidebarGesture()
             #else
             TextField(placeHolder, text: $inputMessage, axis: .vertical)
                 .lineLimit(1...10)

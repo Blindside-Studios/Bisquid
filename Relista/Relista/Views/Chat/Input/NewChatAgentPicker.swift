@@ -77,7 +77,7 @@ struct NewChatAgentPicker: View {
             .padding(.horizontal, 12 + 12)
         }
         .scrollIndicators(.hidden)
-        .blocksHorizontalSidebarGesture()
+        //.blocksHorizontalSidebarGesture()
         .padding(-12) // ensure shadow rendering won't affect layout... this is very buggy but Apple may fix it at some point
     }
 }

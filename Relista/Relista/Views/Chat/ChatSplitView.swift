@@ -153,6 +153,89 @@ struct UnifiedSplitView<Sidebar: View, Content: View>: View {
     }
 }
 
+// MARK: Sidebar Pan Gesture
+
+#if os(iOS)
+private struct SidebarPanGesture: UIGestureRecognizerRepresentable {
+    @Binding var dragOffset: CGFloat
+    @Binding var isGestureActive: Bool
+    @Binding var isMaskActive: Bool
+    let isOpen: Bool
+    let drawerWidth: CGFloat
+    let gestureCoordinator: SidebarGestureCoordinator
+    let onEnded: (_ willOpen: Bool) -> Void
+
+    func makeCoordinator(converter: CoordinateSpaceConverter) -> Coordinator {
+        Coordinator(gestureCoordinator: gestureCoordinator)
+    }
+
+    func makeUIGestureRecognizer(context: Context) -> UIPanGestureRecognizer {
+        let recognizer = UIPanGestureRecognizer()
+        recognizer.delegate = context.coordinator
+        return recognizer
+    }
+
+    func updateUIGestureRecognizer(_ recognizer: UIPanGestureRecognizer, context: Context) {
+        context.coordinator.gestureCoordinator = gestureCoordinator
+    }
+
+    func handleUIGestureRecognizerAction(_ recognizer: UIPanGestureRecognizer, context: Context) {
+        switch recognizer.state {
+        case .began:
+            isGestureActive = true
+        case .changed:
+            dragOffset = recognizer.translation(in: recognizer.view).x
+            if dragOffset > 0 { isMaskActive = true }
+        case .ended, .cancelled, .failed:
+            let velocity = recognizer.velocity(in: recognizer.view)
+            let predicted = (isOpen ? drawerWidth : 0) + dragOffset + velocity.x * 0.15
+            onEnded(predicted > drawerWidth / 2)
+            isGestureActive = false
+        default:
+            break
+        }
+    }
+
+    class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var gestureCoordinator: SidebarGestureCoordinator
+
+        init(gestureCoordinator: SidebarGestureCoordinator) {
+            self.gestureCoordinator = gestureCoordinator
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            var view = touch.view
+            while let v = view {
+                if let tv = v as? UITextView, tv.isFirstResponder { return false }
+                view = v.superview
+            }
+            return true
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+            return true
+        }
+
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard !gestureCoordinator.isBlocked,
+                  let pan = gestureRecognizer as? UIPanGestureRecognizer,
+                  let view = pan.view else { return false }
+            let velocity = pan.velocity(in: view)
+            guard abs(velocity.x) > abs(velocity.y) * 2.5 else { return false }
+            // Don't steal touches from a horizontal scroll view
+            var hitView = view.hitTest(pan.location(in: view), with: nil)
+            while let v = hitView {
+                if let scroll = v as? UIScrollView, scroll.contentSize.width > scroll.frame.width {
+                    return false
+                }
+                hitView = v.superview
+            }
+            return true
+        }
+    }
+}
+#endif
+
 // MARK: Split View Control
 
 struct ChatSplitView<Sidebar: View, Content: View>: View {
@@ -236,43 +319,45 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                     }
                     .offset(x: currentOffset)
             }
+            #if os(iOS)
+            .gesture(
+                SidebarPanGesture(
+                    dragOffset: $dragOffset,
+                    isGestureActive: $isGestureActive,
+                    isMaskActive: $isMaskActive,
+                    isOpen: isOpen,
+                    drawerWidth: drawerWidth,
+                    gestureCoordinator: gestureCoordinator,
+                    onEnded: { willOpen in
+                        withAnimation(.spring(response: 0.3)) {
+                            if willOpen != isOpen { sidebarSnapHaptic() }
+                            isOpen = willOpen
+                            dragOffset = 0
+                        } completion: {
+                            if !isOpen { isMaskActive = false }
+                        }
+                    }
+                )
+            )
+            #else
             .simultaneousGesture(
                 DragGesture(minimumDistance: 10, coordinateSpace: .local)
                     .onChanged { value in
-                        // Don't activate if content is handling a gesture
-                        if gestureCoordinator.isBlocked {
-                            dragOffset = 0
-                            isGestureActive = false
-                            return
-                        }
-
-                        // On first change, check if it's a horizontal gesture
+                        if gestureCoordinator.isBlocked { dragOffset = 0; isGestureActive = false; return }
                         if !isGestureActive {
                             let t = value.translation
                             guard abs(t.width) > abs(t.height) * 2.5 else { return }
                             isGestureActive = true
                         }
-
                         guard isGestureActive else { return }
                         dragOffset = value.translation.width
                         if dragOffset > 0 { isMaskActive = true }
                     }
                     .onEnded { value in
-                        guard isGestureActive else {
-                            dragOffset = 0
-                            isGestureActive = false
-                            return
-                        }
-
-                        let base = isOpen ? drawerWidth : 0
-                        let predicted = base + value.predictedEndTranslation.width
+                        guard isGestureActive else { dragOffset = 0; isGestureActive = false; return }
+                        let predicted = (isOpen ? drawerWidth : 0) + value.predictedEndTranslation.width
                         let willOpen = predicted > drawerWidth / 2
                         withAnimation(.spring(response: 0.3)) {
-                            #if os(iOS)
-                            if willOpen != isOpen {
-                                sidebarSnapHaptic()
-                            }
-                            #endif
                             isOpen = willOpen
                             dragOffset = 0
                         } completion: {
@@ -281,6 +366,7 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                         isGestureActive = false
                     }
             )
+            #endif
             .onChange(of: isOpen) { oldValue, newValue in
                 if newValue {
                     isMaskActive = true
