@@ -191,6 +191,7 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                 // SIDEBAR
                 sidebar
                     .frame(width: drawerWidth)
+                    .scrollDisabled(isGestureActive)
                     .offset(x: currentOffset / 10 - drawerWidth / 10)
                     .scaleEffect(0.95 + ((currentOffset / drawerWidth) * 0.05))
                     .background{
@@ -204,6 +205,7 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                 // MAIN CONTENT
                 content
                     .environment(\.sidebarGestureCoordinator, gestureCoordinator)
+                    .scrollDisabled(isGestureActive)
                     .contentShape(Rectangle())
                     .background{
                         Color.gray.opacity((currentOffset / drawerWidth) * 0.25)
