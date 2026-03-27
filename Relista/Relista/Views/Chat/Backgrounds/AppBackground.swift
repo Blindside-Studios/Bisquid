@@ -14,7 +14,7 @@ struct AppBackground: View {
     var body: some View {
         ZStack{
             if useBisquidBackground{
-                Color(hex: colorScheme == .dark ? "12171F" : "EEEFF7")
+                Color(hex: colorScheme == .dark ? "0c202e" : "cbe6f7")
                     .ignoresSafeArea()
                     .animation(.default, value: colorScheme)
             }

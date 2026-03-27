@@ -187,14 +187,29 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
             let currentOffset = min(max(baseOffset + dragOffset, 0), drawerWidth)
 
             ZStack(alignment: .leading) {
-
+                // SIDEBAR
+                sidebar
+                    .frame(width: drawerWidth)
+                    .offset(x: currentOffset / 10 - drawerWidth / 10)
+                    .scaleEffect(0.95 + ((currentOffset / drawerWidth) * 0.05))
+                    .background{
+                        AppBackground()
+                            .opacity(0.5)
+                            .ignoresSafeArea()
+                    }
+                    .opacity(0.5 + ((currentOffset / drawerWidth) * 0.5))
+                
                 // MAIN CONTENT
                 content
                     .environment(\.sidebarGestureCoordinator, gestureCoordinator)
                     .contentShape(Rectangle())
-                    .opacity(1.0 - ((currentOffset / drawerWidth) * 0.25))
-                    .background(Color.gray.opacity((currentOffset / drawerWidth) * 0.25))
-                    .offset(x: currentOffset)
+                    .background{
+                        Color.gray.opacity((currentOffset / drawerWidth) * 0.25)
+                    }
+                    /*.mask{
+                        RoundedRectangle(cornerRadius: currentOffset > 0 ? 56 : 0, style: .continuous)
+                            .ignoresSafeArea()
+                    }*/
                     .overlay{
                         if currentOffset > 0 {
                             Color.clear
@@ -207,11 +222,7 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                                 }
                         }
                     }
-
-                // SIDEBAR
-                sidebar
-                    .frame(width: drawerWidth)
-                    .offset(x: currentOffset - drawerWidth)
+                    .offset(x: currentOffset)
             }
             .simultaneousGesture(
                 DragGesture(minimumDistance: 10, coordinateSpace: .local)
