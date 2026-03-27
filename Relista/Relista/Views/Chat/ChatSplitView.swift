@@ -162,6 +162,7 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
     @Binding var isOpen: Bool
     @State private var dragOffset: CGFloat = 0
     @State private var isGestureActive: Bool = false
+    @State private var isMaskActive: Bool = false
     @StateObject private var gestureCoordinator = SidebarGestureCoordinator()
 
     #if os(iOS)
@@ -196,6 +197,7 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                         AppBackground()
                             .opacity(0.5)
                             .ignoresSafeArea()
+                            .padding(.trailing, -56)
                     }
                     .opacity(0.5 + ((currentOffset / drawerWidth) * 0.5))
                 
@@ -206,12 +208,20 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                     .background{
                         Color.gray.opacity((currentOffset / drawerWidth) * 0.25)
                     }
-                    /*.mask{
-                        RoundedRectangle(cornerRadius: currentOffset > 0 ? 56 : 0, style: .continuous)
-                            .ignoresSafeArea()
-                    }*/
+                    .mask{
+                        UnevenRoundedRectangle(
+                            cornerRadii: RectangleCornerRadii(
+                                topLeading: isMaskActive ? 56 : 0,
+                                bottomLeading: isMaskActive ? 56 : 0,
+                                bottomTrailing: 0,
+                                topTrailing: 0
+                            ),
+                            style: .continuous
+                        )
+                        .ignoresSafeArea()
+                    }
                     .overlay{
-                        if currentOffset > 0 {
+                        if isMaskActive {
                             Color.clear
                                 .ignoresSafeArea()
                                 .contentShape(Rectangle())
@@ -243,6 +253,7 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
 
                         guard isGestureActive else { return }
                         dragOffset = value.translation.width
+                        if dragOffset > 0 { isMaskActive = true }
                     }
                     .onEnded { value in
                         guard isGestureActive else {
@@ -262,16 +273,25 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                             #endif
                             isOpen = willOpen
                             dragOffset = 0
+                        } completion: {
+                            if !isOpen { isMaskActive = false }
                         }
                         isGestureActive = false
                     }
             )
             .onChange(of: isOpen) { oldValue, newValue in
-                // Dismiss keyboard when opening sidebar
-                if newValue == true && oldValue == false {
+                if newValue {
+                    isMaskActive = true
+                    // Dismiss keyboard when opening sidebar
                     #if os(iOS)
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     #endif
+                } else {
+                    // Delay deactivating the mask until the closing animation settles
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(600))
+                        if !isOpen { isMaskActive = false }
+                    }
                 }
             }
         }
