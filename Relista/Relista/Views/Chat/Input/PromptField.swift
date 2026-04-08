@@ -103,21 +103,28 @@ struct PromptField: View {
             .zIndex(1)
             //.blocksHorizontalSidebarGesture()
             #else
-            TextField(placeHolder, text: $inputMessage, axis: .vertical)
-                .lineLimit(1...10)
-                .frame(width: .infinity)
-                .textFieldStyle(.plain)
-                .focused($isTextFieldFocused)
-                .blocksHorizontalSidebarGesture()
-                .onSubmit(sendMessage)
-                .onKeyPress { keyPress in
-                    if keyPress.modifiers == .shift && keyPress.key == .return {
-                        insertNewlineAtCursor()
-                        return .handled
-                    } else {
-                        return .ignored
-                    }
+            ZStack(alignment: .topLeading) {
+                if inputMessage.isEmpty {
+                    Text(placeHolder)
+                        .foregroundStyle(.placeholder)
+                        .allowsHitTesting(false)
                 }
+                TextEditor(text: $inputMessage)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 20, maxHeight: 220)
+                    .padding(.top, 2)
+                    .padding(.horizontal, -4)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .focused($isTextFieldFocused)
+                    .blocksHorizontalSidebarGesture()
+                    .onKeyPress(keys: [.return]) { keyPress in
+                        if keyPress.modifiers.contains(.shift) {
+                            return .ignored
+                        }
+                        sendMessage()
+                        return .handled
+                    }
+            }
             #endif
             //.padding(spacing)
             CommandBar(selectedModel: $selectedModel, conversationID: $conversationID, secondaryAccentColor: $secondaryAccentColor, pendingAttachments: $pendingAttachments, sendMessage: sendMessage, sendMessageAsSystem: sendMessageAsSystem, appendDummyMessages: appendDummyMessages)
@@ -359,15 +366,6 @@ struct PromptField: View {
         placeHolder = ChatPlaceHolders.returnAppropriatePlaceholder(agentUUID: selectedAgent)
     }
 
-    private func insertNewlineAtCursor() {
-        #if os(macOS)
-        if let textView = NSApplication.shared.keyWindow?.firstResponder as? NSText {
-            textView.insertText("\n")
-        } else {
-            inputMessage += "\n"
-        }
-        #endif
-    }
 }
 
 class ChatPlaceHolders{
