@@ -37,6 +37,7 @@ struct PromptField: View {
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
     #if os(macOS)
     @AppStorage("AddPaddingToTypingBar") private var typingBarPaddingMacOS: Bool = true
+    @AppStorage("chatFontSize") private var chatFontSize: Double = Font.defaultBodySize
     #endif
     
     private var cornerRadius: Int{
@@ -106,14 +107,16 @@ struct PromptField: View {
             ZStack(alignment: .topLeading) {
                 if inputMessage.isEmpty {
                     Text(placeHolder)
+                        .font(.system(size: chatFontSize))
+                        .padding(.leading, 4)
                         .foregroundStyle(.placeholder)
                         .allowsHitTesting(false)
                 }
                 TextEditor(text: $inputMessage)
                     .scrollContentBackground(.hidden)
+                    .font(.system(size: chatFontSize))
                     .frame(minHeight: 20, maxHeight: 220)
-                    .padding(.top, 2)
-                    .padding(.horizontal, -4)
+                    .padding(.horizontal, -2)
                     .fixedSize(horizontal: false, vertical: true)
                     .focused($isTextFieldFocused)
                     .blocksHorizontalSidebarGesture()
