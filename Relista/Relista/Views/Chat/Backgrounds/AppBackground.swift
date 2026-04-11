@@ -14,7 +14,7 @@ struct AppBackground: View {
     var body: some View {
         ZStack{
             if useBisquidBackground{
-                Color(hex: colorScheme == .dark ? "0c202e" : "cbe6f7")
+                Color(hex: colorScheme == .dark ? "1a1918" : "eceae9") // squid ink and squid ink after twenty minutes in the ocean (very dissolved)
                     .ignoresSafeArea()
                     .animation(.default, value: colorScheme)
             }
