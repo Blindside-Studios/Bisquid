@@ -136,8 +136,9 @@ struct PromptField: View {
         .animation(.bouncy(duration: 0.3), value: pendingAttachments.isEmpty)
         .animation(.bouncy(duration: 0.3), value: editingMessage == nil)
         .padding(spacing)
-        .glassEffect(.clear.tint(liquidGlassTint).interactive(), in: .rect(cornerRadius: CGFloat(cornerRadius)))
-        .animation(.default, value: liquidGlassTint)
+        //.glassEffect(.clear.tint(liquidGlassTint).interactive(), in: .rect(cornerRadius: CGFloat(cornerRadius)))
+        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: CGFloat(cornerRadius)))
+        //.animation(.default, value: liquidGlassTint)
         //.shadow(color: primaryAccentColor.opacity(0.4), radius: 20)
         .padding(8)
         // Drag & drop: pass through the image framework so HEIC and any other

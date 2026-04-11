@@ -72,7 +72,7 @@ struct InputUI: View {
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 50)).combined(with: .opacity)
                             )
-                            .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
+                            //.shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                     }
                     
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
@@ -101,12 +101,12 @@ struct InputUI: View {
                         )
                     }
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
-                        #if os(macOS)
+                        /*#if os(macOS)
                         .padding(typingBarPaddingMacOS && !isChatBlank ? 16 : 0)
                         .shadow(color: focused == .inactive ? .clear : .black.opacity(isChatBlank ? 0.075 : 0.025), radius: focused == .inactive ? 0 : 12)
                         #else
                         .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
-                        #endif
+                        #endif*/
                     if isChatBlank {
                         NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
                             .zIndex(-1) // to place it behind the PromptField, otherwise it would just constantly overlap and we couldn't click anything anymore
@@ -127,7 +127,9 @@ struct InputUI: View {
                 .frame(maxWidth: .infinity)
                 .frame(maxWidth: 750)
                 .frame(maxWidth: .infinity)
+                //.contentMargins(.horizontal, 16, for: .scrollContent)
                 .padding(.horizontal, isChatBlank ? 50 : 0)
+                //.clipped()
                 #if os(macOS)
                 .animation(.default, value: typingBarPaddingMacOS)
                 #endif
