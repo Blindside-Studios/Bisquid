@@ -547,7 +547,29 @@ class ChatCache {
 
                 if isChatNew {
                     if let conv = getConversation(for: conversationID) {
-                        conv.title = (try? await Mistral(apiKey: KeychainHelper.shared.mistralAPIKey).generateChatName(messages: chat.messages)) ?? conv.title
+                        // todo: do this
+                        var cleaned = (try? await Mistral(apiKey: KeychainHelper.shared.mistralAPIKey).generateChatName(messages: chat.messages)) ?? conv.title
+                        // remove everything inside and including asterisks (role play stage directions)
+                            .replacingOccurrences(of: #"\*[^*]*\*"#, with: "", options: .regularExpression)
+                        // remove remaining standalone asterisks
+                            .replacingOccurrences(of: "*", with: "")
+                        // replace em dashes with spaced hyphens
+                            .replacingOccurrences(of: "—", with: " - ")
+                        // trim whitespace
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        
+                        // remove leading/trailing quotes
+                        if cleaned.hasPrefix("\"") { cleaned.removeFirst() }
+                        if cleaned.hasSuffix("\"") { cleaned.removeLast() }
+                        // keep only the first line
+                        if let firstLine = cleaned.components(separatedBy: "\n").first {
+                            cleaned = firstLine
+                        }
+                        
+                        // clean up multiple spaces
+                        cleaned = cleaned.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+                        
+                        conv.title = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
                     }
                 }
                 // save again to make sure it saves our chat title
