@@ -28,6 +28,7 @@ struct Sidebar: View {
     @ObservedObject private var agentManager = AgentManager.shared
     
     @AppStorage("CustomAgentsInSidebarAreExpanded") private var showCustomAgents: Bool = true
+    @AppStorage("ToolsInSidebarAreExpanded") private var showTools: Bool = true
     @AppStorage("ChatsInSidebarAreExpanded") private var showChats = true
     
     @Environment(\.onSidebarSelection) private var onSidebarSelection
@@ -45,17 +46,23 @@ struct Sidebar: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
+            LazyVStack(alignment: .leading, spacing: 0) {
                 newChatRow
+                SidebarSectionHeader(label: "Squidlets", state: $showCustomAgents)
                 agentsList
-                squidletsToggle
-                SidebarToolSelector(shownContentType: $shownContentType)
+                //squidletsToggle
+                SidebarSectionHeader(label: "Tools", state: $showTools)
+                if showTools{
+                    SidebarToolSelector(shownContentType: $shownContentType)
+                }
                 filterHeader
+                    .padding(.vertical, 4)
                 conversationsList
             }
             .padding(.top, hSizeClass == .compact ? 0 : -15)
             .animation(.default, value: showChats)
             .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showCustomAgents)
+            .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showTools)
             .alert("Rename Conversation", isPresented: $showingRenameDialog) {
                 TextField("Conversation Name", text: $renameText)
                 Button("Cancel", role: .cancel) {
@@ -148,7 +155,7 @@ struct Sidebar: View {
         }
     }
 
-    @ViewBuilder
+    /*@ViewBuilder
     private var squidletsToggle: some View {
         Button {
             withAnimation(.bouncy(duration: 0.3, extraBounce: 0.05)) {
@@ -169,7 +176,7 @@ struct Sidebar: View {
         .buttonStyle(.plain)
         .labelStyle(.iconOnly)
         .backgroundStyle(.clear)
-    }
+    }*/
 
     @ViewBuilder
     private var filterHeader: some View {
