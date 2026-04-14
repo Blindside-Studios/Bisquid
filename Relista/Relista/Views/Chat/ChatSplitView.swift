@@ -278,7 +278,7 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                     .offset(x: currentOffset / 10 - drawerWidth / 10)
                     .scaleEffect(0.95 + ((currentOffset / drawerWidth) * 0.05))
                     .background{
-                        AppBackground()
+                        AppBackground(style: 1)
                             .opacity(0.5)
                             .ignoresSafeArea()
                             .padding(.trailing, -56)
