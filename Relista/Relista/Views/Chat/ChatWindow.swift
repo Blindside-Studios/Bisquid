@@ -33,7 +33,7 @@ struct ChatWindow: View {
                     let sortedMessages = chat.messages.sorted { $0.timeStamp < $1.timeStamp }
                     ScrollViewReader { proxy in
                         ScrollView(.vertical){
-                            LazyVStack{
+                            VStack{
                                 ForEach(sortedMessages){ message in
                                     if(message.role == .assistant){
                                         MessageModel(message: message, onRegenerate: {
