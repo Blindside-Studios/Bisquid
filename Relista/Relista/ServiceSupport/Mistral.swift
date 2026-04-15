@@ -171,9 +171,10 @@ struct Mistral {
 
     func streamMessage(messages: [Message], modelName: String, agent: UUID?, tools: [any ChatTool] = []) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         let baseRequest = makeRequest()
-        let (defaultInstructions, memorySuffix) = await MainActor.run {
-            (SyncedSettings.shared.defaultInstructions, SyncedSettings.memoryContext(for: agent))
+        let (defaultInstructions, memorySuffix, temperature) = await MainActor.run {
+            (SyncedSettings.shared.defaultInstructions, SyncedSettings.memoryContext(for: agent), AgentManager.getAgentTemperature(fromUUID: agent))
         }
+        debugPrint(temperature)
 
         let baseContent = agent == nil ? defaultInstructions : agent
             .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""
@@ -210,6 +211,7 @@ struct Mistral {
                         modelName: modelName,
                         tools: tools,
                         supportsReasoning: supportsReasoning,
+                        temperature: temperature,
                         continuation: continuation
                     )
                     continuation.finish()
@@ -229,6 +231,7 @@ struct Mistral {
         modelName: String,
         tools: [any ChatTool],
         supportsReasoning: Bool,
+        temperature: Double,
         continuation: AsyncThrowingStream<StreamChunk, Error>.Continuation
     ) async throws {
         var reasoningEffort = "none"
@@ -254,6 +257,7 @@ struct Mistral {
         if supportsReasoning /*|| reasoningEffort != "none"*/ { body["prompt_mode"] = "reasoning" } // remove when retiring magistral models... like the entire line, we do not need prompt mode for reasoning with the new reasoning_effort parameter
         if reasoningEffort != "none" { body["reasoning_effort"] = reasoningEffort } // can't specify this on any other model
         if !tools.isEmpty { body["tools"] = tools.map { $0.definition } }
+        body["temperature"] = temperature
 
         var request = baseRequest
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -406,6 +410,7 @@ struct Mistral {
                     modelName: modelName,
                     tools: tools,
                     supportsReasoning: supportsReasoning,
+                    temperature: temperature,
                     continuation: continuation
                 )
                 return

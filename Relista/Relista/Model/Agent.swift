@@ -195,7 +195,7 @@ public class AgentManager: ObservableObject {
     }
     
     static func createNewAgent() -> Agent {
-        return Agent(name: "", description: "", icon: "", model: "mistralai/mistral-medium-3.1", systemPrompt: "", temperature: 0.3, shownInSidebar: true, lastModified: Date.now)
+        return Agent(name: "", description: "", icon: "", model: "mistral-medium-latest", systemPrompt: "", temperature: 0.3, shownInSidebar: true, lastModified: Date.now)
     }
     
     static func getAgent(fromUUID: UUID) -> Agent?{
@@ -225,5 +225,19 @@ public class AgentManager: ObservableObject {
             return [agent!.primaryAccentColor, agent!.secondaryAccentColor]
         }
         else { return ["", ""] }
+    }
+    
+    static func getAgentTemperature(fromUUID: UUID?) -> Double
+    {
+        
+        if fromUUID == nil{
+            return SyncedSettings.shared.temperature
+        } else {
+            let agent = AgentManager.shared.customAgents.filter { $0.id == fromUUID }.first
+            if agent != nil {
+                return agent!.temperature
+            }
+            else { return 0.5 }
+        }
     }
 }

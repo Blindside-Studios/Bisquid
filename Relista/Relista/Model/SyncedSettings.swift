@@ -19,6 +19,7 @@ final class SyncedSettings: ObservableObject {
         static let defaultInstructions = "DefaultAssistantInstructions"
         static let userName = "UIUserName"
         static let memories = "GlobalMemories"
+        static let temperature = "DefaultAssistantTemperature"
     }
 
     @Published var defaultModel: String {
@@ -48,13 +49,21 @@ final class SyncedSettings: ObservableObject {
             store.synchronize()
         }
     }
+    
+    @Published var temperature: Double {
+        didSet {
+            store.set(temperature, forKey: Keys.temperature)
+            store.synchronize()
+        }
+    }
 
     private init() {
         // Load initial values from iCloud KVS, with defaults
-        self.defaultModel = store.string(forKey: Keys.defaultModel) ?? "mistralai/mistral-medium-3.1"
+        self.defaultModel = store.string(forKey: Keys.defaultModel) ?? "mistral-medium-latest"
         self.defaultInstructions = store.string(forKey: Keys.defaultInstructions) ?? ""
         self.userName = store.string(forKey: Keys.userName) ?? ""
         self.memories = store.array(forKey: Keys.memories) as? [String] ?? []
+        self.temperature = store.object(forKey: Keys.temperature) != nil ? store.double(forKey: Keys.temperature) : 0.35
 
         // Listen for external changes (from other devices)
         NotificationCenter.default.addObserver(
@@ -82,6 +91,9 @@ final class SyncedSettings: ObservableObject {
             }
             if let newMemories = store.array(forKey: Keys.memories) as? [String], newMemories != memories {
                 memories = newMemories
+            }
+            if let newTemperature = store.double(forKey: Keys.temperature) as Double?, newTemperature != temperature {
+                temperature = newTemperature
             }
         }
     }

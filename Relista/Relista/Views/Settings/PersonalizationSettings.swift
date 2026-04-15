@@ -29,6 +29,13 @@ struct PersonalizationSettings: View {
                 MemoryListEditor(memories: $settings.memories)
             }
             
+            Section("Default Temperature") {
+                Slider(value: $settings.temperature, in: 0...1)
+                Text(settings.temperature, format: .number.precision(.fractionLength(2)))
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
+            }
+
             Section("Modifications"){
                 Toggle("Replace em-dashes with spaced hyphens", isOn: $suppressEmDashes)
             }
