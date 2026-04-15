@@ -47,18 +47,19 @@ struct InputUI: View {
                 VStack (alignment: .center){
                     if isChatBlank{
                         VStack{
-                            Spacer()
+                            Spacer(minLength: 0)
                             Text(agentIcon)
                                 .font(.system(size: 72))
                             Text(displayedGreeting)
                                 .opacity(0.75)
                                 .multilineTextAlignment(.center)
                                 .font(.largeTitle)
-                            Spacer()
-                            Spacer()
-                            Spacer()
+                            Spacer(minLength: 0)
+                            Spacer(minLength: 0)
+                            Spacer(minLength: 0)
                         }
                         .padding()
+                        .layoutPriority(0)
                         .transition(
                             AnyTransition.blurFade.combined(with: .offset(y: -150)).combined(with: .opacity)
                         )
@@ -69,13 +70,15 @@ struct InputUI: View {
                             #endif
                         })
                         NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
+                            .layoutPriority(0)
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 50)).combined(with: .opacity)
                             )
                             //.shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                     }
-                    
+
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
+                        .layoutPriority(1)
                         .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                 }
                 #endif
