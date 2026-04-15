@@ -9,22 +9,21 @@ import SwiftUI
 
 struct PersonalizationSettings: View {
     @ObservedObject private var settings = SyncedSettings.shared
-    @AppStorage("ReplaceEMDashesWithHyphens") private var suppressEmDashes: Bool = false
 
     var body: some View {
-        Form {
+        List {
             Section("Personal info") {
                 TextField("Name", text: $settings.userName)
             }
             Section("Default Model") {
                 ModelPicker(selectedModel: $settings.defaultModel)
             }
-
+            
             Section("Default instructions") {
                 TextEditor(text: $settings.defaultInstructions)
                     .frame(minHeight: 150)
             }
-
+            
             Section("Memories") {
                 MemoryListEditor(memories: $settings.memories)
             }
@@ -35,9 +34,9 @@ struct PersonalizationSettings: View {
                     .foregroundStyle(.secondary)
                     .font(.caption)
             }
-
+            
             Section("Modifications"){
-                Toggle("Replace em-dashes with spaced hyphens", isOn: $suppressEmDashes)
+                Toggle("Replace em-dashes with en-dashes", isOn: $settings.suppressEmDashes)
             }
         }
     }
