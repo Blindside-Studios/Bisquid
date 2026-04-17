@@ -31,6 +31,14 @@ struct RelistaApp: App {
     @State private var hasInitialized = false
     @Environment(\.scenePhase) private var scenePhase
 
+    init() {
+        #if os(iOS)
+        // BGTaskScheduler.register(...) must be called exactly once per launch,
+        // before the app finishes launching.
+        ChatCache.shared.registerBackgroundTasks()
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView(reloadSidebar: refreshContent)

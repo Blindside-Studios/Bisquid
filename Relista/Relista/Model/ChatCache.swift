@@ -66,6 +66,26 @@ class ChatCache {
     /// Dictionary tracking cancellation requests for conversations
     private var cancellationFlags: [UUID: Bool] = [:]
 
+    #if os(iOS)
+    private struct PendingGeneration {
+        let chat: LoadedChat
+        let conversationID: UUID
+        let modelName: String
+        let agent: UUID?
+        let apiKey: String
+        let withHapticFeedback: Bool
+        let isChatNew: Bool
+        let onCompletion: (() -> Void)?
+        let tools: [any ChatTool]
+        let newMessageUUID: UUID
+    }
+
+    private var pendingGenerationsQueue: [PendingGeneration] = []
+    private var hasRegisteredBackgroundTasks = false
+    private static let backgroundTaskIdentifier =
+        "\(Bundle.main.bundleIdentifier!).response-background-generation"
+    #endif
+
     private init() {
         // Load conversations from disk on init
         do {
@@ -395,8 +415,68 @@ class ChatCache {
         )
     }
 
+    #if os(iOS)
+    /// Registers the background-task handler. Must be called exactly once per app launch,
+    /// before the app finishes launching. Subsequent calls are no-ops.
+    /// The identifier must match BGTaskSchedulerPermittedIdentifiers in Info.plist exactly —
+    /// wildcards are not supported.
+    func registerBackgroundTasks() {
+        guard !hasRegisteredBackgroundTasks else { return }
+        hasRegisteredBackgroundTasks = true
+
+        let didRegister = BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: Self.backgroundTaskIdentifier,
+            using: nil
+        ) { [weak self] task in
+            guard let self, let task = task as? BGContinuedProcessingTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self.runNextPendingGeneration(for: task)
+        }
+
+        if !didRegister {
+            print("⚠️ BGTaskScheduler failed to register \(Self.backgroundTaskIdentifier). Check Info.plist's BGTaskSchedulerPermittedIdentifiers.")
+        }
+    }
+
+    private func runNextPendingGeneration(for task: BGContinuedProcessingTask) {
+        guard !pendingGenerationsQueue.isEmpty else {
+            task.setTaskCompleted(success: false)
+            return
+        }
+        let pending = pendingGenerationsQueue.removeFirst()
+
+        task.progress.totalUnitCount = 100
+        task.progress.completedUnitCount = 0
+
+        task.expirationHandler = { [weak self] in
+            self?.cancellationFlags[pending.conversationID] = true
+        }
+
+        sendToProvider(
+            chat: pending.chat,
+            conversationID: pending.conversationID,
+            modelName: pending.modelName,
+            agent: pending.agent,
+            apiKey: pending.apiKey,
+            withHapticFeedback: pending.withHapticFeedback,
+            isChatNew: pending.isChatNew,
+            onCompletion: pending.onCompletion,
+            tools: pending.tools,
+            newMessageUUID: pending.newMessageUUID,
+            onProgressUpdate: { progress, subtitle in
+                task.progress.completedUnitCount = Int64(progress)
+                task.updateTitle("Receiving response", subtitle: subtitle)
+            },
+            onCompleteCallback: { completed in
+                task.setTaskCompleted(success: completed)
+            }
+        )
+    }
+    #endif
+
     /// Core generation loop — shared by sendMessage and regenerateMessage.
-    
     private func startGeneration(
         chat: LoadedChat,
         conversationID: UUID,
@@ -410,43 +490,66 @@ class ChatCache {
     ) {
         #if os(iOS)
         let newMessageUUID = UUID()
-        let taskIdentifier = "\(Bundle.main.bundleIdentifier!).response-background-generation"
-        
-        let request = StreamingTaskRequest(
-            identifier: taskIdentifier,
+        let pending = PendingGeneration(
+            chat: chat,
+            conversationID: conversationID,
+            modelName: modelName,
+            agent: agent,
+            apiKey: apiKey,
+            withHapticFeedback: withHapticFeedback,
+            isChatNew: isChatNew,
+            onCompletion: onCompletion,
+            tools: tools,
+            newMessageUUID: newMessageUUID
+        )
+        pendingGenerationsQueue.append(pending)
+
+        let request = BGContinuedProcessingTaskRequest(
+            identifier: Self.backgroundTaskIdentifier,
             title: "Receiving response",
             subtitle: "\(agent == nil ? "Bisquid" : AgentManager.getUIAgentName(fromUUID: agent!)) is preparing"
         )
-        
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: taskIdentifier, using: nil) { task in
-            guard let task = task as? BGContinuedProcessingTask else { return }
-            task.progress.totalUnitCount = 100
-            task.progress.completedUnitCount = 0
-            
-            
-            self.sendToProvider(chat: chat, conversationID: conversationID, modelName: modelName, agent: agent, apiKey: apiKey, withHapticFeedback: withHapticFeedback, isChatNew: isChatNew, tools: tools, newMessageUUID: newMessageUUID,
-                onProgressUpdate: { progress, subtitle in
-                    task.progress.completedUnitCount = Int64(progress)
-                    task.updateTitle("Receiving response", subtitle: subtitle)
-                print("\(progress) \(subtitle)")
-                },
-                onCompleteCallback: { completed in
-                /*if completed{
-                    //return .success(())
-                } else {
-                    //return .failure(.expired)
-                }*/
-                })
-        }
-        
+
         do {
             try BGTaskScheduler.shared.submit(request)
         } catch {
-            print("Failed to submit: \(error)")
+            // Fallback: if the system refuses the BG request, run the generation in-process
+            // so the user still gets a response.
+            print("Failed to submit background task: \(error) — running in-process")
+            // Remove the work item we just enqueued (it's the last one).
+            if let idx = pendingGenerationsQueue.lastIndex(where: { $0.newMessageUUID == newMessageUUID }) {
+                pendingGenerationsQueue.remove(at: idx)
+            }
+            sendToProvider(
+                chat: chat,
+                conversationID: conversationID,
+                modelName: modelName,
+                agent: agent,
+                apiKey: apiKey,
+                withHapticFeedback: withHapticFeedback,
+                isChatNew: isChatNew,
+                onCompletion: onCompletion,
+                tools: tools,
+                newMessageUUID: newMessageUUID,
+                onProgressUpdate: { _, _ in },
+                onCompleteCallback: { _ in }
+            )
         }
-        
         #else
-        sendToProvider(chat: chat, conversationID: conversationID, modelName: modelName, agent: agent, apiKey: apiKey, withHapticFeedback: withHapticFeedback, isChatNew: isChatNew, tools: tools, newMessageUUID: UUID(), onProgressUpdate: { progress, subtitle in }, onComplete: { completed in })
+        sendToProvider(
+            chat: chat,
+            conversationID: conversationID,
+            modelName: modelName,
+            agent: agent,
+            apiKey: apiKey,
+            withHapticFeedback: withHapticFeedback,
+            isChatNew: isChatNew,
+            onCompletion: onCompletion,
+            tools: tools,
+            newMessageUUID: UUID(),
+            onProgressUpdate: { _, _ in },
+            onCompleteCallback: { _ in }
+        )
         #endif
     }
     
@@ -687,6 +790,7 @@ class ChatCache {
                 #endif
                 
                 onProgressUpdate?(100.0, "Generation completed")
+                onCompleteCallback?(true)
 
             } catch {
                 await MainActor.run {
@@ -703,9 +807,9 @@ class ChatCache {
                     cleanupUnusedChats()
                     onProgressUpdate?(100.0, "Failed to generate message")
                 }
+                onCompleteCallback?(false)
             }
         }
-        onCompleteCallback?(true)
     }
 
     // MARK: - Persistence
