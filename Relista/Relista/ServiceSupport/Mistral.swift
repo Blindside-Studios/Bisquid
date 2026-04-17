@@ -270,7 +270,7 @@ struct Mistral {
         var assistantMessage = ""
 
         for try await line in bytes.lines {
-            if !line.isEmpty { print("📥 Received line: \(line)") }
+            //if !line.isEmpty { print("📥 Received line: \(line)") }
 
             if line.hasPrefix("{") && line.contains("\"error\"") {
                 if let jsonData = line.data(using: .utf8),

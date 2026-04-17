@@ -7,9 +7,25 @@
 
 import Foundation
 import Observation
+import BackgroundTasks
 import SwiftUI
 #if os(iOS)
 import UIKit
+#endif
+
+#if os(iOS)
+typealias StreamingTaskRequest = BGContinuedProcessingTaskRequest
+#else
+class StreamingTaskRequest {
+    init() {}
+    var identifier: String = ""
+    var title: String = ""
+    var subtitle: String = ""
+    var progress = Progress()
+    func updateTitle(_ title: String, subtitle: String) {}
+    func setTaskCompleted(success: Bool) {}
+    var expirationHandler: (() -> Void)? = nil
+}
 #endif
 
 /// Represents a loaded chat in memory with its messages and metadata
@@ -380,6 +396,7 @@ class ChatCache {
     }
 
     /// Core generation loop — shared by sendMessage and regenerateMessage.
+    
     private func startGeneration(
         chat: LoadedChat,
         conversationID: UUID,
@@ -391,8 +408,70 @@ class ChatCache {
         onCompletion: (() -> Void)? = nil,
         tools: [any ChatTool]
     ) {
+        #if os(iOS)
+        let newMessageUUID = UUID()
+        let taskIdentifier = "\(Bundle.main.bundleIdentifier!).response-background-generation"
+        
+        let request = StreamingTaskRequest(
+            identifier: taskIdentifier,
+            title: "Receiving response",
+            subtitle: "\(agent == nil ? "Bisquid" : AgentManager.getUIAgentName(fromUUID: agent!)) is preparing"
+        )
+        
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: taskIdentifier, using: nil) { task in
+            guard let task = task as? BGContinuedProcessingTask else { return }
+            task.progress.totalUnitCount = 100
+            task.progress.completedUnitCount = 0
+            
+            
+            self.sendToProvider(chat: chat, conversationID: conversationID, modelName: modelName, agent: agent, apiKey: apiKey, withHapticFeedback: withHapticFeedback, isChatNew: isChatNew, tools: tools, newMessageUUID: newMessageUUID,
+                onProgressUpdate: { progress, subtitle in
+                    task.progress.completedUnitCount = Int64(progress)
+                    task.updateTitle("Receiving response", subtitle: subtitle)
+                print("\(progress) \(subtitle)")
+                },
+                onCompleteCallback: { completed in
+                /*if completed{
+                    //return .success(())
+                } else {
+                    //return .failure(.expired)
+                }*/
+                })
+        }
+        
+        do {
+            try BGTaskScheduler.shared.submit(request)
+        } catch {
+            print("Failed to submit: \(error)")
+        }
+        
+        #else
+        sendToProvider(chat: chat, conversationID: conversationID, modelName: modelName, agent: agent, apiKey: apiKey, withHapticFeedback: withHapticFeedback, isChatNew: isChatNew, tools: tools, newMessageUUID: UUID(), onProgressUpdate: { progress, subtitle in }, onComplete: { completed in })
+        #endif
+    }
+    
+    private func sendToProvider(
+        chat: LoadedChat,
+        conversationID: UUID,
+        modelName: String,
+        agent: UUID?,
+        apiKey: String,
+        withHapticFeedback: Bool,
+        isChatNew: Bool,
+        onCompletion: (() -> Void)? = nil,
+        tools: [any ChatTool],
+        newMessageUUID: UUID,
+        onProgressUpdate: ((Double, String) -> Void)? = nil,
+        onCompleteCallback: ((Bool) -> Void)? = nil
+    ) {
         chat.isGenerating = true
         cancellationFlags[conversationID] = false
+        var progressMade = 0.0
+        let maxStreamingProgress = 90.0
+        let tokenValue = 1.0/100.0
+        let toolValue = 1.0/10.0
+        let reasoningValue = 1.0/200.0
+        let agentName = agent == nil ? "Bisquid" : AgentManager.getUIAgentName(fromUUID: agent!)
 
         Task {
             do {
@@ -415,7 +494,7 @@ class ChatCache {
 
                 // Create blank assistant message
                 let assistantMsg = Message(
-                    id: UUID(),
+                    id: newMessageUUID,
                     text: "",
                     role: .assistant,
                     modelUsed: modelName,
@@ -462,6 +541,11 @@ class ChatCache {
                                 }
                             }
                             updatedMessage.lastModified = Date.now
+                            
+                            let remainingProgress = maxStreamingProgress - progressMade
+                            let additionalProgress = remainingProgress * reasoningValue
+                            progressMade += additionalProgress
+                            onProgressUpdate?(progressMade, "\(agentName) is thinking…")
 
                         case .content(let rawText):
                             let text = SyncedSettings.shared.suppressEmDashes
@@ -492,6 +576,11 @@ class ChatCache {
                                 chunkCount += 1
                             }
                             #endif
+                            
+                            let remainingProgress = maxStreamingProgress - progressMade
+                            let additionalProgress = remainingProgress * tokenValue
+                            progressMade += additionalProgress
+                            onProgressUpdate?(progressMade, "\(agentName) is typing…")
 
                         case .toolUseStarted(let id, let toolName, let displayName, let icon, let inputSummary):
                             let newToolBlock = MessageContentBlock.toolUse(ToolUseBlock(id: id, toolName: toolName, displayName: displayName, icon: icon, inputSummary: inputSummary, result: nil, isLoading: true))
@@ -504,6 +593,8 @@ class ChatCache {
                             }
                             updatedMessage.lastModified = Date.now
                             print("🔧 Tool use started: \(toolName) — \(inputSummary)")
+                            
+                            onProgressUpdate?(progressMade, "\(agentName) is using \(displayName)…")
 
                         case .toolResultReceived(let id, let result):
                             guard var blocks = updatedMessage.contentBlocks else { break }
@@ -518,17 +609,29 @@ class ChatCache {
                             updatedMessage.contentBlocks = blocks
                             updatedMessage.lastModified = Date.now
                             print("📎 Tool result received for id: \(id)")
+                    
+                            let remainingProgress = maxStreamingProgress - progressMade
+                            let additionalProgress = remainingProgress * toolValue
+                            progressMade += additionalProgress
+                            onProgressUpdate?(progressMade, "\(agentName) is typing…")
 
                         case .annotations(let annotations):
                             updatedMessage.annotations = annotations
                             updatedMessage.lastModified = Date.now
                             print("📎 Received \(annotations.count) annotation(s) for message")
+                            
+                            let remainingProgress = maxStreamingProgress - progressMade
+                            let additionalProgress = remainingProgress * tokenValue
+                            progressMade += additionalProgress
+                            onProgressUpdate?(progressMade, "\(agentName) is annotating…")
                         }
 
                         chat.messages[assistantIndex] = updatedMessage
                     }
                 }
 
+                onProgressUpdate?(90.0, "Response is ready. Saving...")
+                
                 // Generation complete - save and cleanup
                 await MainActor.run {
                     chat.isGenerating = false
@@ -582,6 +685,8 @@ class ChatCache {
                     feedbackGenerator.notificationOccurred(.success)
                 }
                 #endif
+                
+                onProgressUpdate?(100.0, "Generation completed")
 
             } catch {
                 await MainActor.run {
@@ -596,9 +701,11 @@ class ChatCache {
                     }
                     #endif
                     cleanupUnusedChats()
+                    onProgressUpdate?(100.0, "Failed to generate message")
                 }
             }
         }
+        onCompleteCallback?(true)
     }
 
     // MARK: - Persistence

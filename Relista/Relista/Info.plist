@@ -4,9 +4,13 @@
 <dict>
 	<key>CFBundleIconFile</key>
 	<string>BisquidAppIcon</string>
-	<key>CFBundleDisplayName</key>
-	<string>Bisquid</string>
-	<key>CFBundleName</key>
-	<string>Bisquid</string>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>Blindside-Studios.Relista.response-background-generation</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+	</array>
 </dict>
 </plist>
