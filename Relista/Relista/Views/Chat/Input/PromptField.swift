@@ -94,7 +94,7 @@ struct PromptField: View {
             #if os(iOS)
             PasteAwareTextField(
                 text: $inputMessage,
-                placeholder: placeHolder,
+                placeholder: $placeHolder,
                 onSubmit: sendMessage,
                 onImagePaste: { attachment in
                     withAnimation(.bouncy(duration: 0.3)) { pendingAttachments.append(attachment) }

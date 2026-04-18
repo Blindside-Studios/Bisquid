@@ -17,7 +17,7 @@ import UIKit
 /// SwiftUI `TextField` in the chat input bar on iOS/iPadOS.
 struct PasteAwareTextField: UIViewRepresentable {
     @Binding var text: String
-    let placeholder: String
+    @Binding var placeholder: String
     let onSubmit: () -> Void
     let onImagePaste: (PendingAttachment) -> Void
 
@@ -47,6 +47,7 @@ struct PasteAwareTextField: UIViewRepresentable {
             tv.updatePlaceholderVisibility()
             tv.invalidateIntrinsicContentSize()
         }
+        tv.setPlaceholder(placeholder)
         if focusRequest {
             tv.becomeFirstResponder()
             DispatchQueue.main.async { focusRequest = false }
@@ -120,6 +121,11 @@ final class PasteInterceptingTextView: UITextView {
 
     func updatePlaceholderVisibility() {
         placeholderLabel?.isHidden = !text.isEmpty
+    }
+
+    func setPlaceholder(_ placeholder: String) {
+        guard placeholderLabel?.text != placeholder else { return }
+        placeholderLabel?.text = placeholder
     }
 
     // Expand the hit-testable region so selection handles that extend outside
