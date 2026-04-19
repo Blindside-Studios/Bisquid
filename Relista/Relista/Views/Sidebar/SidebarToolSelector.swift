@@ -9,11 +9,57 @@ import SwiftUI
 
 struct SidebarToolSelector: View {
     @Binding var shownContentType: ContentType
+    @State var showingSettings: Bool = false
     
     var body: some View {
         VStack(spacing: 0){
             SidebarToolButton(assignedTool: .documentAI, shownContentType: $shownContentType, toolName: "Documents", systemImage: "document.on.document")
             SidebarToolButton(assignedTool: .audioAI, shownContentType: $shownContentType, toolName: "Audio", systemImage: "waveform")
+            
+#if os(macOS)
+            SettingsLink{
+                HStack {
+                    Label("Settings", systemImage: "gearshape")
+                    Text("Settings")
+                    Spacer()
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .labelStyle(.iconOnly)
+            .backgroundStyle(.clear)
+            #else
+            Button {
+                showingSettings.toggle()
+            } label: {
+                HStack {
+                    Label("Settings", systemImage: "gearshape")
+                    Text("Settings")
+                    Spacer()
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .labelStyle(.iconOnly)
+            .backgroundStyle(.clear)
+            .sheet(isPresented: $showingSettings) {
+                NavigationStack {
+                    SettingsView(selection: .general)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button(role: .close) {
+                                    showingSettings = false
+                                }
+                            }
+                        }
+                        .navigationTitle("Settings")
+                }
+            }
+            #endif
         }
     }
 }
@@ -33,7 +79,7 @@ struct SidebarToolButton: View {
             onSidebarSelection?()
         } label: {
             HStack {
-                Label("", systemImage: systemImage)
+                Label(toolName, systemImage: systemImage)
                 Text(toolName)
                 Spacer()
             }

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @State private var selection: SettingsItem? = .apiProvider
+    @State var selection: SettingsItem
         
         var body: some View {
             #if os(macOS)
@@ -35,8 +35,6 @@ struct SettingsView: View {
                     PersonalizationSettings()
                 case .agents:
                     AgentsSettings()
-                case .none:
-                    Text("Select a category")
                 }
             }
             .frame(width: 800, height: 500)
@@ -107,5 +105,5 @@ struct AgentsSettings: View {
 }
 
 #Preview {
-    SettingsView()
+    SettingsView(selection: .general)
 }

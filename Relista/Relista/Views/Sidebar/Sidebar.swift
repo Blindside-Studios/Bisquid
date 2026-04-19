@@ -94,11 +94,6 @@ struct Sidebar: View {
         .refreshable {
             await performSync()
         }
-        #if os(iOS)
-        .safeAreaBar(edge: .bottom, alignment: .leading, spacing: 0) {
-            settingsBar
-        }
-        #endif
     }
 
     // MARK: - Subviews
@@ -158,29 +153,6 @@ struct Sidebar: View {
             }
         }
     }
-
-    /*@ViewBuilder
-    private var squidletsToggle: some View {
-        Button {
-            withAnimation(.bouncy(duration: 0.3, extraBounce: 0.05)) {
-                showCustomAgents.toggle()
-            }
-        } label: {
-            HStack {
-                Label("Expand/collapse Squidlet list", systemImage: "chevron.down")
-                    .rotationEffect(showCustomAgents ? Angle(degrees: -180) : Angle(degrees: 0))
-                Text("Squidlets")
-                Spacer()
-            }
-            .padding(10)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-        }
-        .opacity(0.6)
-        .buttonStyle(.plain)
-        .labelStyle(.iconOnly)
-        .backgroundStyle(.clear)
-    }*/
 
     @ViewBuilder
     private var filterHeader: some View {
@@ -255,38 +227,6 @@ struct Sidebar: View {
             }
         }
     }
-
-    #if os(iOS)
-    @ViewBuilder
-    private var settingsBar: some View {
-        HStack {
-            Button {
-                showingSettings.toggle()
-            } label: {
-                Label("Settings", systemImage: "gear")
-                    .padding(4)
-                    .contentShape(Rectangle())
-                    .hoverEffect(.highlight)
-                    .padding(4)
-                    .padding(.leading, 12)
-            }
-            .sheet(isPresented: $showingSettings) {
-                NavigationStack {
-                    SettingsView()
-                        .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
-                                Button(role: .close) {
-                                    showingSettings = false
-                                }
-                            }
-                        }
-                        .navigationTitle("Settings")
-                }
-            }
-            .buttonStyle(.plain)
-        }
-    }
-    #endif
     
     func loadConversation(_ id: UUID) {
         let previousID = selectedConversationID
