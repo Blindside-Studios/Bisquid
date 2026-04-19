@@ -10,14 +10,21 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     let totalAvailableItems: [SettingsItem] = [.general, .personalization, .agents, .apiProvider]
-    @State private var settingsView: SettingsItem? = nil
+    @SceneStorage("settings.selection") private var storedSelection: String = ""
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var onClose: (() -> Void)? = nil
 
+    private var selectionBinding: Binding<SettingsItem?> {
+        Binding(
+            get: { SettingsItem(rawValue: storedSelection) },
+            set: { storedSelection = $0?.rawValue ?? "" }
+        )
+    }
+
     var body: some View {
         NavigationSplitView {
-            List(totalAvailableItems, selection: $settingsView) { view in
+            List(totalAvailableItems, selection: selectionBinding) { view in
                 NavigationLink(value: view) {
                     Label(view.title, systemImage: view.systemImage)
                 }
@@ -33,16 +40,15 @@ struct SettingsView: View {
             }
             #endif
         } detail: {
-            if let settingsView {
-                settingsDetail(for: settingsView)
+            if let selection = selectionBinding.wrappedValue {
+                settingsDetail(for: selection)
             } else {
                 Text("Select a setting")
             }
         }
         .task(id: "initial-selection") {
-            // do this with persistent id so it doesn't do this again, aka stays on the page you were on
-            if settingsView == nil && sizeClass != .compact {
-                settingsView = .general
+            if selectionBinding.wrappedValue == nil && sizeClass != .compact {
+                selectionBinding.wrappedValue = .general
             }
         }
     }

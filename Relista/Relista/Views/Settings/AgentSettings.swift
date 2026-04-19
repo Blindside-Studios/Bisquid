@@ -65,8 +65,21 @@ extension Color {
 struct AgentSettings: View {
     @StateObject private var manager = AgentManager.shared
 
-    @State private var showCreateSheet = false
-    @State private var selectedAgent: Agent?
+    @SceneStorage("agents.showCreateSheet") private var showCreateSheet = false
+    @SceneStorage("agents.editingAgentID") private var editingAgentID: String = ""
+
+    private var selectedAgentBinding: Binding<Agent?> {
+        Binding(
+            get: {
+                guard !editingAgentID.isEmpty,
+                      let uuid = UUID(uuidString: editingAgentID) else { return nil }
+                return manager.customAgents.first { $0.id == uuid }
+            },
+            set: { newValue in
+                editingAgentID = newValue?.id.uuidString ?? ""
+            }
+        )
+    }
 
     var body: some View {
         Group {
@@ -93,7 +106,7 @@ struct AgentSettings: View {
                         }
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            selectedAgent = agent
+                            editingAgentID = agent.id.uuidString
                         }
                         .contextMenu {
                                 Button(role: .destructive) {
@@ -117,13 +130,15 @@ struct AgentSettings: View {
                 }
             }
         }
-        .sheet(item: $selectedAgent) { agent in
+        .sheet(item: selectedAgentBinding) { agent in
             AgentEditorView(agent: agent)
                 .presentationSizing(.page)
+                .interactiveDismissDisabled()
         }
         .sheet(isPresented: $showCreateSheet) {
             AgentEditorView()
                 .presentationSizing(.page)
+                .interactiveDismissDisabled()
         }
     }
     
@@ -152,10 +167,12 @@ struct AgentEditorView: View {
 
     let mode: Mode
     @State private var agent: Agent
+    @SceneStorage private var draftJSON: String
 
     init(agent: Agent) {
         self.mode = .edit(agent.id)
         _agent = State(initialValue: agent)
+        _draftJSON = SceneStorage(wrappedValue: "", "agentEditor.edit.\(agent.id.uuidString)")
     }
 
     init() {
@@ -172,6 +189,7 @@ struct AgentEditorView: View {
             secondaryAccentColor: nil,
             memories: []
         ))
+        _draftJSON = SceneStorage(wrappedValue: "", "agentEditor.create")
     }
 
     private var isEditing: Bool {
@@ -223,19 +241,32 @@ struct AgentEditorView: View {
                 }
                 
                 Section("Memories") {
-                    MemoryListEditor(memories: $agent.memories)
+                    MemoryListEditor(memories: $agent.memories, storageID: "agent")
                 }
             }
             //.navigationTitle(isEditing ? agent.name : "New Squidlet")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(role: .cancel) { dismiss() }
+                    Button(role: .cancel) { cancel() }
                 }
-                
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button(role: .confirm) { save() }
                         .disabled(agent.name.isEmpty)
                 }
+            }
+        }
+        .task {
+            if !draftJSON.isEmpty,
+               let data = draftJSON.data(using: .utf8),
+               let restored = try? JSONDecoder().decode(Agent.self, from: data) {
+                agent = restored
+            }
+        }
+        .onChange(of: agent) { _, newValue in
+            if let data = try? JSONEncoder().encode(newValue),
+               let json = String(data: data, encoding: .utf8) {
+                draftJSON = json
             }
         }
     }
@@ -249,6 +280,12 @@ struct AgentEditorView: View {
                 existing = agent
             }
         }
+        draftJSON = ""
+        dismiss()
+    }
+
+    private func cancel() {
+        draftJSON = ""
         dismiss()
     }
 }

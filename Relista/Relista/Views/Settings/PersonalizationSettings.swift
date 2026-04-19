@@ -25,7 +25,7 @@ struct PersonalizationSettings: View {
             }
             
             Section("Memories") {
-                MemoryListEditor(memories: $settings.memories)
+                MemoryListEditor(memories: $settings.memories, storageID: "personalization")
             }
             
             Section("Default Temperature") {

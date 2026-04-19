@@ -9,12 +9,30 @@ import SwiftUI
 
 /// A reusable list editor for an array of memory strings.
 /// Designed to be used inside a Form Section.
+///
+/// `storageID` namespaces the `@SceneStorage` keys so that multiple
+/// instances in the same scene (e.g. Personalization + Agent editor) don't
+/// trample each other's sheet state.
 struct MemoryListEditor: View {
     @Binding var memories: [String]
 
-    @State private var showAddSheet = false
-    @State private var editingIndex: Int?
-    @State private var draftText = ""
+    @SceneStorage private var showAddSheet: Bool
+    @SceneStorage private var editingIndex: Int
+    @SceneStorage private var draftText: String
+
+    init(memories: Binding<[String]>, storageID: String) {
+        self._memories = memories
+        self._showAddSheet = SceneStorage(wrappedValue: false, "memory.\(storageID).showAdd")
+        self._editingIndex = SceneStorage(wrappedValue: -1, "memory.\(storageID).editingIndex")
+        self._draftText = SceneStorage(wrappedValue: "", "memory.\(storageID).draftText")
+    }
+
+    private var isEditingBinding: Binding<Bool> {
+        Binding(
+            get: { editingIndex >= 0 },
+            set: { if !$0 { editingIndex = -1 } }
+        )
+    }
 
     var body: some View {
         ForEach(memories.indices, id: \.self) { index in
@@ -52,16 +70,16 @@ struct MemoryListEditor: View {
                 let trimmed = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty { memories.append(trimmed) }
             }
+            .interactiveDismissDisabled()
         }
-        .sheet(isPresented: Binding(
-            get: { editingIndex != nil },
-            set: { if !$0 { editingIndex = nil } }
-        )) {
-            if let index = editingIndex {
+        .sheet(isPresented: isEditingBinding) {
+            if editingIndex >= 0 && editingIndex < memories.count {
+                let index = editingIndex
                 MemoryEditSheet(text: $draftText, title: "Edit Memory") {
                     let trimmed = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmed.isEmpty { memories[index] = trimmed }
                 }
+                .interactiveDismissDisabled()
             }
         }
     }
@@ -87,10 +105,10 @@ private struct MemoryEditSheet: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(role: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(role: .confirm) {
                         onSave()
                         dismiss()
                     }
