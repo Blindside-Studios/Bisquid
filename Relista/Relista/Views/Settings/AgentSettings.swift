@@ -274,9 +274,8 @@ struct AgentHeader: View{
                         .font(.largeTitle)
                     Text("My Name is")
                     //.bold()
-                    TextField("Bob", text: $name)
+                    TextField("Squiddy", text: $name)
                         .bold()
-                        .foregroundStyle(.black)
                         .multilineTextAlignment(.center)
                         .textFieldStyle(.plain)
                         .font(.title2)
@@ -295,8 +294,7 @@ struct AgentHeader: View{
             
             Divider()
             
-            TextField("Add a description", text: $description)
-                .foregroundStyle(.black)
+            TextField("Your friendly AI who doesn't ink", text: $description)
                 .opacity(0.7)
                 .multilineTextAlignment(.center)
                 .textFieldStyle(.plain)
@@ -359,75 +357,98 @@ struct AgentColorPicker: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 16) {
                 ForEach(AgentColorPreset.presets) { preset in
+                    
+                    let isSelected = normalized(preset.primaryHex) == normalized(primaryHex)
+                                  && normalized(preset.secondaryHex) == normalized(secondaryHex)
+                    
                     Button {
                         primaryHex = preset.primaryHex
                         secondaryHex = preset.secondaryHex
                     } label: {
                         VStack(spacing: 0){
-                            HStack{
-                                Spacer()
-                                    .frame(width: 15)
-                                Text("Example request")
-                                    .font(.caption)
-                                    .redacted(reason: .placeholder)
-                                    .multilineTextAlignment(.leading)
-                                    .lineLimit(2)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 6)
-                                    .glassEffect(.regular.tint((preset.primaryColor ?? Color.clear).opacity(0.3)), in: .rect(cornerRadius: 8, style: .continuous))
-                            }
                             ZStack{
-                                HStack{
-                                    Text("This is text from the model lmao")
-                                        .font(.caption)
-                                        .redacted(reason: .placeholder)
-                                        .multilineTextAlignment(.leading)
-                                    Spacer()
-                                        .frame(width: 7)
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.bottom, 12)
+                                Rectangle()
+                                    .fill(.gray.opacity(0.0001))
                                 VStack{
-                                    Spacer()
-                                        .frame(height: 40)
+                                    HStack{
+                                        Spacer()
+                                            .frame(width: 15)
+                                        Text("Example request")
+                                            .font(.caption)
+                                            .redacted(reason: .placeholder)
+                                            .multilineTextAlignment(.leading)
+                                            .lineLimit(2)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 6)
+                                            .glassEffect(.regular.tint((preset.primaryColor ?? Color.clear).opacity(0.3)), in: .rect(cornerRadius: 8, style: .continuous))
+                                    }
                                     ZStack{
-                                        Rectangle()
-                                            .fill(.clear)
-                                            .frame(height: 24)
-                                            .glassEffect(in: .rect(cornerRadius: 12, style: .continuous))
-                                        
                                         HStack{
+                                            Text("This is text from the model lmao")
+                                                .font(.caption)
+                                                .redacted(reason: .placeholder)
+                                                .multilineTextAlignment(.leading)
                                             Spacer()
-                                            Button {} label: {
-                                                Label("Mock send button", systemImage: "arrow.up")
-                                            }
-                                            .scaleEffect(0.5)
-                                            .offset(x: 12)
-                                            .buttonBorderShape(.circle)
-                                            .buttonStyle(.borderedProminent)
-                                            .tint(preset.secondaryColor ?? Color.white)
-                                            .foregroundStyle(preset.secondaryHex != nil ? Color.white : Color.black)
+                                                .frame(width: 7)
                                         }
-                                        .padding(4)
+                                        .padding(.horizontal, 8)
+                                        .padding(.bottom, 12)
+                                        .offset(y: -4)
+                                        VStack{
+                                            Spacer()
+                                                .frame(height: 34)
+                                            ZStack{
+                                                Rectangle()
+                                                    .fill(.clear)
+                                                    .frame(height: 24)
+                                                    .glassEffect(in: .rect(cornerRadius: 12, style: .continuous))
+                                                
+                                                HStack{
+                                                    Spacer()
+                                                    Button {} label: {
+                                                        Label("Mock send button", systemImage: "arrow.up")
+                                                    }
+                                                    .scaleEffect(0.5)
+                                                    .offset(x: 12)
+                                                    .buttonBorderShape(.circle)
+                                                    .buttonStyle(.borderedProminent)
+                                                    .tint(preset.secondaryColor ?? Color.white)
+                                                    .foregroundStyle(preset.secondaryHex != nil ? Color.white : Color.black)
+                                                }
+                                                .padding(4)
+                                            }
+                                        }
                                     }
                                 }
                             }
+                            .padding(.horizontal, 8)
+                            .background{
+                                GeometryReader { proxy in
+                                    Jellyfish(primaryColor: preset.primaryColor ?? Color.clear, secondaryColor: preset.secondaryColor ?? Color.clear, showJellyfish: isSelected)
+                                        .frame(width: proxy.size.width * 5, height: proxy.size.height * 5)
+                                        .scaleEffect(1/5, anchor: .center)
+                                        .frame(width: proxy.size.width, height: proxy.size.height)
+                                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                        .overlay {
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(.gray.opacity(0.3), lineWidth: isSelected ? 2 : 0)
+                                                .animation(.default, value: isSelected)
+                                        }
+                                }
+                                .padding(.bottom, 8)
+                            }
                             
                             Spacer()
-                                .frame(height: 8)
+                                .frame(height: 4)
                             Text(preset.name)
                                 .font(.caption)
                                 .lineLimit(2)
-                                .opacity(0.7)
-                            
-                            /*swatch(for: preset)
-                             Text(preset.name)
-                             .font(.caption2)
-                             .foregroundStyle(.primary)*/
+                                .opacity(isSelected ? 1 : 0.7)
+                                .animation(.default, value: isSelected)
                         }
                     }
                     .frame(minHeight: 150)
-                    .frame(maxWidth: 100)
+                    .frame(maxWidth: 120)
                     .contentShape(Rectangle())
                     .buttonStyle(.plain)
                 }

@@ -8,13 +8,11 @@
 import SwiftUI
 
 struct Jellyfish: View {
-    @Binding var primaryColor: Color
-    @Binding var secondaryColor: Color
-    @Binding var selectedChat: UUID
+    let primaryColor: Color
+    let secondaryColor: Color
+    let showJellyfish: Bool
+    //@Binding var selectedChat: UUID
     
-    private var isChatBlank: Bool{
-        ChatCache.shared.loadedChats[selectedChat]?.messages.isEmpty ?? false
-    }
     var cornerRadius: Int{
         #if os(macOS)
         24
@@ -38,31 +36,31 @@ struct Jellyfish: View {
                     Rectangle()
                         .overlay {
                             RoundedRectangle(cornerSize: CGSize(width: cornerRadius, height: cornerRadius), style: .continuous)
-                                .blur(radius: isChatBlank ? 40 : 0)
-                                .opacity(isChatBlank ? 0.6 : 1)
+                                .blur(radius: showJellyfish ? 40 : 0)
+                                .opacity(showJellyfish ? 0.6 : 1)
                                 .blendMode(.destinationOut)
                             RoundedRectangle(cornerSize: CGSize(width: cornerRadius, height: cornerRadius), style: .continuous)
-                                .blur(radius: isChatBlank ? 40 : 0)
-                                .opacity(isChatBlank ? 0.6 : 1)
+                                .blur(radius: showJellyfish ? 40 : 0)
+                                .opacity(showJellyfish ? 0.6 : 1)
                                 .blendMode(.destinationOut)
                         }
                         .compositingGroup()
                 }
-                .opacity(isChatBlank ? 1 : 0)
-                .onChange(of: selectedChat, {_ = isChatBlank})
+                .opacity(showJellyfish ? 1 : 0)
+                .onChange(of: showJellyfish, {_ = showJellyfish})
                 .ignoresSafeArea()
             
-            if isChatBlank{
-                AmbientBackground(accentColor: $secondaryColor)
+            if showJellyfish{
+                AmbientBackground(accentColor: secondaryColor)
                     .blur(radius: 100)
                     .transition(.opacity.combined(with: .scale(scale: 5)))
             }
         }
-        .animation(.default, value: isChatBlank)
+        .animation(.default, value: showJellyfish)
     }
     
     struct FloatingOrb: View {
-        @Binding var color: Color
+        let color: Color
         let size: CGFloat
         let duration: Double
         
@@ -106,7 +104,7 @@ struct Jellyfish: View {
     }
 
     struct AmbientBackground: View {
-        @Binding var accentColor: Color
+        let accentColor: Color
         @State private var rotation: Double = 0
         
         var body: some View {
@@ -115,26 +113,26 @@ struct Jellyfish: View {
                     let width = geometry.size.width
                     let height = geometry.size.height
                     
-                    FloatingOrb(color: $accentColor, size: 250, duration: 8)
+                    FloatingOrb(color: accentColor, size: 250, duration: 8)
                         .position(x: width * 0.2, y: height * 0.3)
 
-                    FloatingOrb(color: $accentColor, size: 200, duration: 12)
+                    FloatingOrb(color: accentColor, size: 200, duration: 12)
                         .opacity(0.8)
                         .position(x: width * 0.8, y: height * 0.6)
 
-                    FloatingOrb(color: $accentColor, size: 220, duration: 10)
+                    FloatingOrb(color: accentColor, size: 220, duration: 10)
                         .opacity(0.6)
                         .position(x: width * 0.5, y: height * 0.2)
 
-                    FloatingOrb(color: $accentColor, size: 210, duration: 14)
+                    FloatingOrb(color: accentColor, size: 210, duration: 14)
                         .opacity(0.7)
                         .position(x: width * 0.15, y: height * 0.7)
 
-                    FloatingOrb(color: $accentColor, size: 180, duration: 9)
+                    FloatingOrb(color: accentColor, size: 180, duration: 9)
                         .opacity(0.9)
                         .position(x: width * 0.75, y: height * 0.25)
 
-                    FloatingOrb(color: $accentColor, size: 240, duration: 11)
+                    FloatingOrb(color: accentColor, size: 240, duration: 11)
                         .opacity(0.75)
                         .position(x: width * 0.6, y: height * 0.8)
                 }
@@ -154,7 +152,7 @@ struct Jellyfish: View {
 }
 
 #Preview {
-    Jellyfish(primaryColor: .constant(.red), secondaryColor: .constant(.blue), selectedChat: .constant(UUID()))
+    Jellyfish(primaryColor: .red, secondaryColor: .blue, showJellyfish: true)
         //.frame(width: 700, height: 500)
         .ignoresSafeArea()
 }

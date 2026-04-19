@@ -15,15 +15,16 @@ struct ChatBackground: View {
     @State var primaryColor: Color = .clear
     @State var secondaryColor: Color = .clear
     @Environment(\.colorScheme) private var colorScheme
+    private var isChatEmpty: Bool {
+        return ChatCache.shared.loadedChats[selectedChat]?.messages.isEmpty ?? false
+    }
     
     var body: some View {
         ZStack{
             AppBackground()
             
-            if selectedAgent != nil{
-                Jellyfish(primaryColor: $primaryColor, secondaryColor: $secondaryColor, selectedChat: $selectedChat)
-                    .transition(.opacity.combined(with: .scale(scale: 5)))
-            }
+            Jellyfish(primaryColor: primaryColor, secondaryColor: secondaryColor, showJellyfish: isChatEmpty && selectedAgent != nil)
+                .transition(.opacity.combined(with: .scale(scale: 5)))
         }
         .animation(.default, value: selectedAgent)
         .animation(.default, value: primaryColor)
