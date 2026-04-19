@@ -41,7 +41,7 @@ struct RelistaApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(reloadSidebar: refreshContent)
+            ContentView(reloadSidebar: RelistaApp.refreshContent)
                 .onAppear {
                     // Only initialize once
                     guard !hasInitialized else { return }
@@ -55,7 +55,7 @@ struct RelistaApp: App {
         .onChange(of: scenePhase) { oldPhase, newPhase in
                     if newPhase == .active {
                         Task{
-                            await refreshContent()
+                            await RelistaApp.refreshContent()
                         }
                     }
                 }
@@ -75,7 +75,7 @@ struct RelistaApp: App {
             CommandGroup(after: .sidebar) {
                 Button("Refresh", systemImage: "arrow.clockwise") {
                     Task {
-                        await refreshContent()
+                        await RelistaApp.refreshContent()
                     }
                 }
                 .keyboardShortcut("r", modifiers: .command)
@@ -94,7 +94,7 @@ struct RelistaApp: App {
         #endif
     }
     
-    func refreshContent() async{
+    public static func refreshContent() async{
         ChatCache.shared.loadingProgress = 0.0
         ChatCache.shared.isLoading = true
         print("Refreshing agents and chats")
@@ -106,7 +106,7 @@ struct RelistaApp: App {
         ChatCache.shared.isLoading = false
     }
     
-    func ensureICloudUpToDate() async {
+    static func ensureICloudUpToDate() async {
         guard let iCloudURL = FileManager.default.url(forUbiquityContainerIdentifier: "iCloud.Blindside-Studios.Relista") else {
             print("iCloud not available")
             return
@@ -136,7 +136,7 @@ struct RelistaApp: App {
         }
     }
 
-    private func waitForDownload(url: URL) async throws {
+    private static func waitForDownload(url: URL) async throws {
         while true {
             let resourceValues = try url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
             

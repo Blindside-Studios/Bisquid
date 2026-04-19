@@ -736,6 +736,7 @@ class ChatCache {
                 onProgressUpdate?(90.0, "Response is ready. Saving...")
                 
                 // Generation complete - save and cleanup
+                await RelistaApp.refreshContent()
                 await MainActor.run {
                     chat.isGenerating = false
                     cancellationFlags[conversationID] = false

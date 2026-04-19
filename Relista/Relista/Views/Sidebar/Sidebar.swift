@@ -70,7 +70,9 @@ struct Sidebar: View {
                     renameText = ""
                 }
                 Button("Rename") {
-                    renameConversation()
+                    Task{
+                        await renameConversation()
+                    }
                 }
             } message: {
                 Text("Enter a new name for this conversation")
@@ -80,7 +82,9 @@ struct Sidebar: View {
                     conversationToDelete = nil
                 }
                 Button("Delete", role: .destructive) {
-                    deleteConversation()
+                    Task{
+                        await deleteConversation()
+                    }
                 }
             } message: {
                 Text("Are you sure you want to delete this conversation? This action cannot be undone.")
@@ -299,14 +303,15 @@ struct Sidebar: View {
         chatCache.setViewing(id: id, isViewing: true)
     }
     
-    func renameConversation() {
+    func renameConversation() async {
+        await RelistaApp.refreshContent()
         guard let conv = conversationToRename, !renameText.isEmpty else { return }
         chatCache.renameConversation(id: conv.id, to: renameText)
         conversationToRename = nil
         renameText = ""
     }
     
-    func deleteConversation() {
+    func deleteConversation() async {
         guard let conv = conversationToDelete else { return }
         if selectedConversationID == conv.id {
             createNewChat()
@@ -317,6 +322,7 @@ struct Sidebar: View {
     
     func performSync() async {
         print("🔄 Manual refresh triggered (Sidebar)")
+        await RelistaApp.refreshContent()
         await AgentManager.shared.refreshFromStorage()
         await ConversationManager.refreshConversationsFromStorage()
     }
