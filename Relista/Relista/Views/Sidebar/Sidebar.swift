@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct Sidebar: View {
-    @Binding var showingSettings: Bool
     @Binding var chatCache: ChatCache
     @Binding var selectedConversationID: UUID
     @Binding var selectedAgent: UUID?

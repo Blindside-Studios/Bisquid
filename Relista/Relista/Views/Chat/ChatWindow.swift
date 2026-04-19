@@ -12,6 +12,8 @@ struct ChatWindow: View {
     @Binding var inputMessage: String
     @Binding var selectedAgent: UUID?
     @Binding var selectedModel: String
+    @Binding var editingMessage: Message?
+    @Binding var pendingAttachments: [PendingAttachment]
     @State private var chatCache = ChatCache.shared
 
     @AppStorage("chatFontSize") private var chatFontSize: Double = Font.defaultBodySize
@@ -19,7 +21,6 @@ struct ChatWindow: View {
     @State private var scrollWithAnimation = true
     @State private var primaryAccentColor: Color = .clear
     @State private var secondaryAccentColor: Color = .primary
-    @State private var editingMessage: Message? = nil
 
     var body: some View {
         ZStack{
@@ -79,7 +80,7 @@ struct ChatWindow: View {
                             #endif
                         })
                         .safeAreaBar(edge: .bottom, spacing: 0){
-                            InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
+                            InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
                         }
                         .onChange(of: conversationID) { _, _ in
                             // scroll to last user/system message when switching conversations
@@ -107,9 +108,6 @@ struct ChatWindow: View {
         .task(id: conversationID) {
             // Load the chat when the view appears or conversation changes
             _ = chatCache.getChat(for: conversationID)
-        }
-        .onChange(of: conversationID) { _, _ in
-            editingMessage = nil
         }
         #if os(iOS)
         .onChange(of: chatCache.getConversation(for: conversationID)?.title, initial: true) { _, title in

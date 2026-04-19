@@ -16,6 +16,7 @@ struct InputUI: View {
     @Binding var primaryAccentColor: Color
     @Binding var secondaryAccentColor: Color
     @Binding var editingMessage: Message?
+    @Binding var pendingAttachments: [PendingAttachment]
     
     // own logic
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -77,7 +78,7 @@ struct InputUI: View {
                             //.shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                     }
 
-                    PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
+                    PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
                         .layoutPriority(1)
                         .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                 }
@@ -103,7 +104,7 @@ struct InputUI: View {
                             AnyTransition.blurFade.combined(with: .offset(y: -150)).combined(with: .opacity)
                         )
                     }
-                    PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage)
+                    PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
                         #if os(macOS)
                         .padding(typingBarPaddingMacOS && !isChatBlank ? 16 : 0)
                         /*.shadow(color: focused == .inactive ? .clear : .black.opacity(isChatBlank ? 0.075 : 0.025), radius: focused == .inactive ? 0 : 12)

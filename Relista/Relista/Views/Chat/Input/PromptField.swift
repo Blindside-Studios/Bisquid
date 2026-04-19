@@ -25,8 +25,7 @@ struct PromptField: View {
     @Binding var primaryAccentColor: Color
     @Binding var secondaryAccentColor: Color
     @Binding var editingMessage: Message?
-
-    @State private var pendingAttachments: [PendingAttachment] = []
+    @Binding var pendingAttachments: [PendingAttachment]
     #if os(iOS)
     @State private var textFieldFocusRequest: Bool = false
     #endif
