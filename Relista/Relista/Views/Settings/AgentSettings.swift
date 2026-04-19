@@ -148,6 +148,7 @@ struct AgentEditorView: View {
     }
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) var sizeClass
 
     let mode: Mode
     @State private var agent: Agent
@@ -167,8 +168,8 @@ struct AgentEditorView: View {
             systemPrompt: "",
             temperature: 1.0,
             shownInSidebar: true,
-            primaryAccentColor: Color.blue.toHex(),
-            secondaryAccentColor: Color.purple.toHex(),
+            primaryAccentColor: nil,
+            secondaryAccentColor: nil,
             memories: []
         ))
     }
@@ -178,97 +179,31 @@ struct AgentEditorView: View {
         return false
     }
 
-    private var primaryColorBinding: Binding<Color> {
-        Binding(
-            get: {
-                if let hex = agent.primaryAccentColor, let color = Color(hex: hex) { return color }
-                return .blue
-            },
-            set: { agent.primaryAccentColor = $0.toHex() }
-        )
-    }
-
-    private var secondaryColorBinding: Binding<Color> {
-        Binding(
-            get: {
-                if let hex = agent.secondaryAccentColor, let color = Color(hex: hex) { return color }
-                return .purple
-            },
-            set: { agent.secondaryAccentColor = $0.toHex() }
-        )
-    }
-
     var body: some View {
         NavigationStack {
             Form {
                 Section{
-                    VStack{
-                        HStack{
-                            TextField("Icon (Emoji)", text: $agent.icon)
-                                .frame(width: 92, height: 92)
-                                .font(.system(size: 72))
-                                .gesture(TapGesture().onEnded {
-                                    //self.showingImagePicker.toggle()
-                                })
-                                .padding(.horizontal, 16)
-                            
-                            VStack{
-                                Text("Hello")
-                                    .bold()
-                                    .font(.largeTitle)
-                                Text("My Name is")
-                                //.bold()
-                                TextField("Bob", text: $agent.name)
-                                    .bold()
-                                    .foregroundStyle(.black)
-                                    .multilineTextAlignment(.center)
-                                    .textFieldStyle(.plain)
-                                    .font(.title2)
-                                    .padding(8)
-                                    .background{
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(Color(.systemGroupedBackground))
-                                    }
-                                    //.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
-                            }
+                    if sizeClass == .regular {
+                        HStack(spacing: 16) {
+                            AgentHeader(name: $agent.name, description: $agent.description, icon: $agent.icon)
+                            AgentColorPicker(primaryHex: $agent.primaryAccentColor, secondaryHex: $agent.secondaryAccentColor)
                         }
-                        
-                        Divider()
-                        
-                        TextField("Add a description", text: $agent.description)
-                            .foregroundStyle(.black)
-                            .opacity(0.7)
-                            .multilineTextAlignment(.center)
-                            .textFieldStyle(.plain)
-                            .font(.body)
-                            .padding(8)
-                            .background{
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(.systemGroupedBackground))
-                            }
-                            //.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
+                    } else {
+                        VStack(spacing: 16) {
+                            AgentHeader(name: $agent.name, description: $agent.description, icon: $agent.icon)
+                            AgentColorPicker(primaryHex: $agent.primaryAccentColor, secondaryHex: $agent.secondaryAccentColor)
+                        }
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
                     }
-                    .padding(8)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
-                    .background{
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .fill(Color(.secondarySystemGroupedBackground))
-                    }
-                    .frame(maxWidth: 400)
                 }
                 
-                /*Section("Basics") {
-                 TextField("Name", text: $agent.name)
-                 TextField("Description", text: $agent.description)
-                 TextField("Icon (Emoji)", text: $agent.icon)
-                 .font(.largeTitle)
-                 }*/
-                
-                Section("Colors") {
+                /*Section("Colors") {
                     ColorPicker("Primary Accent Color", selection: primaryColorBinding)
                     ColorPicker("Secondary Accent Color", selection: secondaryColorBinding)
-                }
+                }*/
                 
                 Section("System Prompt") {
                     TextField("Tell your Squidlet how to respond", text: $agent.systemPrompt, axis: .vertical)
@@ -315,6 +250,232 @@ struct AgentEditorView: View {
             }
         }
         dismiss()
+    }
+}
+
+struct AgentHeader: View{
+    @Binding var name: String
+    @Binding var description: String
+    @Binding var icon: String
+    var body: some View{
+        VStack{
+            HStack{
+                TextField("Icon (Emoji)", text: $icon)
+                    .frame(width: 92, height: 92)
+                    .font(.system(size: 72))
+                    .gesture(TapGesture().onEnded {
+                        //self.showingImagePicker.toggle()
+                    })
+                    .padding(.horizontal, 16)
+                
+                VStack{
+                    Text("Hello")
+                        .bold()
+                        .font(.largeTitle)
+                    Text("My Name is")
+                    //.bold()
+                    TextField("Bob", text: $name)
+                        .bold()
+                        .foregroundStyle(.black)
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(.plain)
+                        .font(.title2)
+                        .padding(8)
+                        .background{
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                #if os(iOS)
+                                .fill(Color(.systemGroupedBackground))
+                                #else
+                                .fill(.gray)
+                                #endif
+                        }
+                        //.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
+                }
+            }
+            
+            Divider()
+            
+            TextField("Add a description", text: $description)
+                .foregroundStyle(.black)
+                .opacity(0.7)
+                .multilineTextAlignment(.center)
+                .textFieldStyle(.plain)
+                .font(.body)
+                .padding(8)
+                .background{
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        #if os(iOS)
+                        .fill(Color(.systemGroupedBackground))
+                        #else
+                        .fill(.gray)
+                        #endif
+                }
+                //.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
+        }
+        .padding(8)
+        .background{
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                #if os(iOS)
+                .fill(Color(.secondarySystemGroupedBackground))
+                #else
+                .fill(.background)
+                #endif
+        }
+        .frame(maxWidth: 350)
+    }
+}
+
+struct AgentColorPreset: Identifiable, Hashable {
+    let name: String
+    let primaryHex: String?
+    let secondaryHex: String?
+    var id: String { name }
+
+    var primaryColor: Color? {
+        guard let primaryHex else { return nil }
+        return Color(hex: primaryHex)
+    }
+
+    var secondaryColor: Color? {
+        guard let secondaryHex else { return nil }
+        return Color(hex: secondaryHex)
+    }
+
+    static let presets: [AgentColorPreset] = [
+        .init(name: "Simply Bisquid",   primaryHex: nil,       secondaryHex: nil),
+        .init(name: "Deepsea Violets",  primaryHex: "#0056D6", secondaryHex: "#61187C"),
+        .init(name: "Split Fantasy",    primaryHex: "#669D34", secondaryHex: "#016E8F"),
+        .init(name: "Timeless Love",    primaryHex: "#D30011", secondaryHex: "#C31B78"),
+        .init(name: "Mechanical Poet",  primaryHex: "#91783F", secondaryHex: "#CC7C5E"),
+        .init(name: "Cool Profession",  primaryHex: "#74A7FF", secondaryHex: "#858585")
+    ]
+}
+
+struct AgentColorPicker: View {
+    @Binding var primaryHex: String?
+    @Binding var secondaryHex: String?
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 16) {
+                ForEach(AgentColorPreset.presets) { preset in
+                    Button {
+                        primaryHex = preset.primaryHex
+                        secondaryHex = preset.secondaryHex
+                    } label: {
+                        VStack(spacing: 0){
+                            HStack{
+                                Spacer()
+                                    .frame(width: 15)
+                                Text("Example request")
+                                    .font(.caption)
+                                    .redacted(reason: .placeholder)
+                                    .multilineTextAlignment(.leading)
+                                    .lineLimit(2)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                    .glassEffect(.regular.tint((preset.primaryColor ?? Color.clear).opacity(0.3)), in: .rect(cornerRadius: 8, style: .continuous))
+                            }
+                            ZStack{
+                                HStack{
+                                    Text("This is text from the model lmao")
+                                        .font(.caption)
+                                        .redacted(reason: .placeholder)
+                                        .multilineTextAlignment(.leading)
+                                    Spacer()
+                                        .frame(width: 7)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.bottom, 12)
+                                VStack{
+                                    Spacer()
+                                        .frame(height: 40)
+                                    ZStack{
+                                        Rectangle()
+                                            .fill(.clear)
+                                            .frame(height: 24)
+                                            .glassEffect(in: .rect(cornerRadius: 12, style: .continuous))
+                                        
+                                        HStack{
+                                            Spacer()
+                                            Button {} label: {
+                                                Label("Mock send button", systemImage: "arrow.up")
+                                            }
+                                            .scaleEffect(0.5)
+                                            .offset(x: 12)
+                                            .buttonBorderShape(.circle)
+                                            .buttonStyle(.borderedProminent)
+                                            .tint(preset.secondaryColor ?? Color.white)
+                                            .foregroundStyle(preset.secondaryHex != nil ? Color.white : Color.black)
+                                        }
+                                        .padding(4)
+                                    }
+                                }
+                            }
+                            
+                            Spacer()
+                                .frame(height: 8)
+                            Text(preset.name)
+                                .font(.caption)
+                                .lineLimit(2)
+                                .opacity(0.7)
+                            
+                            /*swatch(for: preset)
+                             Text(preset.name)
+                             .font(.caption2)
+                             .foregroundStyle(.primary)*/
+                        }
+                    }
+                    .frame(minHeight: 150)
+                    .frame(maxWidth: 100)
+                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxHeight: .infinity)
+            .padding(16)
+        }
+        .background{
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                #if os(iOS)
+                .fill(Color(.secondarySystemGroupedBackground))
+                #else
+                .fill(.background)
+                #endif
+        }
+    }
+
+    @ViewBuilder
+    private func swatch(for preset: AgentColorPreset) -> some View {
+        let isSelected = normalized(preset.primaryHex) == normalized(primaryHex)
+                      && normalized(preset.secondaryHex) == normalized(secondaryHex)
+        ZStack {
+            if let primary = preset.primaryColor, let secondary = preset.secondaryColor {
+                LinearGradient(
+                    colors: [primary, secondary],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.15))
+                    .overlay(
+                        Image(systemName: "nosign")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    )
+            }
+            Circle()
+                .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 2.5)
+                .padding(-3)
+        }
+        .frame(width: 36, height: 36)
+        .contentShape(Circle())
+    }
+
+    func normalized(_ hex: String?) -> String? {
+        hex?.replacingOccurrences(of: "#", with: "").uppercased()
     }
 }
 

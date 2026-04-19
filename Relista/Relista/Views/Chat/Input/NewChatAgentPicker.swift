@@ -49,11 +49,10 @@ struct NewChatAgentPicker: View {
                     let isCurrentAgent = selectedAgent == Optional(agent.id)
                     let colorResponse = AgentManager.getUIAgentColors(fromUUID: agent.id)
                     let primaryAccentColor: Color = {
-                        if let primaryHex = colorResponse[0] {
-                            let cleanPrimary = primaryHex.replacingOccurrences(of: "#", with: "")
-                            return Color(hex: cleanPrimary) ?? .blue
+                        if let primaryHex = colorResponse[0], let color = Color(hex: primaryHex) {
+                            return color
                         }
-                        return .blue
+                        return .accentColor
                     }()
                     
                     HStack {

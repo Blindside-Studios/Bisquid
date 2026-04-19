@@ -48,6 +48,7 @@ struct RelistaApp: App {
                     hasInitialized = true
 
                     Task {
+                        print(URL.documentsDirectory.path)
                         await ModelList.loadModels()
                     }
                 }

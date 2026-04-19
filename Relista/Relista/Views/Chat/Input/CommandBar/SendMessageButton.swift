@@ -44,7 +44,7 @@ struct SendMessageButton: View {
                             )
                         )
                 } else {
-                    Label("Stop generating", systemImage: "arrow.up")
+                    Label("Send", systemImage: "arrow.up")
                         .transition(
                             .asymmetric(
                                 insertion: .move(edge: .top).combined(with: .opacity),

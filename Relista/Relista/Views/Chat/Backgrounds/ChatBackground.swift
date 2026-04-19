@@ -49,7 +49,7 @@ struct ChatBackground: View {
                 secondaryAccentColor = Color(hex: cleanSecondary) ?? .primary
             } else {
                 primaryAccentColor = .clear
-                secondaryColor = .primary
+                secondaryAccentColor = .primary
                 primaryColor = .clear
                 secondaryColor = .clear
             }
