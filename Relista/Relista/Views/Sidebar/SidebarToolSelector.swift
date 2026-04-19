@@ -47,17 +47,7 @@ struct SidebarToolSelector: View {
             .labelStyle(.iconOnly)
             .backgroundStyle(.clear)
             .sheet(isPresented: $showingSettings) {
-                NavigationStack {
-                    SettingsView(selection: .general)
-                        .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
-                                Button(role: .close) {
-                                    showingSettings = false
-                                }
-                            }
-                        }
-                        .navigationTitle("Settings")
-                }
+                SettingsView(onClose: { showingSettings = false })
             }
             #endif
         }

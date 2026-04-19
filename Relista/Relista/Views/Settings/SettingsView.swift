@@ -8,59 +8,57 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @State var selection: SettingsItem
-        
-        var body: some View {
-            #if os(macOS)
-            NavigationSplitView {
-                List(selection: $selection) {
-                    ForEach(SettingsItem.allCases, id: \.self) { item in
-                        NavigationLink(value: item) {
-                            Label {
-                                Text(item.title)
-                            } icon: {
-                                Image(systemName: item.systemImage)
-                            }
-                        }
-                    }
-                }
-                .navigationTitle("Settings")
-            } detail: {
-                switch selection {
-                case .general:
-                    GeneralSettings()
-                case .apiProvider:
-                    APIProviderSettings()
-                case .personalization:
-                    PersonalizationSettings()
-                case .agents:
-                    AgentsSettings()
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    let totalAvailableItems: [SettingsItem] = [.general, .personalization, .agents, .apiProvider]
+    @State private var settingsView: SettingsItem? = nil
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+
+    var onClose: (() -> Void)? = nil
+
+    var body: some View {
+        NavigationSplitView {
+            List(totalAvailableItems, selection: $settingsView) { view in
+                NavigationLink(value: view) {
+                    Label(view.title, systemImage: view.systemImage)
                 }
             }
-            .frame(width: 800, height: 500)
-            
-            #else
-            NavigationStack {
-                List {
-                    ForEach(SettingsItem.allCases, id: \.self) { item in
-                        NavigationLink(item.title) {
-                            switch item {
-                            case .general:
-                                GeneralSettings()
-                            case .apiProvider:
-                                APIProviderSettings()
-                            case .personalization:
-                                PersonalizationSettings()
-                            case .agents:
-                                AgentsSettings()
-                            }
-                        }
+            .navigationTitle("Settings")
+            #if os(iOS)
+            .toolbar {
+                if let onClose {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(role: .close, action: onClose)
                     }
                 }
-                .navigationTitle("Settings")
             }
             #endif
+        } detail: {
+            if let settingsView {
+                settingsDetail(for: settingsView)
+            } else {
+                Text("Select a setting")
+            }
         }
+        .onAppear {
+            if sizeClass != .compact {
+                settingsView = .general
+            }
+        }
+    }
+    
+    @ViewBuilder
+    func settingsDetail(for item: SettingsItem) -> some View {
+        switch item {
+        case .general:
+            GeneralSettings()
+        case .apiProvider:
+            APIProvider()
+        case .personalization:
+            PersonalizationSettings()
+        case .agents:
+            AgentSettings()
+        }
+    }
 }
 
 enum SettingsItem: String, CaseIterable, Identifiable {
@@ -90,20 +88,6 @@ enum SettingsItem: String, CaseIterable, Identifiable {
     }
 }
 
-struct APIProviderSettings: View {
-    var body: some View {
-        APIProvider()
-            .padding()
-    }
-}
-
-struct AgentsSettings: View {
-    var body: some View {
-        AgentSettings()
-            .padding()
-    }
-}
-
 #Preview {
-    SettingsView(selection: .general)
+    //SettingsView(selection: .general)
 }

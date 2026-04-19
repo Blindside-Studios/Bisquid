@@ -89,7 +89,7 @@ struct RelistaApp: App {
 
         #if os(macOS)
         Settings {
-            SettingsView(selection: .general)
+            SettingsView()
         }
         #endif
     }
