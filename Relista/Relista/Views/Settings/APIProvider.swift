@@ -20,11 +20,11 @@ struct APIProvider: View {
                     .onChange(of: apiKeyMistral) { _, newValue in
                         KeychainHelper.shared.mistralAPIKey = newValue
                     }
-                SecureField("Claude API Key", text: $apiKeyClaude)
+                /*SecureField("Claude API Key", text: $apiKeyClaude)
                     .textFieldStyle(.roundedBorder)
                     .onChange(of: apiKeyClaude) { _, newValue in
                         KeychainHelper.shared.claudeAPIKey = newValue
-                    }
+                    }*/
                 /*SecureField("OpenRouter API Key", text: $apiKeyOpenRouter)
                     .textFieldStyle(.roundedBorder)
                     .onChange(of: apiKeyOpenRouter) { _, newValue in

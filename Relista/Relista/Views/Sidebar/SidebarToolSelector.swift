@@ -48,6 +48,7 @@ struct SidebarToolSelector: View {
             .backgroundStyle(.clear)
             .sheet(isPresented: $showingSettings) {
                 SettingsView(onClose: { showingSettings = false })
+                    .presentationSizing(.page)
             }
             #endif
         }

@@ -11,7 +11,7 @@ struct PersonalizationSettings: View {
     @ObservedObject private var settings = SyncedSettings.shared
 
     var body: some View {
-        List {
+        Form {
             Section("Personal info") {
                 TextField("Name", text: $settings.userName)
             }
@@ -20,8 +20,8 @@ struct PersonalizationSettings: View {
             }
             
             Section("Default instructions") {
-                TextEditor(text: $settings.defaultInstructions)
-                    .frame(minHeight: 150)
+                TextField("Default instructions", text: $settings.defaultInstructions, axis: .vertical)
+                    .lineLimit(5...)
             }
             
             Section("Memories") {
@@ -39,6 +39,7 @@ struct PersonalizationSettings: View {
                 Toggle("Replace em-dashes with en-dashes", isOn: $settings.suppressEmDashes)
             }
         }
+        .formStyle(.grouped)
     }
 }
 

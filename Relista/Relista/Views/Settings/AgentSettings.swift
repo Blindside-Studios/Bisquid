@@ -118,12 +118,12 @@ struct AgentSettings: View {
             }
         }
         .sheet(item: $selectedAgent) { agent in
-            NavigationStack {
-                AgentDetailView(agent: binding(for: agent))
-            }
+            AgentEditorView(agent: agent)
+                .presentationSizing(.page)
         }
         .sheet(isPresented: $showCreateSheet) {
-            AgentCreateView(isPresented: $showCreateSheet)
+            AgentEditorView()
+                .presentationSizing(.page)
         }
     }
     
@@ -139,183 +139,182 @@ struct AgentSettings: View {
         manager.customAgents.move(fromOffsets: source, toOffset: destination)
         try? AgentManager.shared.saveToDisk()
     }
-    
-    private func binding(for agent: Agent) -> Binding<Agent> {
-        guard let index = manager.customAgents.firstIndex(where: { $0.id == agent.id }) else {
-            fatalError("Agent not found")
-        }
-        return $manager.customAgents[index]
-    }
 }
 
-struct AgentCreateView: View {
-    @Binding var isPresented: Bool
-
-    @State private var name = ""
-    @State private var description = ""
-    @State private var icon = "🤖"
-    @State private var systemPrompt = ""
-    @State private var temperature = 1.0
-    @State private var model: String = ModelList.placeHolderModel
-    @State private var primaryAccentColor: Color = .blue
-    @State private var secondaryAccentColor: Color = .purple
-    @State private var memories: [String] = []
-
-    @State private var showModelPickerPopOver: Bool = false
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Basics") {
-                    TextField("Name", text: $name)
-                    TextField("Description", text: $description)
-                    TextField("Icon (Emoji)", text: $icon)
-                        .font(.largeTitle)
-                }
-
-                Section("Colors") {
-                    ColorPicker("Primary Accent Color", selection: $primaryAccentColor)
-                    ColorPicker("Secondary Accent Color", selection: $secondaryAccentColor)
-                }
-
-                Section("System Prompt") {
-                    TextEditor(text: $systemPrompt)
-                        .frame(minHeight: 120)
-                }
-
-                Section("Temperature") {
-                    Slider(value: $temperature, in: 0...2, step: 0.1)
-                }
-
-                Section("Model") {
-                    ModelPicker(selectedModel: $model)
-                }
-
-                Section("Memories") {
-                    MemoryListEditor(memories: $memories)
-                }
-            }
-            .navigationTitle("New Agent")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { isPresented = false }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") { create() }
-                        .disabled(name.isEmpty)
-                }
-            }
-        }
+struct AgentEditorView: View {
+    enum Mode: Equatable {
+        case create
+        case edit(UUID)
     }
-    
-    private func create() {
-        let newAgent = Agent(
-            name: name,
-            description: description,
-            icon: icon,
-            model: model,
-            systemPrompt: systemPrompt,
-            temperature: temperature,
-            shownInSidebar: true,
-            primaryAccentColor: primaryAccentColor.toHex(),
-            secondaryAccentColor: secondaryAccentColor.toHex(),
-            memories: memories
-        )
 
-        // Use new createAgent() API for proper timestamp and sync
-        try? AgentManager.shared.createAgent(newAgent)
-        isPresented = false
-    }
-}
-
-struct AgentDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var agent: Agent
 
-    @State private var showModelPickerPopOver = false
+    let mode: Mode
+    @State private var agent: Agent
 
-    // Computed bindings for color pickers
+    init(agent: Agent) {
+        self.mode = .edit(agent.id)
+        _agent = State(initialValue: agent)
+    }
+
+    init() {
+        self.mode = .create
+        _agent = State(initialValue: Agent(
+            name: "",
+            description: "",
+            icon: "🤖",
+            model: ModelList.placeHolderModel,
+            systemPrompt: "",
+            temperature: 1.0,
+            shownInSidebar: true,
+            primaryAccentColor: Color.blue.toHex(),
+            secondaryAccentColor: Color.purple.toHex(),
+            memories: []
+        ))
+    }
+
+    private var isEditing: Bool {
+        if case .edit = mode { return true }
+        return false
+    }
+
     private var primaryColorBinding: Binding<Color> {
         Binding(
             get: {
-                if let hexString = agent.primaryAccentColor,
-                   let color = Color(hex: hexString) {
-                    return color
-                }
-                return .blue // Default color
+                if let hex = agent.primaryAccentColor, let color = Color(hex: hex) { return color }
+                return .blue
             },
-            set: { newColor in
-                agent.primaryAccentColor = newColor.toHex()
-            }
+            set: { agent.primaryAccentColor = $0.toHex() }
         )
     }
 
     private var secondaryColorBinding: Binding<Color> {
         Binding(
             get: {
-                if let hexString = agent.secondaryAccentColor,
-                   let color = Color(hex: hexString) {
-                    return color
-                }
-                return .purple // Default color
+                if let hex = agent.secondaryAccentColor, let color = Color(hex: hex) { return color }
+                return .purple
             },
-            set: { newColor in
-                agent.secondaryAccentColor = newColor.toHex()
-            }
+            set: { agent.secondaryAccentColor = $0.toHex() }
         )
     }
 
     var body: some View {
-        Form {
-            Section("Basics") {
-                TextField("Name", text: $agent.name)
-                TextField("Description", text: $agent.description)
-                TextField("Icon (Emoji)", text: $agent.icon)
-                    .font(.largeTitle)
+        NavigationStack {
+            Form {
+                Section{
+                    VStack{
+                        HStack{
+                            TextField("Icon (Emoji)", text: $agent.icon)
+                                .frame(width: 92, height: 92)
+                                .font(.system(size: 72))
+                                .gesture(TapGesture().onEnded {
+                                    //self.showingImagePicker.toggle()
+                                })
+                                .padding(.horizontal, 16)
+                            
+                            VStack{
+                                Text("Hello")
+                                    .bold()
+                                    .font(.largeTitle)
+                                Text("My Name is")
+                                //.bold()
+                                TextField("Bob", text: $agent.name)
+                                    .bold()
+                                    .foregroundStyle(.black)
+                                    .multilineTextAlignment(.center)
+                                    .textFieldStyle(.plain)
+                                    .font(.title2)
+                                    .padding(8)
+                                    .background{
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .fill(Color(.systemGroupedBackground))
+                                    }
+                                    //.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        TextField("Add a description", text: $agent.description)
+                            .foregroundStyle(.black)
+                            .opacity(0.7)
+                            .multilineTextAlignment(.center)
+                            .textFieldStyle(.plain)
+                            .font(.body)
+                            .padding(8)
+                            .background{
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color(.systemGroupedBackground))
+                            }
+                            //.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
+                    }
+                    .padding(8)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                    .background{
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .fill(Color(.secondarySystemGroupedBackground))
+                    }
+                    .frame(maxWidth: 400)
+                }
+                
+                /*Section("Basics") {
+                 TextField("Name", text: $agent.name)
+                 TextField("Description", text: $agent.description)
+                 TextField("Icon (Emoji)", text: $agent.icon)
+                 .font(.largeTitle)
+                 }*/
+                
+                Section("Colors") {
+                    ColorPicker("Primary Accent Color", selection: primaryColorBinding)
+                    ColorPicker("Secondary Accent Color", selection: secondaryColorBinding)
+                }
+                
+                Section("System Prompt") {
+                    TextField("Tell your Squidlet how to respond", text: $agent.systemPrompt, axis: .vertical)
+                        .lineLimit(5...)
+                }
+                
+                Section("Temperature") {
+                    Slider(value: $agent.temperature, in: 0...2, step: 0.1)
+                }
+                
+                Section("Model") {
+                    ModelPicker(selectedModel: $agent.model)
+                }
+                
+                Section("Sidebar") {
+                    Toggle("Show in Sidebar", isOn: $agent.shownInSidebar)
+                }
+                
+                Section("Memories") {
+                    MemoryListEditor(memories: $agent.memories)
+                }
             }
-
-            Section("Colors") {
-                ColorPicker("Primary Accent Color", selection: primaryColorBinding)
-                ColorPicker("Secondary Accent Color", selection: secondaryColorBinding)
-            }
-
-            Section("Model") {
-                ModelPicker(selectedModel: $agent.model)
-            }
-
-            Section("System Prompt") {
-                TextEditor(text: $agent.systemPrompt)
-                    .frame(minHeight: 150)
-            }
-
-            Section("Temperature") {
-                Slider(value: $agent.temperature, in: 0...2, step: 0.1)
-                Text("Current: \(agent.temperature, specifier: "%.1f")")
-            }
-
-            Section("Sidebar") {
-                Toggle("Show in Sidebar", isOn: $agent.shownInSidebar)
-            }
-
-            Section("Memories") {
-                MemoryListEditor(memories: $agent.memories)
-            }
-        }
-        .onDisappear {
-            // Use updateAgent() to properly save with timestamp update
-            try? AgentManager.shared.updateAgent(agent.id) { _ in
-                // Agent is already updated via binding
-            }
-        }
-        .navigationTitle(agent.name)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Done") {
-                    dismiss()
+            //.navigationTitle(isEditing ? agent.name : "New Squidlet")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(role: .cancel) { dismiss() }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(role: .confirm) { save() }
+                        .disabled(agent.name.isEmpty)
                 }
             }
         }
+    }
+
+    private func save() {
+        switch mode {
+        case .create:
+            try? AgentManager.shared.createAgent(agent)
+        case .edit(let id):
+            try? AgentManager.shared.updateAgent(id) { existing in
+                existing = agent
+            }
+        }
+        dismiss()
     }
 }
 

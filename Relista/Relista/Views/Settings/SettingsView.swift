@@ -39,8 +39,9 @@ struct SettingsView: View {
                 Text("Select a setting")
             }
         }
-        .onAppear {
-            if sizeClass != .compact {
+        .task(id: "initial-selection") {
+            // do this with persistent id so it doesn't do this again, aka stays on the page you were on
+            if settingsView == nil && sizeClass != .compact {
                 settingsView = .general
             }
         }
