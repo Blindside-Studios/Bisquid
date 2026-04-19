@@ -9,13 +9,15 @@ import SwiftUI
 
 struct SidebarToolSelector: View {
     @Binding var shownContentType: ContentType
-    @State var showingSettings: Bool = false
-    
+    #if os(iOS)
+    @SceneStorage("sidebar.showingSettings") private var showingSettings: Bool = false
+    #endif
+
     var body: some View {
         VStack(spacing: 0){
             SidebarToolButton(assignedTool: .documentAI, shownContentType: $shownContentType, toolName: "Documents", systemImage: "document.on.document")
             SidebarToolButton(assignedTool: .audioAI, shownContentType: $shownContentType, toolName: "Audio", systemImage: "waveform")
-            
+
 #if os(macOS)
             SettingsLink{
                 HStack {
@@ -46,12 +48,14 @@ struct SidebarToolSelector: View {
             .buttonStyle(.plain)
             .labelStyle(.iconOnly)
             .backgroundStyle(.clear)
-            .sheet(isPresented: $showingSettings) {
-                SettingsView(onClose: { showingSettings = false })
-                    .presentationSizing(.page)
-            }
             #endif
         }
+        #if os(iOS)
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(onClose: { showingSettings = false })
+                .presentationSizing(.page)
+        }
+        #endif
     }
 }
  

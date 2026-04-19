@@ -23,7 +23,7 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             List(totalAvailableItems, selection: selectionBinding) { view in
                 NavigationLink(value: view) {
                     Label(view.title, systemImage: view.systemImage)
@@ -33,24 +33,47 @@ struct SettingsView: View {
             #if os(iOS)
             .toolbar {
                 if let onClose {
-                    ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItem(placement: .cancellationAction) {
                         Button(role: .close, action: onClose)
                     }
                 }
             }
             #endif
         } detail: {
-            if let selection = selectionBinding.wrappedValue {
-                settingsDetail(for: selection)
-            } else {
-                Text("Select a setting")
+            Group {
+                if let selection = selectionBinding.wrappedValue {
+                    settingsDetail(for: selection)
+                } else {
+                    Text("Select a setting")
+                }
             }
+            #if os(iOS)
+            .toolbar {
+                // When the sidebar is collapsed in regular width, or we're
+                // in compact width without a sidebar visible, expose the
+                // close button on the detail's nav bar so the sheet can
+                // still be dismissed.
+                if let onClose, shouldShowDetailClose {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(role: .close, action: onClose)
+                    }
+                }
+            }
+            #endif
         }
         .task(id: "initial-selection") {
             if selectionBinding.wrappedValue == nil && sizeClass != .compact {
                 selectionBinding.wrappedValue = .general
             }
         }
+    }
+
+    private var shouldShowDetailClose: Bool {
+        // Compact mode stacks into a NavigationStack — the sidebar is the
+        // root and the detail is pushed, so the system-provided back button
+        // gets the user back to the sidebar's close button.
+        guard sizeClass == .regular else { return false }
+        return columnVisibility == .detailOnly
     }
     
     @ViewBuilder

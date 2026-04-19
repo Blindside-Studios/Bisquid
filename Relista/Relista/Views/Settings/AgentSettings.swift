@@ -294,6 +294,7 @@ struct AgentHeader: View{
     @Binding var name: String
     @Binding var description: String
     @Binding var icon: String
+    @Environment(\.horizontalSizeClass) var sizeClass
     var body: some View{
         VStack{
             HStack{
@@ -356,7 +357,7 @@ struct AgentHeader: View{
                 .fill(.background)
                 #endif
         }
-        .frame(maxWidth: 350)
+        .frame(maxWidth: sizeClass == .compact ? 500 : 350)
     }
 }
 
