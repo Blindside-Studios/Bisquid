@@ -90,6 +90,8 @@ struct RelistaApp: App {
         #if os(macOS)
         Settings {
             SettingsView()
+                .frame(minWidth: 600, minHeight: 400)
+                .windowResizeBehavior(.enabled)
         }
         #endif
     }
