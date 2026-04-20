@@ -190,8 +190,7 @@ struct AgentSettings: View {
                 .buttonStyle(.borderless)
                 Spacer()
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(16)
         }
         #endif
     }
@@ -200,6 +199,17 @@ struct AgentSettings: View {
         #if os(macOS)
         AgentEditorCoordinator.shared.launch = launch
         openWindow(id: "agentEditor")
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(50))
+            NSApp.activate(ignoringOtherApps: true)
+            let window = NSApp.windows.first { win in
+                win.identifier?.rawValue.contains("agentEditor") == true
+            } ?? NSApp.windows.first { $0 is NSPanel }
+            if let panel = window as? NSPanel {
+                panel.becomesKeyOnlyIfNeeded = false
+            }
+            window?.makeKeyAndOrderFront(nil)
+        }
         #else
         switch launch {
         case .create:
@@ -564,6 +574,10 @@ struct AgentColorPicker: View {
                                                     }
                                                     .scaleEffect(0.5)
                                                     .offset(x: 12)
+                                                    #if os(macOS)
+                                                    .scaleEffect(1.5)
+                                                    .offset(x: -16)
+                                                    #endif
                                                     .buttonBorderShape(.circle)
                                                     .buttonStyle(.borderedProminent)
                                                     .tint(preset.secondaryColor ?? Color.white)
