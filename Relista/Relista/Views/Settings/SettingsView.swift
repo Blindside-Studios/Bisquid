@@ -23,6 +23,17 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        TabView(selection: macTabSelectionBinding) {
+            ForEach(totalAvailableItems) { item in
+                NavigationStack {
+                    settingsDetail(for: item)
+                }
+                .tabItem { Label(item.title, systemImage: item.systemImage) }
+                .tag(item)
+            }
+        }
+        #else
         NavigationSplitView(columnVisibility: $columnVisibility) {
             List(totalAvailableItems, selection: selectionBinding) { view in
                 NavigationLink(value: view) {
@@ -30,7 +41,6 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            #if os(iOS)
             .toolbar {
                 if let onClose {
                     ToolbarItem(placement: .cancellationAction) {
@@ -38,7 +48,6 @@ struct SettingsView: View {
                     }
                 }
             }
-            #endif
         } detail: {
             Group {
                 if let selection = selectionBinding.wrappedValue {
@@ -47,7 +56,6 @@ struct SettingsView: View {
                     Text("Select a setting")
                 }
             }
-            #if os(iOS)
             .toolbar {
                 // When the sidebar is collapsed in regular width, or we're
                 // in compact width without a sidebar visible, expose the
@@ -59,14 +67,23 @@ struct SettingsView: View {
                     }
                 }
             }
-            #endif
         }
         .task(id: "initial-selection") {
             if selectionBinding.wrappedValue == nil && sizeClass != .compact {
                 selectionBinding.wrappedValue = .general
             }
         }
+        #endif
     }
+
+    #if os(macOS)
+    private var macTabSelectionBinding: Binding<SettingsItem> {
+        Binding(
+            get: { SettingsItem(rawValue: storedSelection) ?? .general },
+            set: { storedSelection = $0.rawValue }
+        )
+    }
+    #endif
 
     private var shouldShowDetailClose: Bool {
         // Compact mode stacks into a NavigationStack — the sidebar is the

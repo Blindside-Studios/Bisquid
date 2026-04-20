@@ -81,11 +81,30 @@ extension Color {
     }
 }
 
+enum AgentEditorLaunch: Hashable, Codable {
+    case create
+    case edit(UUID)
+}
+
+#if os(macOS)
+@MainActor
+@Observable
+final class AgentEditorCoordinator {
+    static let shared = AgentEditorCoordinator()
+    var launch: AgentEditorLaunch = .create
+    private init() {}
+}
+#endif
+
 struct AgentSettings: View {
     @StateObject private var manager = AgentManager.shared
 
     @SceneStorage("agents.showCreateSheet") private var showCreateSheet = false
     @SceneStorage("agents.editingAgentID") private var editingAgentID: String = ""
+
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     private var selectedAgentBinding: Binding<Agent?> {
         Binding(
@@ -125,7 +144,7 @@ struct AgentSettings: View {
                         }
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            editingAgentID = agent.id.uuidString
+                            openEditor(for: .edit(agent.id))
                         }
                         .contextMenu {
                                 Button(role: .destructive) {
@@ -142,10 +161,11 @@ struct AgentSettings: View {
             }
         }
         .navigationTitle("Agents")
+        #if os(iOS)
         .toolbar(){
             ToolbarItemGroup(placement: .automatic) {
                 Button("New Squidlet", systemImage: "square.and.pencil"){
-                    showCreateSheet = true
+                    openEditor(for: .create)
                 }
             }
         }
@@ -159,6 +179,35 @@ struct AgentSettings: View {
                 .presentationSizing(.page)
                 .interactiveDismissDisabled()
         }
+        #else
+        .safeAreaBar(edge: .bottom) {
+            HStack(spacing: 8) {
+                Button {
+                    openEditor(for: .create)
+                } label: {
+                    Label("New Squidlet", systemImage: "plus")
+                }
+                .buttonStyle(.borderless)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+        }
+        #endif
+    }
+
+    private func openEditor(for launch: AgentEditorLaunch) {
+        #if os(macOS)
+        AgentEditorCoordinator.shared.launch = launch
+        openWindow(id: "agentEditor")
+        #else
+        switch launch {
+        case .create:
+            showCreateSheet = true
+        case .edit(let id):
+            editingAgentID = id.uuidString
+        }
+        #endif
     }
     
     private func deleteAgents(at offsets: IndexSet) {
@@ -265,7 +314,8 @@ struct AgentEditorView: View {
                 }
             }
             .formStyle(.grouped)
-            //.navigationTitle(isEditing ? agent.name : "New Squidlet")
+            .navigationTitle(agent.name.isEmpty ? "New Squidlet" : agent.name)
+            #if os(iOS)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .cancel) { cancel() }
@@ -276,6 +326,19 @@ struct AgentEditorView: View {
                         .disabled(agent.name.isEmpty)
                 }
             }
+            #else
+            .safeAreaBar(edge: .bottom) {
+                HStack {
+                    Button(role: .cancel) { cancel() }
+                    Spacer()
+                    Button(role: .confirm) { save() }
+                        .disabled(agent.name.isEmpty)
+                        .keyboardShortcut(.defaultAction)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+            }
+            #endif
         }
         .task {
             if !draftJSON.isEmpty,
@@ -310,6 +373,38 @@ struct AgentEditorView: View {
         dismiss()
     }
 }
+
+#if os(macOS)
+struct AgentEditorWindowContent: View {
+    @State private var coordinator = AgentEditorCoordinator.shared
+    @ObservedObject private var manager = AgentManager.shared
+
+    var body: some View {
+        content
+            .environment(\.horizontalSizeClass, .compact)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch coordinator.launch {
+        case .create:
+            AgentEditorView()
+                .id("create")
+        case .edit(let id):
+            if let agent = manager.customAgents.first(where: { $0.id == id }) {
+                AgentEditorView(agent: agent)
+                    .id(id)
+            } else {
+                ContentUnavailableView(
+                    "Squidlet Not Found",
+                    systemImage: "questionmark.circle",
+                    description: Text("This Squidlet may have been deleted.")
+                )
+            }
+        }
+    }
+}
+#endif
 
 struct AgentHeader: View{
     @Binding var name: String
