@@ -15,8 +15,9 @@ struct APIProvider: View {
     var body: some View {
         Form {
             Section("API Keys") {
-                SecureField("Mistral API Key", text: $apiKeyMistral)
+                SecureField("Mistral API Key", text: $apiKeyMistral, prompt: Text("Mistral API Key"))
                     .textFieldStyle(.roundedBorder)
+                    .labelsHidden()
                     .onChange(of: apiKeyMistral) { _, newValue in
                         KeychainHelper.shared.mistralAPIKey = newValue
                     }

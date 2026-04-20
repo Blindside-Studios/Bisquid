@@ -13,15 +13,17 @@ struct PersonalizationSettings: View {
     var body: some View {
         Form {
             Section("Personal info") {
-                TextField("Name", text: $settings.userName)
+                TextField("Name", text: $settings.userName, prompt: Text("Name"))
+                    .labelsHidden()
             }
             Section("Default Model") {
                 ModelPicker(selectedModel: $settings.defaultModel)
             }
-            
+
             Section("Default instructions") {
-                TextField("Default instructions", text: $settings.defaultInstructions, axis: .vertical)
+                TextField("Default instructions", text: $settings.defaultInstructions, prompt: Text("Default instructions"), axis: .vertical)
                     .lineLimit(5...)
+                    .labelsHidden()
             }
             
             Section("Memories") {

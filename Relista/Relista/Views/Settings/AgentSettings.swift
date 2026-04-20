@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#endif
 
 // MARK: - Color Extension for Hex Conversion
 extension Color {
@@ -59,6 +62,22 @@ extension Color {
                          lroundf(g * 255),
                          lroundf(b * 255))
         }
+    }
+
+    static var platformGroupedBackground: Color {
+        #if os(iOS)
+        Color(.systemGroupedBackground)
+        #else
+        Color(nsColor: .controlBackgroundColor)
+        #endif
+    }
+
+    static var platformSecondaryGroupedBackground: Color {
+        #if os(iOS)
+        Color(.secondarySystemGroupedBackground)
+        #else
+        Color(nsColor: .controlBackgroundColor)
+        #endif
     }
 }
 
@@ -224,8 +243,9 @@ struct AgentEditorView: View {
                 }*/
                 
                 Section("System Prompt") {
-                    TextField("Tell your Squidlet how to respond", text: $agent.systemPrompt, axis: .vertical)
+                    TextField("System Prompt", text: $agent.systemPrompt, prompt: Text("Tell your Squidlet how to respond"), axis: .vertical)
                         .lineLimit(5...)
+                        .labelsHidden()
                 }
                 
                 Section("Temperature") {
@@ -296,67 +316,67 @@ struct AgentHeader: View{
     @Binding var description: String
     @Binding var icon: String
     @Environment(\.horizontalSizeClass) var sizeClass
+
+    private enum Field: Hashable { case name, description }
+    @FocusState private var focusedField: Field?
+
     var body: some View{
         VStack{
             HStack{
                 TextField("Icon (Emoji)", text: $icon)
                     .frame(width: 92, height: 92)
+                    .labelsHidden()
                     .font(.system(size: 72))
                     .gesture(TapGesture().onEnded {
                         //self.showingImagePicker.toggle()
                     })
                     .padding(.horizontal, 16)
-                
+
                 VStack{
                     Text("Hello")
                         .bold()
                         .font(.largeTitle)
                     Text("My Name is")
-                    //.bold()
                     TextField("Squiddy", text: $name)
                         .bold()
+                        .lineLimit(1)
+                        .labelsHidden()
                         .multilineTextAlignment(.center)
                         .textFieldStyle(.plain)
                         .font(.title2)
+                        .focused($focusedField, equals: .name)
                         .padding(8)
                         .background{
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                #if os(iOS)
-                                .fill(Color(.systemGroupedBackground))
-                                #else
-                                .fill(.gray)
-                                #endif
+                                .fill(Color.platformGroupedBackground)
                         }
-                        //.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
+                        .contentShape(Rectangle())
+                        .onTapGesture { focusedField = .name }
                 }
             }
-            
+
             Divider()
-            
+
             TextField("Your friendly AI who doesn't ink", text: $description)
                 .opacity(0.7)
+                .lineLimit(1)
+                .labelsHidden()
                 .multilineTextAlignment(.center)
                 .textFieldStyle(.plain)
                 .font(.body)
+                .focused($focusedField, equals: .description)
                 .padding(8)
                 .background{
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        #if os(iOS)
-                        .fill(Color(.systemGroupedBackground))
-                        #else
-                        .fill(.gray)
-                        #endif
+                        .fill(Color.platformGroupedBackground)
                 }
-                //.glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16, style: .continuous))
+                .contentShape(Rectangle())
+                .onTapGesture { focusedField = .description }
         }
         .padding(8)
         .background{
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                #if os(iOS)
-                .fill(Color(.secondarySystemGroupedBackground))
-                #else
-                .fill(.background)
-                #endif
+                .fill(Color.platformSecondaryGroupedBackground)
         }
         .frame(maxWidth: sizeClass == .compact ? 500 : 350)
     }
@@ -497,11 +517,7 @@ struct AgentColorPicker: View {
         }
         .background{
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                #if os(iOS)
-                .fill(Color(.secondarySystemGroupedBackground))
-                #else
-                .fill(.background)
-                #endif
+                .fill(Color.platformSecondaryGroupedBackground)
         }
     }
 
