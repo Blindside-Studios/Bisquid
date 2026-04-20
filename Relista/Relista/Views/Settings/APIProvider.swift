@@ -33,6 +33,7 @@ struct APIProvider: View {
             }
             .padding()
         }
+        .formStyle(.grouped)
     }
 }
 

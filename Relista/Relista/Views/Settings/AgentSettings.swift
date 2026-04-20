@@ -244,6 +244,7 @@ struct AgentEditorView: View {
                     MemoryListEditor(memories: $agent.memories, storageID: "agent")
                 }
             }
+            .formStyle(.grouped)
             //.navigationTitle(isEditing ? agent.name : "New Squidlet")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
