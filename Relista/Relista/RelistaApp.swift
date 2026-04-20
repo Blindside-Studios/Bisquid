@@ -97,15 +97,17 @@ struct RelistaApp: App {
         #if os(macOS)
         Settings {
             SettingsView()
-                .frame(width: 600)
-                .windowResizeBehavior(.enabled)
+                .frame(minWidth: 600, idealWidth: 600, minHeight: 500, idealHeight: 680)
         }
+        .windowResizability(.contentMinSize)
 
-        UtilityWindow("Squidlet Editor", id: "agentEditor") {
-            AgentEditorWindowContent()
-                .frame(minWidth: 420, idealWidth: 480, minHeight: 560, idealHeight: 680)
+        WindowGroup("Squidlet Editor", id: "agentEditor", for: AgentEditorLaunch.self) { $launch in
+            AgentEditorWindowContent(launch: launch ?? .create(token: UUID()))
+                .frame(width: 450)
+                .frame(minHeight: 560, idealHeight: 680, maxHeight: 900)
         }
         .windowResizability(.contentSize)
+        .windowLevel(.floating)
         #endif
     }
     

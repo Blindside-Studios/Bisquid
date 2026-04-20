@@ -82,19 +82,9 @@ extension Color {
 }
 
 enum AgentEditorLaunch: Hashable, Codable {
-    case create
+    case create(token: UUID)
     case edit(UUID)
 }
-
-#if os(macOS)
-@MainActor
-@Observable
-final class AgentEditorCoordinator {
-    static let shared = AgentEditorCoordinator()
-    var launch: AgentEditorLaunch = .create
-    private init() {}
-}
-#endif
 
 struct AgentSettings: View {
     @StateObject private var manager = AgentManager.shared
@@ -183,7 +173,7 @@ struct AgentSettings: View {
         .safeAreaBar(edge: .bottom) {
             HStack(spacing: 8) {
                 Button {
-                    openEditor(for: .create)
+                    openEditor(for: .create(token: UUID()))
                 } label: {
                     Label("New Squidlet", systemImage: "plus")
                 }
@@ -197,18 +187,10 @@ struct AgentSettings: View {
 
     private func openEditor(for launch: AgentEditorLaunch) {
         #if os(macOS)
-        AgentEditorCoordinator.shared.launch = launch
-        openWindow(id: "agentEditor")
+        openWindow(id: "agentEditor", value: launch)
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(50))
+            try? await Task.sleep(for: .milliseconds(30))
             NSApp.activate(ignoringOtherApps: true)
-            let window = NSApp.windows.first { win in
-                win.identifier?.rawValue.contains("agentEditor") == true
-            } ?? NSApp.windows.first { $0 is NSPanel }
-            if let panel = window as? NSPanel {
-                panel.becomesKeyOnlyIfNeeded = false
-            }
-            window?.makeKeyAndOrderFront(nil)
         }
         #else
         switch launch {
@@ -386,7 +368,7 @@ struct AgentEditorView: View {
 
 #if os(macOS)
 struct AgentEditorWindowContent: View {
-    @State private var coordinator = AgentEditorCoordinator.shared
+    let launch: AgentEditorLaunch
     @ObservedObject private var manager = AgentManager.shared
 
     var body: some View {
@@ -396,14 +378,12 @@ struct AgentEditorWindowContent: View {
 
     @ViewBuilder
     private var content: some View {
-        switch coordinator.launch {
+        switch launch {
         case .create:
             AgentEditorView()
-                .id("create")
         case .edit(let id):
             if let agent = manager.customAgents.first(where: { $0.id == id }) {
                 AgentEditorView(agent: agent)
-                    .id(id)
             } else {
                 ContentUnavailableView(
                     "Squidlet Not Found",
