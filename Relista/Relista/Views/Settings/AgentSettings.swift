@@ -155,7 +155,7 @@ struct AgentSettings: View {
         .toolbar(){
             ToolbarItemGroup(placement: .automatic) {
                 Button("New Squidlet", systemImage: "square.and.pencil"){
-                    openEditor(for: .create)
+                    openEditor(for: .create(token: UUID()))
                 }
             }
         }
