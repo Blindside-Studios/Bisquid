@@ -7,11 +7,11 @@
 
 import Foundation
 
-struct UserNameTool: ChatTool {
-    var name: String { "fetch_user_name" }
-    var displayName: String { "User Name" }
-    var description: String { "Lets the model read your name" }
-    var icon: String { "person.text.rectangle" }
+struct AppKnowledgeTool: ChatTool {
+    var name: String { "app_knowledge" }
+    var displayName: String { "App Knowledge" }
+    var description: String { "Provides the model with a Bisquid user guide" }
+    var icon: String { "questionmark.app" }
     var defaultEnabled: Bool { true }
 
     var definition: [String: Any] {
@@ -19,7 +19,7 @@ struct UserNameTool: ChatTool {
             "type": "function",
             "function": [
                 "name": name,
-                "description": description,
+                "description": "Returns information and user guides about the Bisquid application this chat is handled by (currently not implemented).",
                 "parameters": [
                     "type": "object",
                     "properties": [:] as [String: Any],
@@ -30,11 +30,10 @@ struct UserNameTool: ChatTool {
     }
 
     func inputSummary(from arguments: [String: Any]) -> String {
-        "Fetching your name"
+        "Consulted the manual"
     }
 
     func execute(arguments: [String: Any]) async throws -> String {
-        
-        return SyncedSettings.shared.userName
+        return "No app documentation has been submitted by the developer yet. Documentation is being compiled as the app is being developed."
     }
 }

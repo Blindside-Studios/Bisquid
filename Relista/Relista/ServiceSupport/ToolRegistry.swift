@@ -13,10 +13,11 @@ import Foundation
 enum ToolRegistry {
     static let allTools: [any ChatTool] = [
         WebSearchTool(),
-        WriteMemoryTool(agentID: nil),
         AnalyzeImageTool(conversationID: UUID()), // placeholder; real UUID injected by enabledTools
-        RandomFruitTool(),
-        UserNameTool()
+        WriteMemoryTool(agentID: nil),
+        CurrentTimeTool(),
+        KnowledgeRefresherTool(),
+        AppKnowledgeTool()
     ]
 
     private static func key(for tool: any ChatTool) -> String {
