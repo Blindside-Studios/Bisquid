@@ -119,6 +119,14 @@ final class SyncedSettings: ObservableObject {
         let all = agentID == nil ? global : agentMemories
         guard !all.isEmpty else { return "" }
         let numbered = all.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
-        return "\n\n## What I remember\n\(numbered)"
+        return """
+
+        ## Background context
+        The following is background information about the user, derived from past conversations or user input. \
+        Use it only when directly relevant to the current message - do not reference, repeat, or \
+        acknowledge it otherwise. Most messages will not require most or any of this context at all.
+
+        \(numbered)
+        """
     }
 }
