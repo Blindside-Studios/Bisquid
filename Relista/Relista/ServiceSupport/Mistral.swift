@@ -178,7 +178,7 @@ struct Mistral {
 
         let baseContent = agent == nil ? defaultInstructions : agent
             .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""
-        let systemMessage = ["role": "system", "content": baseContent + memorySuffix]
+        let systemMessage = ["role": "system", "content": PromptHandler.populateInstructionsWithData(basePrompt: baseContent) + memorySuffix]
 
         let apiMessages = [systemMessage] + messages.map { message in
             var content = message.text
