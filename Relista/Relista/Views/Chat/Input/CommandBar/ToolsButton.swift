@@ -63,7 +63,7 @@ struct ToolsButton: View {
         .sheet(isPresented: $showSheet) {
             ScrollView(.vertical){
                 ToolsPopoverContents(onToggle: reevaluateIcon)
-                    .presentationDetents([.fraction(0.3), .medium])
+                    .presentationDetents([.medium])
                     .navigationTransition(.zoom(sourceID: "tools", in: ToolsTransition))
                     .padding(4)
                 Spacer()

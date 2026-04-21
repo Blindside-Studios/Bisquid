@@ -21,6 +21,7 @@ final class SyncedSettings: ObservableObject {
         static let memories = "GlobalMemories"
         static let temperature = "DefaultAssistantTemperature"
         static let suppressEmDashes = "SuppressEmDashes"
+        static let wikiEntries = "WikiEntries"
     }
 
     @Published var defaultModel: String {
@@ -65,6 +66,15 @@ final class SyncedSettings: ObservableObject {
         }
     }
 
+    @Published var wikiEntries: [WikiEntry] {
+        didSet {
+            if let data = try? JSONEncoder().encode(wikiEntries) {
+                store.set(data, forKey: Keys.wikiEntries)
+                store.synchronize()
+            }
+        }
+    }
+
     private init() {
         // Load initial values from iCloud KVS, with defaults
         self.defaultModel = store.string(forKey: Keys.defaultModel) ?? "mistral-medium-latest"
@@ -73,6 +83,12 @@ final class SyncedSettings: ObservableObject {
         self.memories = store.array(forKey: Keys.memories) as? [String] ?? []
         self.temperature = store.object(forKey: Keys.temperature) != nil ? store.double(forKey: Keys.temperature) : 0.35
         self.suppressEmDashes = store.object(forKey: Keys.suppressEmDashes) != nil ? store.bool(forKey: Keys.suppressEmDashes) : false
+        if let data = store.data(forKey: Keys.wikiEntries),
+           let decoded = try? JSONDecoder().decode([WikiEntry].self, from: data) {
+            self.wikiEntries = decoded
+        } else {
+            self.wikiEntries = []
+        }
 
         // Listen for external changes (from other devices)
         NotificationCenter.default.addObserver(
@@ -107,6 +123,11 @@ final class SyncedSettings: ObservableObject {
             let newSuppressEmDashes = store.bool(forKey: Keys.suppressEmDashes)
             if newSuppressEmDashes != suppressEmDashes {
                 suppressEmDashes = newSuppressEmDashes
+            }
+            if let data = store.data(forKey: Keys.wikiEntries),
+               let decoded = try? JSONDecoder().decode([WikiEntry].self, from: data),
+               decoded != wikiEntries {
+                wikiEntries = decoded
             }
         }
     }

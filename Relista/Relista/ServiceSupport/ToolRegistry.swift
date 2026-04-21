@@ -15,6 +15,7 @@ enum ToolRegistry {
         WebSearchTool(),
         AnalyzeImageTool(conversationID: UUID()), // placeholder; real UUID injected by enabledTools
         WriteMemoryTool(agentID: nil),
+        WikisTool(entrySnapshot: []), // placeholder; live snapshot injected by enabledTools
         CurrentTimeTool(),
         KnowledgeRefresherTool(),
         AppKnowledgeTool()
@@ -38,6 +39,7 @@ enum ToolRegistry {
 
     /// Returns only the tools that are currently enabled, with context-sensitive tools
     /// (like WriteMemoryTool and AnalyzeImageTool) configured for the active context.
+    @MainActor
     static func enabledTools(for agentID: UUID? = nil, conversationID: UUID? = nil) -> [any ChatTool] {
         allTools
             .filter { isEnabled($0) }
@@ -48,6 +50,9 @@ enum ToolRegistry {
                 if tool.name == "analyze_image" {
                     // Substitute the real conversation ID; fall back to placeholder if unavailable
                     return AnalyzeImageTool(conversationID: conversationID ?? UUID())
+                }
+                if tool.name == "wikis" {
+                    return WikisTool(entrySnapshot: SyncedSettings.shared.wikiEntries)
                 }
                 return tool
             }

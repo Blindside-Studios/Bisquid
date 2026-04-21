@@ -13,7 +13,7 @@ struct WriteMemoryTool: ChatTool {
 
     var name: String { "memory" }
     var displayName: String { "Memory" }
-    var description: String { "Manage long-term memory" }
+    var description: String { "Manage long-term memory for this Squidlet" }
     var icon: String { "brain" }
     var defaultEnabled: Bool { true }
 
