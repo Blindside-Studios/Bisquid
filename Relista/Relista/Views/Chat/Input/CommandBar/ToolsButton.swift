@@ -82,12 +82,17 @@ struct ToolsButton: View {
 
 private struct ToolsPopoverContents: View {
     let onToggle: () -> Void
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Tools")
                 .font(.title)
                 .padding(.bottom, 8)
+
+            SmartGroundingToggleRow()
+                .padding(.bottom, 12)
+            Divider()
+                .padding(.bottom, 12)
 
             ForEach(ToolRegistry.allTools.indices, id: \.self) { i in
                 ToolToggleRow(tool: ToolRegistry.allTools[i], onToggle: onToggle)
@@ -97,6 +102,30 @@ private struct ToolsPopoverContents: View {
             }
         }
         .padding()
+    }
+}
+
+private struct SmartGroundingToggleRow: View {
+    @AppStorage("SmartGroundingEnabled") private var smartGroundingEnabled: Bool = true
+
+    var body: some View {
+        Toggle(isOn: $smartGroundingEnabled) {
+            HStack(spacing: 10) {
+                Image(systemName: "bolt")
+                    .frame(width: 20)
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Smart Grounding")
+                        .fontWeight(.medium)
+                    Text("Inject contextual knowledge into the main model before each reply")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+        }
+        .toggleStyle(.switch)
+        .padding(.vertical, 6)
     }
 }
 

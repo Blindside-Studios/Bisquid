@@ -18,7 +18,9 @@ struct GeneralSettings: View {
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
     #endif
     @AppStorage("ApplyBackgroundBisquidTheme") private var useBisquidBackground: Bool = true
-    
+    @AppStorage("SmartGroundingEnabled") private var smartGroundingEnabled: Bool = true
+    @StateObject private var syncedSettings = SyncedSettings.shared
+
     var body: some View {
         Form{
             Section(header: Text("Interface"), footer: Text("This adds Bisquid's own color to the app background to avoid pure black and white on iOS. This will disable window background tinting on macOS and iPadOS.")){
@@ -32,6 +34,15 @@ struct GeneralSettings: View {
                 Toggle("Show user message toolbars", isOn: $showUserMessageToolbars)
                 Toggle("Always show Chain of Thought", isOn: $alwaysShowCOT)
                 Toggle("Always show time and model", isOn: $alwaysShowFullModelMessageToolbar)
+            }
+
+            Section(
+                header: Text("Smart Grounding"),
+                footer: Text("Smart Grounding runs a small background model before each reply to quietly inject relevant background facts into the conversation. Web search increases latency but helps with time-sensitive questions.")
+            ){
+                Toggle("Enable Smart Grounding", isOn: $smartGroundingEnabled)
+                Toggle("Let Smart Grounding use web search", isOn: $syncedSettings.smartGroundingUseWebSearch)
+                    .disabled(!smartGroundingEnabled)
             }
 
             // haptic feedback only applies to iPhone

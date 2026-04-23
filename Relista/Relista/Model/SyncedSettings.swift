@@ -22,6 +22,7 @@ final class SyncedSettings: ObservableObject {
         static let temperature = "DefaultAssistantTemperature"
         static let suppressEmDashes = "SuppressEmDashes"
         static let wikiEntries = "WikiEntries"
+        static let smartGroundingUseWebSearch = "SmartGroundingUseWebSearch"
     }
 
     @Published var defaultModel: String {
@@ -75,6 +76,13 @@ final class SyncedSettings: ObservableObject {
         }
     }
 
+    @Published var smartGroundingUseWebSearch: Bool {
+        didSet {
+            store.set(smartGroundingUseWebSearch, forKey: Keys.smartGroundingUseWebSearch)
+            store.synchronize()
+        }
+    }
+
     private init() {
         // Load initial values from iCloud KVS, with defaults
         self.defaultModel = store.string(forKey: Keys.defaultModel) ?? "mistral-medium-latest"
@@ -89,6 +97,7 @@ final class SyncedSettings: ObservableObject {
         } else {
             self.wikiEntries = []
         }
+        self.smartGroundingUseWebSearch = store.object(forKey: Keys.smartGroundingUseWebSearch) != nil ? store.bool(forKey: Keys.smartGroundingUseWebSearch) : true
 
         // Listen for external changes (from other devices)
         NotificationCenter.default.addObserver(
@@ -128,6 +137,12 @@ final class SyncedSettings: ObservableObject {
                let decoded = try? JSONDecoder().decode([WikiEntry].self, from: data),
                decoded != wikiEntries {
                 wikiEntries = decoded
+            }
+            if store.object(forKey: Keys.smartGroundingUseWebSearch) != nil {
+                let newValue = store.bool(forKey: Keys.smartGroundingUseWebSearch)
+                if newValue != smartGroundingUseWebSearch {
+                    smartGroundingUseWebSearch = newValue
+                }
             }
         }
     }

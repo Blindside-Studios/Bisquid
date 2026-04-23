@@ -593,7 +593,34 @@ class ChatCache {
                 }*/
                 
                 let service = Mistral(apiKey: apiKey)
-                let stream = try await service.streamMessage(messages: chat.messages, modelName: modelName, agent: agent, tools: tools)
+
+                // Captured by the smart grounding callback before the stream is returned,
+                // so it's available when we create the assistant message below.
+                var capturedGrounding: String?
+                let stream = try await service.streamMessage(
+                    messages: chat.messages,
+                    modelName: modelName,
+                    agent: agent,
+                    tools: tools,
+                    onSmartGroundingGenerated: { injection in
+                        capturedGrounding = injection
+                    }
+                )
+
+                // Attach the injection as a MessageAnnotation so it persists with the
+                // assistant message and can be rendered in the toolbar.
+                let initialAnnotations: [MessageAnnotation]? = capturedGrounding.map { injection in
+                    [MessageAnnotation(
+                        type: "smart_grounding",
+                        urlCitation: URLCitation(
+                            url: "",
+                            title: "system_smart_grounding",
+                            content: injection,
+                            startIndex: nil,
+                            endIndex: nil
+                        )
+                    )]
+                }
 
                 // Create blank assistant message
                 let assistantMsg = Message(
@@ -604,6 +631,7 @@ class ChatCache {
                     attachmentLinks: [],
                     timeStamp: Date.now.addingTimeInterval(0.001),
                     lastModified: Date.now,
+                    annotations: initialAnnotations,
                     conversationID: conversationID
                 )
 
@@ -719,7 +747,10 @@ class ChatCache {
                             onProgressUpdate?(progressMade, "\(agentName) is typing…")
 
                         case .annotations(let annotations):
-                            updatedMessage.annotations = annotations
+                            // Preserve smart_grounding annotations (added pre-stream) when
+                            // the model sends citation annotations.
+                            let grounding = (updatedMessage.annotations ?? []).filter { $0.type == "smart_grounding" }
+                            updatedMessage.annotations = grounding + annotations
                             updatedMessage.lastModified = Date.now
                             print("📎 Received \(annotations.count) annotation(s) for message")
                             

@@ -18,6 +18,10 @@ struct MistralAgents {
         URL(string: "https://api.mistral.ai/v1/conversations")!
     }
 
+    var chatCompletionsUrl: URL {
+        URL(string: "https://api.mistral.ai/v1/chat/completions")!
+    }
+
     private func makeRequest(url: URL) -> URLRequest {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -157,5 +161,184 @@ struct MistralAgents {
         throw NSError(domain: "MistralAgents", code: 3, userInfo: [
             NSLocalizedDescriptionKey: "No search results found in conversation"
         ])
+    }
+
+    // MARK: - Smart Grounding
+
+    /// Runs the smart grounding agent to generate a context injection for the main model.
+    /// Returns a trimmed injection string. An empty string means "no injection needed".
+    /// Any thrown error should be treated by the caller as "no injection needed".
+    ///
+    /// Implementation note: the spec calls for an /v1/agents + /v1/conversations agent
+    /// with Mistral's native web_search tool. We use /v1/chat/completions with function
+    /// tools instead — the web_search function tool wraps `executeSearch`, which itself
+    /// uses the search agent defined above, so the result is still Mistral's native web
+    /// search. This path reuses our proven tool infrastructure and avoids the function
+    /// call loop over the conversations API.
+    func executeSmartGrounding(
+        systemPromptExcerpt: String,
+        currentUserMessage: String,
+        previousUserMessage: String?,
+        previousAssistantMessage: String?,
+        previousInjections: [String],
+        useWebSearch: Bool
+    ) async throws -> String {
+        // Snapshot the wiki entries from the main thread so WikisTool can operate off-thread.
+        let wikiSnapshot = await MainActor.run { SyncedSettings.shared.wikiEntries }
+        let wikisTool = WikisTool(entrySnapshot: wikiSnapshot)
+
+        var tools: [any ChatTool] = [
+            CurrentTimeTool(),
+            KnowledgeRefresherTool(),
+            wikisTool
+        ]
+        if useWebSearch {
+            tools.append(WebSearchTool())
+        }
+
+        let instructions = """
+        You are Smart Grounding, a background assistant for the Bisquid chat app.
+        Your job: inspect the user's latest message and optionally return a short \
+        knowledge injection that will be appended to that message inside \
+        `<system_smart_grounding>...</system_smart_grounding>` tags for the main chat \
+        model to read.
+
+        When to provide an injection:
+        - The question likely touches information past a 2024 training cutoff. Use the \
+          `knowledge_refresher` tool, and/or `web_search` if available, then state the \
+          relevant facts. If you cannot confirm recent facts, tell the main model to \
+          acknowledge the gap or use the web search tool itself.
+        - The main model is roleplaying a persona (inspect its system prompt excerpt). \
+          Provide period- or context-appropriate factual grounding so the response stays \
+          tonally and historically accurate.
+        - Any other case where a small, focused fact dump would measurably improve the \
+          main model's answer.
+
+        When to RETURN AN EMPTY RESPONSE (no injection):
+        - The user's question is answerable from standard pre-2024 general knowledge.
+        - The user explicitly asks the main model to use a tool ("search the web", \
+          "look it up", "what's the time", etc.) — the main model will handle it itself.
+        - You have nothing useful to add.
+        - The previous injections shown below already cover the relevant ground, and \
+          the current user turn does not need new information.
+
+        Using Wikis:
+        - `wikis` read/add lets you consult and extend a persistent knowledge base.
+        - When you learn something via web search that is likely to matter again in the \
+          future (e.g., "iOS 26 released 2025", "current US president name"), add it to \
+          an appropriate category. Do NOT add trivia (e.g., "top running speed of a \
+          giraffe"). Always read the relevant category first before adding to avoid \
+          duplicates.
+
+        Output format:
+        - Plain text, 1-3 short paragraphs, briefing-style. Do not address the user. \
+          Do not introduce yourself. Do not wrap in tags — the wrapping tags are added \
+          around your output automatically.
+        - If no injection is needed, return a completely empty response.
+        """
+
+        let priorUserBlock = (previousUserMessage?.isEmpty == false) ? previousUserMessage! : "(none)"
+        let priorAssistantBlock = (previousAssistantMessage?.isEmpty == false) ? previousAssistantMessage! : "(none)"
+        let priorInjectionsBlock: String
+        if previousInjections.isEmpty {
+            priorInjectionsBlock = "(none)"
+        } else {
+            priorInjectionsBlock = previousInjections
+                .enumerated()
+                .map { "[\($0.offset + 1)] \($0.element)" }
+                .joined(separator: "\n\n")
+        }
+
+        let userContent = """
+        # Main model system prompt (first 800 characters)
+        \(systemPromptExcerpt)
+
+        # Previous user message
+        \(priorUserBlock)
+
+        # Previous assistant message
+        \(priorAssistantBlock)
+
+        # Prior smart grounding injections (do not repeat these)
+        \(priorInjectionsBlock)
+
+        # Current user message
+        \(currentUserMessage)
+
+        Provide the injection, or reply with an empty response if none is needed.
+        """
+
+        var messages: [[String: Any]] = [
+            ["role": "system", "content": instructions],
+            ["role": "user", "content": userContent]
+        ]
+
+        let maxIterations = 5
+        for iteration in 0..<maxIterations {
+            var request = makeRequest(url: chatCompletionsUrl)
+            let body: [String: Any] = [
+                "model": "ministral-14b-latest",
+                "messages": messages,
+                "tools": tools.map { $0.definition },
+                "stream": false,
+                "temperature": 0.2
+            ]
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+            let (data, _) = try await URLSession.shared.data(for: request)
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let choices = json["choices"] as? [[String: Any]],
+                  let choice = choices.first,
+                  let message = choice["message"] as? [String: Any] else {
+                return ""
+            }
+
+            if let toolCalls = message["tool_calls"] as? [[String: Any]], !toolCalls.isEmpty {
+                var assistantMsg: [String: Any] = [
+                    "role": "assistant",
+                    "tool_calls": toolCalls
+                ]
+                if let content = message["content"] as? String, !content.isEmpty {
+                    assistantMsg["content"] = content
+                }
+                messages.append(assistantMsg)
+
+                for call in toolCalls {
+                    guard let fn = call["function"] as? [String: Any],
+                          let name = fn["name"] as? String,
+                          let id = call["id"] as? String else { continue }
+                    let argsStr = fn["arguments"] as? String ?? "{}"
+                    let args = (try? JSONSerialization.jsonObject(
+                        with: Data(argsStr.utf8)
+                    ) as? [String: Any]) ?? [:]
+
+                    let result: String
+                    if let tool = tools.first(where: { $0.name == name }) {
+                        do {
+                            result = try await tool.execute(arguments: args)
+                        } catch {
+                            result = "Tool \(name) failed: \(error.localizedDescription)"
+                        }
+                    } else {
+                        result = "Unknown tool: \(name)"
+                    }
+
+                    messages.append([
+                        "role": "tool",
+                        "tool_call_id": id,
+                        "content": result
+                    ])
+                }
+
+                print("🧭 Smart grounding iteration \(iteration + 1): executed \(toolCalls.count) tool call(s)")
+                continue
+            }
+
+            let content = (message["content"] as? String) ?? ""
+            return content.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        print("🧭 Smart grounding: hit max iterations without final text")
+        return ""
     }
 }

@@ -16,10 +16,24 @@ struct MessageModel: View {
     @State private var isToolbarExpanded: Bool = false
     @State private var showInfoPopOver: Bool = false
     @State private var showRegenerateConfirmation: Bool = false
-    
+    @State private var showGroundingPopover: Bool = false
+    @State private var showGroundingSheet: Bool = false
+
     @State private var copied = false
-    
+
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
+
+    private var smartGroundingText: String? {
+        guard let annotations = message.annotations else { return nil }
+        let content = annotations
+            .first(where: { $0.type == "smart_grounding" })?
+            .urlCitation?
+            .content
+        guard let text = content, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return text
+    }
     
     var body: some View {
         VStack{
@@ -114,8 +128,45 @@ struct MessageModel: View {
                         .padding()
                     }
                     #endif
-                    
-                    
+
+                    if let groundingText = smartGroundingText {
+                        Button {
+                            if horizontalSizeClass == .compact { showGroundingSheet = true }
+                            else { showGroundingPopover = true }
+                        } label: {
+                            Label("Show smart grounding context", systemImage: "bolt")
+                                .frame(minWidth: 28, minHeight: 28)
+                                .contentShape(Rectangle())
+                                #if os(iOS)
+                                .hoverEffect(.highlight)
+                                #endif
+                                .scaleEffect(0.8)
+                        }
+                        .buttonStyle(.plain)
+                        .labelStyle(.iconOnly)
+                        .popover(isPresented: $showGroundingPopover) {
+                            SmartGroundingDetail(text: groundingText)
+                                .frame(width: 360, height: 400)
+                                .presentationCompactAdaptation(.popover)
+                        }
+                        #if os(iOS)
+                        .sheet(isPresented: $showGroundingSheet) {
+                            ScrollView(.vertical){
+                                HStack{
+                                    Text("Smart Grounding")
+                                        .font(.title)
+                                        .offset(x: 4, y: 4)
+                                    Spacer()
+                                }
+                                .padding(4)
+                                SmartGroundingDetail(text: groundingText)
+                                    .padding(4)
+                            }
+                            .presentationDetents([.medium, .large])
+                        }
+                        #endif
+                    }
+
                     if horizontalSizeClass == .compact{
                         Button {
                             showInfoPopOver.toggle()
@@ -215,6 +266,28 @@ struct MessageModel: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
+    }
+}
+
+private struct SmartGroundingDetail: View {
+    let text: String
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 6) {
+                    Image(systemName: "bolt")
+                        .foregroundStyle(.secondary)
+                    Text("Smart Grounding for this turn:")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                StructuredText(markdown: text)
+                    .textual.textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+        }
     }
 }
 

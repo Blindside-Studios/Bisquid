@@ -169,18 +169,29 @@ struct Mistral {
             return finalGreeting
     }
 
-    func streamMessage(messages: [Message], modelName: String, agent: UUID?, tools: [any ChatTool] = []) async throws -> AsyncThrowingStream<StreamChunk, Error> {
+    func streamMessage(
+        messages: [Message],
+        modelName: String,
+        agent: UUID?,
+        tools: [any ChatTool] = [],
+        onSmartGroundingGenerated: ((String) -> Void)? = nil
+    ) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         let baseRequest = makeRequest()
-        let (defaultInstructions, memorySuffix, temperature) = await MainActor.run {
-            (SyncedSettings.shared.defaultInstructions, SyncedSettings.memoryContext(for: agent), AgentManager.getAgentTemperature(fromUUID: agent))
+        let (defaultInstructions, memorySuffix, temperature, smartGroundingEnabled, smartGroundingUseWebSearch) = await MainActor.run {
+            (SyncedSettings.shared.defaultInstructions,
+             SyncedSettings.memoryContext(for: agent),
+             AgentManager.getAgentTemperature(fromUUID: agent),
+             Self.smartGroundingEnabledSetting,
+             SyncedSettings.shared.smartGroundingUseWebSearch)
         }
         debugPrint(temperature)
 
         let baseContent = agent == nil ? defaultInstructions : agent
             .flatMap { AgentManager.getAgent(fromUUID: $0)?.systemPrompt } ?? ""
-        let systemMessage = ["role": "system", "content": PromptHandler.populateInstructionsWithData(basePrompt: baseContent) + memorySuffix]
+        let populatedSystemPrompt = PromptHandler.populateInstructionsWithData(basePrompt: baseContent)
+        let systemMessage = ["role": "system", "content": populatedSystemPrompt + memorySuffix]
 
-        let apiMessages = [systemMessage] + messages.map { message in
+        var apiMessages = [systemMessage] + messages.map { message in
             var content = message.text
             if content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 content = "[No message content]"
@@ -195,6 +206,46 @@ struct Mistral {
             return ["role": message.role.toAPIString(), "content": content]
         }
 
+        // Smart Grounding: run before submitting to the main model so the injection can
+        // ride along on the last user message. Failures are swallowed — the feature
+        // degrades to "no injection" per spec.
+        if smartGroundingEnabled,
+           let currentUser = messages.last(where: { $0.role == .user }),
+           !currentUser.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let (priorUser, priorAssistant) = Self.priorTurn(before: currentUser.id, in: messages)
+            let priorInjections: [String] = messages
+                .flatMap { $0.annotations ?? [] }
+                .filter { $0.type == "smart_grounding" }
+                .compactMap { $0.urlCitation?.content }
+                .filter { !$0.isEmpty }
+
+            let excerpt = String(populatedSystemPrompt.prefix(800))
+            let groundingAgent = MistralAgents(apiKey: self.apiKey)
+            do {
+                let injection = try await groundingAgent.executeSmartGrounding(
+                    systemPromptExcerpt: excerpt,
+                    currentUserMessage: currentUser.text,
+                    previousUserMessage: priorUser,
+                    previousAssistantMessage: priorAssistant,
+                    previousInjections: priorInjections,
+                    useWebSearch: smartGroundingUseWebSearch
+                )
+                let trimmed = injection.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    if let lastUserIdx = apiMessages.lastIndex(where: { ($0["role"] as? String) == "user" }) {
+                        let existing = apiMessages[lastUserIdx]["content"] ?? ""
+                        apiMessages[lastUserIdx]["content"] = existing + "\n\n<system_smart_grounding>\n\(trimmed)\n</system_smart_grounding>"
+                    }
+                    print("🧭 Smart grounding injected (\(trimmed.count) chars)")
+                    onSmartGroundingGenerated?(trimmed)
+                } else {
+                    print("🧭 Smart grounding: no injection needed")
+                }
+            } catch {
+                print("⚠️ Smart grounding failed, continuing without injection: \(error)")
+            }
+        }
+
         //let supportsReasoning = ModelList.getModelFromSlug(slug: modelName).supportsReasoning
         let supportsReasoning = modelName.contains("magistral") // update this logic when Magistral is retired for Mistral 4
 
@@ -202,12 +253,13 @@ struct Mistral {
             print("🔧 Tools enabled: \(tools.map { $0.name }.joined(separator: ", "))")
         }
 
+        let finalApiMessages = apiMessages
         return AsyncThrowingStream { continuation in
             Task {
                 do {
                     try await self.streamLoop(
                         baseRequest: baseRequest,
-                        messages: apiMessages,
+                        messages: finalApiMessages,
                         modelName: modelName,
                         tools: tools,
                         supportsReasoning: supportsReasoning,
@@ -220,6 +272,37 @@ struct Mistral {
                 }
             }
         }
+    }
+
+    /// Reads the Smart Grounding enable flag from UserDefaults, defaulting to true
+    /// when the user hasn't interacted with the toggle yet.
+    @MainActor
+    private static var smartGroundingEnabledSetting: Bool {
+        guard UserDefaults.standard.object(forKey: "SmartGroundingEnabled") != nil else {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: "SmartGroundingEnabled")
+    }
+
+    /// Returns the most recent prior user message and prior assistant message relative
+    /// to the given user message ID. Either may be nil if absent.
+    private static func priorTurn(before currentUserID: UUID, in messages: [Message]) -> (user: String?, assistant: String?) {
+        guard let currentIdx = messages.firstIndex(where: { $0.id == currentUserID }),
+              currentIdx > 0 else {
+            return (nil, nil)
+        }
+        var priorAssistant: String? = nil
+        var priorUser: String? = nil
+        for i in stride(from: currentIdx - 1, through: 0, by: -1) {
+            let m = messages[i]
+            if priorAssistant == nil, m.role == .assistant {
+                priorAssistant = m.text
+            } else if priorUser == nil, m.role == .user {
+                priorUser = m.text
+            }
+            if priorAssistant != nil && priorUser != nil { break }
+        }
+        return (priorUser, priorAssistant)
     }
 
     /// Recursive streaming loop. Handles tool calls by executing all of them, then
