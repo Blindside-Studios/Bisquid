@@ -87,9 +87,13 @@ struct ContentView: View {
             hasRestoredConversation = true
 
             if !persistedConversationIDString.isEmpty,
-               let uuid = UUID(uuidString: persistedConversationIDString) {
+               let uuid = UUID(uuidString: persistedConversationIDString),
+               chatCache.getConversation(for: uuid) != nil {
                 selectedConversationID = uuid
             } else {
+                // Either no persisted UUID, or the persisted UUID points to a
+                // conversation that was never saved (new-but-unsent chats are
+                // filtered out of index.json by saveIndex). Start fresh.
                 let result = ConversationManager.createNewConversation(fromID: nil)
                 selectedConversationID = result.newChatUUID
                 persistedConversationIDString = result.newChatUUID.uuidString
