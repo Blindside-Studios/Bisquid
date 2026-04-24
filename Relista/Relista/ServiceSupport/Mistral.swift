@@ -234,7 +234,7 @@ struct Mistral {
                 if !trimmed.isEmpty {
                     if let lastUserIdx = apiMessages.lastIndex(where: { ($0["role"] as? String) == "user" }) {
                         let existing = apiMessages[lastUserIdx]["content"] ?? ""
-                        apiMessages[lastUserIdx]["content"] = existing + "\n\n<system_smart_grounding>\n\(trimmed)\n</system_smart_grounding>"
+                        apiMessages[lastUserIdx]["content"] = existing + "\n\n<system_smart_grounding>\nThe following was injected by the application's smart grounding system providing you with potentially useful information for your answer. Use this information in case it improves your answer, ignore if it does not. You are not obligated to mention any of this, these are merely suggestions.\n\(trimmed)\n</system_smart_grounding>"
                     }
                     print("🧭 Smart grounding injected (\(trimmed.count) chars)")
                     onSmartGroundingGenerated?(trimmed)

@@ -220,6 +220,10 @@ struct MistralAgents {
         
         Essentially, you are the back bone of making sure the model responds in a customised and personal manner to the user by providing it with information directly and indirectly linked to the topic from the Wiki. Make sure the model is sufficiently informed for a "magical" connection, a sense of continuity and memory to appear, while maintaining your job as the librarian that enables all this rather.
         
+        Only ever inject things that you believe genuinely make the model's upcoming response better. Do not inject unrelated information just to inject something. You are not the center of attention and injecting information that is not highly relevant WILL derail the main model and will make its response seem unfocused. It your your duty to avoid that!
+        
+        Do not provide stylistic suggestions you came up with, do not repeat yourself, do not reiterate bland knowledge! It is perfectly acceptable to not return anything when you do not find significant information in the Wiki that is guaranteed to be useful!
+        
         When you do inject:
 
         One to two sentences maximum. Never a paragraph.
@@ -286,7 +290,7 @@ struct MistralAgents {
         for iteration in 0..<maxIterations {
             var request = makeRequest(url: chatCompletionsUrl)
             let body: [String: Any] = [
-                "model": "ministral-14b-latest",
+                "model": "mistral-small-latest",
                 "messages": messages,
                 "tools": tools.map { $0.definition },
                 "stream": false,
