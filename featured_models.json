@@ -1,10 +1,17 @@
 [
   {
-    "name": "Mistral Small Creative",
+    "name": "Mistral Medium 3.1",
+    "modelID": "mistral-medium-2508",
+    "provider": "Mistral",
+    "family": "Mistral",
+    "specifier": "Medium 3.1"
+  },
+  {
+    "name": "Mistral Small Creative (Labs)",
     "modelID": "labs-mistral-small-creative",
     "provider": "Mistral",
     "family": "Mistral Small",
-    "specifier": "Creative"
+    "specifier": "Creative (Labs)"
   },
   {
     "name": "Magistral Small",
