@@ -54,7 +54,7 @@ struct ChatWindow: View {
                                                 tools: ToolRegistry.enabledTools(for: chatCache.getConversation(for: conversationID)?.agentUsed, conversationID: conversationID)
                                             )
                                         })
-                                        .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height * 0.8 : 0)
+                                        .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height * 0.8 : 0, alignment: .top)
                                         .id(message.id)
                                     }
                                     else if (message.role == .user || message.role == .system){

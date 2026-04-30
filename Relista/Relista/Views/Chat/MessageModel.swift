@@ -251,9 +251,6 @@ struct MessageModel: View {
             .padding(.leading, 10)
             .opacity(0.4)
             .padding(.top, -5)
-            
-            Spacer()
-                .frame(minHeight: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, horizontalSizeClass == .compact ? 0 : 8)
