@@ -35,6 +35,25 @@ struct MessageModel: View {
         return text
     }
     
+    private var modelDisplayName: String{
+        switch(message.modelUsed){
+        case "mistral-small-latest":
+            return "Mistral Small"
+        case "[t]mistral-small-latest":
+            return "Mistral Small Thinking"
+        case "mistral-medium-3.5":
+            return "Mistral Medium 3.5"
+        case "[t]mistral-medium-3.5":
+            return "Mistral Medium 3.5 Thinking"
+        case "mistral-large-latest":
+            return "Mistral Large"
+        case "[t]mistral-large-latest":
+            return "Mistral Large Thinking"
+        default:
+            return ModelList.getModelFromSlug(slug: message.modelUsed).name
+        }
+    }
+    
     var body: some View {
         VStack{
             HStack {
@@ -181,19 +200,14 @@ struct MessageModel: View {
                                 .rotationEffect(showInfoPopOver ? Angle(degrees: 0) : Angle(degrees: -360))
                         }
                         .popover(isPresented: $showInfoPopOver) {
-                            let modelUsed = ModelList.getModelFromSlug(slug: message.modelUsed)
+                            
                             VStack(alignment: .leading) {
                                 Text(formatMessageTimestamp(message.timeStamp))
                                 Text(message.timeStamp.formatted())
                                     .font(.caption)
                                     .opacity(0.7)
                                 Divider()
-                                Text(modelUsed.name)
-                                if modelUsed.name != modelUsed.modelID{
-                                    Text(modelUsed.modelID)
-                                        .font(.caption)
-                                        .opacity(0.7)
-                                }
+                                Text(modelDisplayName)
                             }
                             .padding()
                             .presentationCompactAdaptation(.popover)
@@ -209,8 +223,8 @@ struct MessageModel: View {
                                 .help(message.timeStamp.formatted())
                             Divider()
                                 .frame(height:12)
-                            Text(ModelList.getModelFromSlug(slug: message.modelUsed).name)
-                                .help(message.modelUsed)
+                            Text(modelDisplayName)
+                                .help(modelDisplayName)
                         }
                         
                         Button {

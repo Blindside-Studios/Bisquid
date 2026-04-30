@@ -22,9 +22,9 @@ struct ModelPicker: View {
             return ["Mistral", "Small"]
         case "[t]mistral-small-latest":
             return ["Mistral Small", "Thinking"]
-        case "mistral-medium-latest":
+        case "mistral-medium-3.5":
             return ["Mistral", "Medium"]
-        case "[t]mistral-medium-latest":
+        case "[t]mistral-medium-3.5":
             return ["Mistral Medium", "Thinking"]
         case "mistral-large-latest":
             return ["Mistral", "Large"]
@@ -137,7 +137,7 @@ struct ModelPickerContents: View {
                     let mlRadii = RectangleCornerRadii(topLeading: 8, bottomLeading: 4, bottomTrailing: 4, topTrailing: cornerRounding)
                     let mltRadii = RectangleCornerRadii(topLeading: 4, bottomLeading: 8, bottomTrailing: cornerRounding, topTrailing: 4)
                     
-                    let models = ["mistral-small-latest", "mistral-medium-latest", "mistral-large-latest"]
+                    let models = ["mistral-small-latest", "mistral-medium-3.5", "mistral-large-latest"]
                     let modelNames = ["Small", "Medium", "Large"]
                     let emoji = ["🐙", "🦑", "🐋"]
                     let radii = [msRadii, mmRadii, mlRadii, mstRadii, mmtRadii, mltRadii]
