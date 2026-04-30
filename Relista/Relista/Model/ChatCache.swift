@@ -719,6 +719,12 @@ class ChatCache {
                                 // First tool block — seed with any pre-tool text
                                 updatedMessage.contentBlocks = [.text(updatedMessage.text), newToolBlock]
                             } else {
+                                // Cap any in-flight thinking block — reasoning interrupted by a tool call
+                                let lastIndex = updatedMessage.contentBlocks!.count - 1
+                                if case .thinking(var tb) = updatedMessage.contentBlocks![lastIndex], tb.isLoading {
+                                    tb.isLoading = false
+                                    updatedMessage.contentBlocks![lastIndex] = .thinking(tb)
+                                }
                                 // Additional tool block — append without overwriting existing blocks
                                 updatedMessage.contentBlocks!.append(newToolBlock)
                             }
