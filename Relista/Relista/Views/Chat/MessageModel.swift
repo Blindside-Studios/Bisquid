@@ -65,7 +65,7 @@ struct MessageModel: View {
                                 StructuredText(markdown: text,
                                                patternOptions: .init(mathExpressions: true))
                                 .textual.textSelection(.enabled)
-                                .padding(.vertical, 8)
+                                .padding(.top, 8)
                             case .toolUse(let toolBlock):
                                 ToolUseView(toolBlock: toolBlock)
                             case .thinking(let thinkingBlock):
