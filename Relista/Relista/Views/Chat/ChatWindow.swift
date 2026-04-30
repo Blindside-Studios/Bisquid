@@ -21,6 +21,7 @@ struct ChatWindow: View {
     @State private var scrollWithAnimation = true
     @State private var primaryAccentColor: Color = .clear
     @State private var secondaryAccentColor: Color = .primary
+    @State private var topMessageID: UUID?
 
     var body: some View {
         ZStack{
@@ -66,12 +67,14 @@ struct ChatWindow: View {
                                     }
                                 }
                             }
+                            .scrollTargetLayout()
                             .environment(\.font, .system(size: chatFontSize))
                             // to center-align
                             .frame(maxWidth: .infinity)
                             .frame(maxWidth: 740 + max(0, (chatFontSize - 13) / (24 - 13)) * (geo.size.width - 740))
                             .frame(maxWidth: .infinity)
                         }
+                        .scrollPosition(id: $topMessageID, anchor: .top)
                         .scrollDismissesKeyboard(.interactively)
                         .contentShape(Rectangle())
                         .simultaneousGesture(TapGesture().onEnded {
@@ -95,6 +98,21 @@ struct ChatWindow: View {
                             }
                             withAnimation(.easeInOut(duration: scrollWithAnimation ? 0.35 : 0)) {
                                 proxy.scrollTo(newLastMessageID, anchor: .top)
+                            }
+                        }
+                        .onChange(of: topMessageID) { _, new in
+                            // Persist scroll position so it survives ChatWindow rebuilds
+                            // (e.g., when UnifiedSplitView swaps view trees on iPad rotation).
+                            if let new {
+                                chatCache.lastTopMessageID[conversationID] = new
+                            }
+                        }
+                        .onAppear {
+                            // Restore scroll position if we have one saved for this conversation.
+                            // Setting topMessageID drives scrollPosition's binding, which scrolls
+                            // the view to the saved message.
+                            if let saved = chatCache.lastTopMessageID[conversationID] {
+                                topMessageID = saved
                             }
                         }
                     }

@@ -66,6 +66,11 @@ class ChatCache {
     /// Dictionary tracking cancellation requests for conversations
     private var cancellationFlags: [UUID: Bool] = [:]
 
+    /// Per-conversation last-known topmost-visible message ID, used to restore scroll
+    /// position when ChatWindow is rebuilt (e.g., on iPad rotation when UnifiedSplitView
+    /// swaps its view tree). In-memory only — not persisted across app launches.
+    var lastTopMessageID: [UUID: UUID] = [:]
+
     #if os(iOS)
     private struct PendingGeneration {
         let chat: LoadedChat
