@@ -75,9 +75,33 @@ struct MistralAgents {
         return agentId
     }
 
+    // Delete a previously-created agent. Best-effort: errors are logged but not thrown,
+    // since cleanup failure shouldn't surface to the user.
+    private func deleteAgent(agentId: String) async {
+        guard let url = URL(string: "https://api.mistral.ai/v1/agents/\(agentId)") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse {
+                print("🗑️ Agent \(agentId) deletion response status: \(httpResponse.statusCode)")
+            }
+        } catch {
+            print("⚠️ Failed to delete agent \(agentId): \(error.localizedDescription)")
+        }
+    }
+
     // Execute a web search using the agent
     func executeSearch(query: String, searchType: String = "web_search") async throws -> String {
         let agentId = try await getOrCreateSearchAgent(searchType: searchType, isPremium: searchType == "web_search_premium")
+
+        // Schedule cleanup so the agent doesn't pile up in the user's admin panel.
+        // Fire-and-forget: cleanup must not block or fail the user-facing search.
+        defer {
+            Task { await deleteAgent(agentId: agentId) }
+        }
 
         var request = makeRequest(url: conversationsUrl)
 
