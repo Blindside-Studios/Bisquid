@@ -609,7 +609,8 @@ class ChatCache {
                     tools: tools,
                     onSmartGroundingGenerated: { injection in
                         capturedGrounding = injection
-                    }
+                    },
+                    threadID: chat.id
                 )
 
                 // Attach the injection as a MessageAnnotation so it persists with the

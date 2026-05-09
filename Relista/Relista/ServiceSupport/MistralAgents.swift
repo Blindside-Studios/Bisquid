@@ -313,13 +313,18 @@ struct MistralAgents {
         let maxIterations = 5
         for iteration in 0..<maxIterations {
             var request = makeRequest(url: chatCompletionsUrl)
-            let body: [String: Any] = [
+            var body: [String: Any] = [
                 "model": "mistral-small-latest",
                 "messages": messages,
                 "tools": tools.map { $0.definition },
                 "stream": false,
                 "temperature": 0.2
             ]
+            let usePromptCaching = SyncedSettings.shared.useExplicitPromptCaching
+            if usePromptCaching {
+                body["prompt_cache_key"] = "grounding_model"
+                debugPrint("prompt_cache_key: grounding_model")
+            }
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
             let (data, _) = try await URLSession.shared.data(for: request)

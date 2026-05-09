@@ -42,11 +42,17 @@ struct Mistral {
             ["role": $0.role.toAPIString(), "content": $0.text]
         } + [systemMessage]
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": "ministral-3b-latest",
             "messages": apiMessages,
             "stream": false
         ]
+        
+        let usePromptCaching = SyncedSettings.shared.useExplicitPromptCaching
+        if usePromptCaching {
+            body["prompt_cache_key"] = "conversation_title"
+            debugPrint("prompt_cache_key: conversation_title")
+        }
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
@@ -127,12 +133,18 @@ struct Mistral {
 
         let apiMessages = [systemMessage]
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": "ministral-8b-latest",
             "messages": apiMessages,
             "stream": false,
             "temperature": 1.0
         ]
+        
+        let usePromptCaching = SyncedSettings.shared.useExplicitPromptCaching
+        if usePromptCaching {
+            body["prompt_cache_key"] = "greeting_title_for_agent_\(agent?.uuidString ?? "default")"
+            debugPrint("prompt_cache_key: greeting_title_for_agent_\(agent?.uuidString ?? "default")")
+        }
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
@@ -174,7 +186,8 @@ struct Mistral {
         modelName: String,
         agent: UUID?,
         tools: [any ChatTool] = [],
-        onSmartGroundingGenerated: ((String) -> Void)? = nil
+        onSmartGroundingGenerated: ((String) -> Void)? = nil,
+        threadID: UUID? = nil
     ) async throws -> AsyncThrowingStream<StreamChunk, Error> {
         let baseRequest = makeRequest()
         let (defaultInstructions, memorySuffix, temperature, smartGroundingEnabled, smartGroundingUseWebSearch) = await MainActor.run {
@@ -264,7 +277,8 @@ struct Mistral {
                         tools: tools,
                         supportsReasoning: supportsReasoning,
                         temperature: temperature,
-                        continuation: continuation
+                        continuation: continuation,
+                        threadID: threadID
                     )
                     continuation.finish()
                 } catch {
@@ -315,7 +329,8 @@ struct Mistral {
         tools: [any ChatTool],
         supportsReasoning: Bool,
         temperature: Double,
-        continuation: AsyncThrowingStream<StreamChunk, Error>.Continuation
+        continuation: AsyncThrowingStream<StreamChunk, Error>.Continuation,
+        threadID: UUID? = nil
     ) async throws {
         var reasoningEffort = "none"
         var modelSlug = modelName
@@ -342,6 +357,12 @@ struct Mistral {
         if !tools.isEmpty { body["tools"] = tools.map { $0.definition } }
         body["temperature"] = temperature
 
+        let usePromptCaching = SyncedSettings.shared.useExplicitPromptCaching
+        if usePromptCaching, let threadID {
+            body["prompt_cache_key"] = threadID.uuidString
+            debugPrint("prompt_cache_key: \(threadID.uuidString)")
+        }
+        
         var request = baseRequest
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 

@@ -9,18 +9,20 @@ import SwiftUI
 
 struct APIProvider: View {
     @State private var apiKeyMistral: String = KeychainHelper.shared.mistralAPIKey
-    @State private var apiKeyClaude: String = KeychainHelper.shared.claudeAPIKey
-    @State private var apiKeyOpenRouter: String = KeychainHelper.shared.openRouterAPIKey
+    @State private var explicitPromptCaching: Bool = SyncedSettings.shared.useExplicitPromptCaching
+    //@State private var apiKeyClaude: String = KeychainHelper.shared.claudeAPIKey
+    //@State private var apiKeyOpenRouter: String = KeychainHelper.shared.openRouterAPIKey
 
     var body: some View {
         Form {
-            Section("API Keys") {
-                SecureField("Mistral API Key", text: $apiKeyMistral, prompt: Text("Mistral API Key"))
+            Section("Mistral API") {
+                SecureField("API Key", text: $apiKeyMistral, prompt: Text("Mistral API Key"))
                     .textFieldStyle(.roundedBorder)
                     .labelsHidden()
                     .onChange(of: apiKeyMistral) { _, newValue in
                         KeychainHelper.shared.mistralAPIKey = newValue
                     }
+                Toggle("Use Explicit Prompt Caching", isOn: $explicitPromptCaching)
                 /*SecureField("Claude API Key", text: $apiKeyClaude)
                     .textFieldStyle(.roundedBorder)
                     .onChange(of: apiKeyClaude) { _, newValue in

@@ -23,6 +23,7 @@ final class SyncedSettings: ObservableObject {
         static let suppressEmDashes = "SuppressEmDashes"
         static let wikiEntries = "WikiEntries"
         static let smartGroundingUseWebSearch = "SmartGroundingUseWebSearch"
+        static let useExplicitPromptCaching = "UseExplicitPromptCaching"
     }
 
     @Published var defaultModel: String {
@@ -82,6 +83,13 @@ final class SyncedSettings: ObservableObject {
             store.synchronize()
         }
     }
+    
+    @Published var useExplicitPromptCaching: Bool{
+        didSet {
+            store.set(useExplicitPromptCaching, forKey: Keys.useExplicitPromptCaching)
+            store.synchronize()
+        }
+    }
 
     private init() {
         // Load initial values from iCloud KVS, with defaults
@@ -98,6 +106,7 @@ final class SyncedSettings: ObservableObject {
             self.wikiEntries = []
         }
         self.smartGroundingUseWebSearch = store.object(forKey: Keys.smartGroundingUseWebSearch) != nil ? store.bool(forKey: Keys.smartGroundingUseWebSearch) : true
+        self.useExplicitPromptCaching = store.object(forKey: Keys.useExplicitPromptCaching) != nil ? store.bool(forKey: Keys.useExplicitPromptCaching) : true
 
         // Listen for external changes (from other devices)
         NotificationCenter.default.addObserver(
@@ -142,6 +151,12 @@ final class SyncedSettings: ObservableObject {
                 let newValue = store.bool(forKey: Keys.smartGroundingUseWebSearch)
                 if newValue != smartGroundingUseWebSearch {
                     smartGroundingUseWebSearch = newValue
+                }
+            }
+            if store.object(forKey: Keys.useExplicitPromptCaching) != nil {
+                let newValue = store.bool(forKey: Keys.useExplicitPromptCaching)
+                if newValue != useExplicitPromptCaching {
+                    useExplicitPromptCaching = newValue
                 }
             }
         }
