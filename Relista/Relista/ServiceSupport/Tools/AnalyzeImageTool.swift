@@ -16,7 +16,12 @@ struct AnalyzeImageTool: ChatTool {
     static let defaultModel = "mistral-medium-latest"
 
     /// Models that support vision (image content will be included in the request).
-    static let visionModels: Set<String> = ["pixtral-large-latest", "pixtral-12b-2409", "pixtral-12b-latest"]
+    static let visionModels: Set<String> = [
+        "mistral-medium-3.5",
+        "mistral-large-latest",
+        "mistral-medium-latest",
+        "mistral-small-latest"
+    ]
 
     var name: String { "analyze_image" }
     var displayName: String { "Analyze Image" }
@@ -35,17 +40,14 @@ struct AnalyzeImageTool: ChatTool {
                 Use the exact filename shown (e.g. "abc123.jpg").
 
                 Model selection guide:
-                - pixtral-large-latest: Best vision model. Use for detailed analysis, reading text in images, complex scenes, or when high accuracy matters.
-                - pixtral-12b-latest: Lighter vision model. Use for straightforward image questions where speed matters over depth.
-                - mistral-large-latest: Powerful text model. Use when you already have a cached image description and need deep reasoning, not visual inspection.
-                - mistral-medium-latest (DEFAULT): Balanced text model. Use when cached context is sufficient and the question is straightforward.
-                - mistral-small-latest: Fastest text model. Use only when cached context is sufficient and the question is very simple.
+                - mistral-medium-3.5: Best results. Significantly more expensive — use when accuracy matters most (detailed analysis, reading text in images, complex scenes).
+                - mistral-large-latest: Strong general-purpose model. Use for deep reasoning about an image.
+                - mistral-medium-latest (DEFAULT): Balanced choice. Use for straightforward image questions.
+                - mistral-small-latest: Fastest and cheapest. Use for very simple visual questions.
 
-                Prefer pixtral models when the image has not yet been described or when visual details are needed.
-                Prefer mistral text models when sufficient image context is already cached (visible above).
-                Default to mistral-medium-latest if you are unsure.
+                Default to mistral-medium-latest if you are unsure. Step up to mistral-medium-3.5 when the question demands the highest accuracy.
 
-                To get started, send the image to pixtral-large-latest asking it to describe the image.
+                To get started, ask the model to describe the image.
                 Prefer targeted, specific questions rather than generic "describe this image" prompts for follow-up calls.
                 Your questions and responses are visible to the user and cached for future turns.
                 If a question has already been answered (visible in context above), do not ask it again.
@@ -63,11 +65,9 @@ struct AnalyzeImageTool: ChatTool {
                         ],
                         "model": [
                             "type": "string",
-                            "description": "The model to use. Defaults to mistral-medium-latest if omitted.",
+                            "description": "The model to use. Defaults to mistral-medium-latest if omitted. Mistral Medium 3.5 is significantly more expensive than the other models but provides the best results. Pixtral models are now deprecated.",
                             "enum": [
-                                "pixtral-large-latest",
-                                "pixtral-12b-latest",
-                                "pixtral-12b-2409",
+                                "mistral-medium-3.5",
                                 "mistral-large-latest",
                                 "mistral-medium-latest",
                                 "mistral-small-latest"
