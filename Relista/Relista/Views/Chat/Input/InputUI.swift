@@ -26,17 +26,10 @@ struct InputUI: View {
     private var isChatBlank: Bool{
         ChatCache.shared.loadedChats[conversationID]?.messages.isEmpty ?? false
     }
-    private var agentIcon: String{
-        if selectedAgent != nil{
-            AgentManager.getUIAgentImage(fromUUID: selectedAgent!)
-        } else {
-            "🐙"
-        }
-    }
     @State private var greetingBannerText: String = ""
     @State private var displayedGreeting: String = ""
     @State private var greetingTask: Task<Void, Never>?
-    
+        
     #if os(macOS)
     @AppStorage("AddPaddingToTypingBar") private var typingBarPaddingMacOS: Bool = true
     #endif
@@ -49,8 +42,8 @@ struct InputUI: View {
                     if isChatBlank{
                         VStack{
                             Spacer(minLength: 0)
-                            Text(agentIcon)
-                                .font(.system(size: 72))
+                            AgentManager.getAgentImage(fromUUID: selectedAgent)
+                                .frame(width: 72, height: 72)
                             Text(displayedGreeting)
                                 .opacity(0.75)
                                 .multilineTextAlignment(.center)
@@ -90,13 +83,14 @@ struct InputUI: View {
 
                         HStack(alignment: .bottom){
                             Spacer()
-                            Text(agentIcon)
+                            AgentManager.getAgentImage(fromUUID: selectedAgent)
+                                .frame(width: 32, height: 32)
                             Text(displayedGreeting)
                                 .opacity(0.85)
                                 .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
                             Spacer()
                         }
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding()
                         .font(Font.largeTitle.bold())
                         .frame(height: 20, alignment: .bottom)

@@ -34,9 +34,9 @@ struct ChatFilterMenu: View {
                             chatFilter = .agent(agent.id)
                         } label: {
                             if case .agent(agent.id) = chatFilter {
-                                Label(agent.icon + " " + agent.name, systemImage: "checkmark")
+                                Label(/*agent.icon + " " + */agent.name, systemImage: "checkmark")
                             } else {
-                                Text(agent.icon + " " + agent.name)
+                                Text(/*agent.icon + " " + */agent.name)
                             }
                         }
                     }
@@ -71,7 +71,7 @@ struct ChatFilterMenu: View {
             return kind.rawValue
         case .agent(let agentID):
             if let agent = agentManager.customAgents.first(where: { $0.id == agentID }) {
-                return agent.icon + " " + agent.name
+                return /*agent.icon + " " + */agent.name
             }
             return "Unknown Agent"
         }

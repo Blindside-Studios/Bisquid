@@ -13,6 +13,7 @@ struct NewChatAgentPicker: View {
     @Binding var selectedModel: String
     
     @Environment(\.colorScheme) var colorScheme
+    @ScaledMetric(relativeTo: .body) var size = 20
     
     @ObservedObject private var agentManager = AgentManager.shared
     
@@ -20,7 +21,9 @@ struct NewChatAgentPicker: View {
         ScrollView(.horizontal) {
             HStack {
                 HStack {
-                    Text("🐙 Default")
+                    AgentManager.getAgentImage(fromUUID: nil)
+                        .frame(width: size, height: size)
+                    Text("Default")
                     Spacer()
                         .frame(width: 2)
                 }
@@ -56,7 +59,9 @@ struct NewChatAgentPicker: View {
                     }()
                     
                     HStack {
-                        Text(agent.icon + " " + agent.name)
+                        AgentManager.getAgentImage(fromUUID: agent.id)
+                            .frame(width: size, height: size)
+                        Text(agent.name)
                         Spacer()
                             .frame(width: 2)
                     }

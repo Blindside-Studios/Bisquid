@@ -14,10 +14,13 @@ struct AgentRow: View {
     let onTap: () -> Void
 
     @Environment(\.horizontalSizeClass) private var hSizeClass
+    @ScaledMetric(relativeTo: .body) var size = 20
 
     var body: some View {
         HStack {
-            Text(agent.icon + " " + agent.name)
+            AgentManager.getAgentImage(fromUUID: agent.id)
+                .frame(width: size, height: size)
+            Text(agent.name)
                 .lineLimit(1)
                 .minimumScaleFactor(1)
             Spacer()

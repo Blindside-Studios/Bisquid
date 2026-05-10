@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import SwiftUI
 
 struct Agent: Identifiable, Hashable, Codable{
     var id = UUID()
@@ -210,12 +211,12 @@ public class AgentManager: ObservableObject {
         else { return "Unkown Agent" }
     }
     
-    static func getUIAgentImage(fromUUID: UUID) -> String{
+    private static func getAgentImageName(fromUUID: UUID) -> String?{
         let agent = AgentManager.shared.customAgents.filter { $0.id == fromUUID }.first
         if agent != nil {
             return agent!.icon
         }
-        else { return "" }
+        else { return nil }
     }
     
     static func getUIAgentColors(fromUUID: UUID) -> [String?]
@@ -240,4 +241,14 @@ public class AgentManager: ObservableObject {
             else { return 0.5 }
         }
     }
+    
+    static func getAgentImage(fromUUID: UUID?) -> some View{
+        if let fromUUID{
+            return Image("AgentIcons/\(AgentManager.getAgentImageName(fromUUID: fromUUID) ?? "Default")").resizable().scaledToFit()
+        } else {
+            return Image("AgentIcons/Default").resizable().scaledToFit()
+        }
+    }
+    
+    public static let availableImages: [String] = ["Default", "Twongi", "République", "Meet_The_Squid", "Keep_Calm", "Mechanical", "Bricked_Up", "Ghost", "Headband", "Nadiya"]
 }

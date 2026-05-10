@@ -108,6 +108,8 @@ struct AgentSettings: View {
             }
         )
     }
+    
+    @ScaledMetric(relativeTo: .largeTitle) var size = 20
 
     var body: some View {
         Group {
@@ -121,8 +123,8 @@ struct AgentSettings: View {
                 List {
                     ForEach(manager.customAgents) { agent in
                         HStack {
-                            Text(agent.icon)
-                                .font(.largeTitle)
+                            AgentManager.getAgentImage(fromUUID: agent.id)
+                                .frame(width: size, height: size)
                                 .padding(.trailing, 4)
 
                             VStack(alignment: .leading) {
@@ -240,7 +242,7 @@ struct AgentEditorView: View {
         _agent = State(initialValue: Agent(
             name: "",
             description: "",
-            icon: "🤖",
+            icon: AgentManager.availableImages.randomElement()!,
             model: ModelList.placeHolderModel,
             systemPrompt: "",
             temperature: 1.0,
@@ -401,6 +403,8 @@ struct AgentHeader: View{
     @Binding var description: String
     @Binding var icon: String
     @Environment(\.horizontalSizeClass) var sizeClass
+    
+    @State private var showingImagePicker: Bool = false
 
     private enum Field: Hashable { case name, description }
     @FocusState private var focusedField: Field?
@@ -408,14 +412,23 @@ struct AgentHeader: View{
     var body: some View{
         VStack{
             HStack{
-                TextField("Icon (Emoji)", text: $icon)
+                //TextField("Icon (Emoji)", text: $icon)
+                Image("AgentIcons/\(icon)")
+                    .resizable()
+                    .scaledToFit()
                     .frame(width: 92, height: 92)
-                    .labelsHidden()
+                    .contentShape(Rectangle())
                     .font(.system(size: 72))
                     .gesture(TapGesture().onEnded {
-                        //self.showingImagePicker.toggle()
+                        self.showingImagePicker.toggle()
                     })
                     .padding(.horizontal, 16)
+                    .popover(isPresented: $showingImagePicker) {
+                        List(AgentManager.availableImages, id: \.self) { image in
+                            Text(image)
+                                .onTapGesture { icon = image }
+                        }
+                    }
 
                 VStack{
                     Text("Hello")

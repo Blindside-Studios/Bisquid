@@ -97,10 +97,14 @@ struct Sidebar: View {
 
     // MARK: - Subviews
 
+    @ScaledMetric(relativeTo: .body) var size = 20
+    
     @ViewBuilder
     private var newChatRow: some View {
         HStack {
-            Text("🐙 New chat")
+            AgentManager.getAgentImage(fromUUID: nil)
+                .frame(width: size, height: size)
+            Text("New chat")
             Spacer()
         }
         .padding(10)
