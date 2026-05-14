@@ -10,7 +10,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     let totalAvailableItems: [SettingsItem] = [.general, .personalization, .agents, .wikis, .apiProvider]
-    @SceneStorage("settings.selection") private var storedSelection: String = ""
+    @State var storedSelection: String
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var onClose: (() -> Void)? = nil

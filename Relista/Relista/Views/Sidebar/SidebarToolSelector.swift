@@ -9,8 +9,9 @@ import SwiftUI
 
 struct SidebarToolSelector: View {
     @Binding var shownContentType: ContentType
+    @Environment(\.horizontalSizeClass) private var sizeClass
     #if os(iOS)
-    @SceneStorage("sidebar.showingSettings") private var showingSettings: Bool = false
+    @State private var showingSettings: Bool = false
     #endif
 
     var body: some View {
@@ -18,7 +19,7 @@ struct SidebarToolSelector: View {
             SidebarToolButton(assignedTool: .documentAI, shownContentType: $shownContentType, toolName: "Documents", systemImage: "document.on.document")
             SidebarToolButton(assignedTool: .audioAI, shownContentType: $shownContentType, toolName: "Audio", systemImage: "waveform")
 
-#if os(macOS)
+            #if os(macOS)
             SettingsLink{
                 HStack {
                     Label("Settings", systemImage: "gearshape")
@@ -52,7 +53,7 @@ struct SidebarToolSelector: View {
         }
         #if os(iOS)
         .sheet(isPresented: $showingSettings) {
-            SettingsView(onClose: { showingSettings = false })
+            SettingsView(storedSelection: sizeClass == .compact ? "" : "General", onClose: { showingSettings = false })
                 .presentationSizing(.page)
         }
         #endif

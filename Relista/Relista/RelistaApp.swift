@@ -96,7 +96,7 @@ struct RelistaApp: App {
 
         #if os(macOS)
         Settings {
-            SettingsView()
+            SettingsView(storedSelection: "General")
                 .frame(minWidth: 600, idealWidth: 600, minHeight: 500, idealHeight: 680)
         }
         .windowResizability(.contentMinSize)
