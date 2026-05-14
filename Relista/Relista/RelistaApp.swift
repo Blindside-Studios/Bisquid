@@ -54,18 +54,10 @@ struct RelistaApp: App {
                 }
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
-                    // Only refresh after a true backgrounding. Transient
-                    // interruptions like Control Centre, the app switcher
-                    // preview, or incoming alerts move the scene to
-                    // .inactive — refreshing on those needlessly rebuilds
-                    // the view tree and dismisses any open sheets.
-            print("scenePhase: \(oldPhase) → \(newPhase)")
-            if newPhase == .active && oldPhase == .background {
-                        Task{
-                            await RelistaApp.refreshContent()
-                        }
-                    }
-                }
+            Task{
+                await RelistaApp.refreshContent()
+            }
+        }
         .commands {
             // Replace default "New Window" with "New Chat" in File menu
             #if os(macOS) || os(iOS)
