@@ -52,7 +52,8 @@ struct Jellyfish: View {
             
             if showJellyfish{
                 AmbientBackground(accentColor: secondaryColor)
-                    .blur(radius: 100)
+                    .drawingGroup()
+                    .blur(radius: 75)
                     .transition(.opacity.combined(with: .scale(scale: 5)))
             }
         }
@@ -68,6 +69,8 @@ struct Jellyfish: View {
         @State private var offsetY: CGFloat = 0
         @State private var scale: CGFloat = 1.0
         
+        @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = true
+        
         var body: some View {
             Circle()
                 .fill(
@@ -79,25 +82,27 @@ struct Jellyfish: View {
                     )
                 )
                 .frame(width: size, height: size)
-                .blur(radius: 15)
+                //.blur(radius: 15)
                 .scaleEffect(scale)
                 .offset(x: offsetX, y: offsetY)
                 .onAppear {
-                    // Random drift animation
-                    withAnimation(
-                        .easeInOut(duration: duration)
-                        .repeatForever(autoreverses: true)
-                    ) {
-                        offsetX = CGFloat.random(in: -100...100)
-                        offsetY = CGFloat.random(in: -100...100)
-                    }
-                    
-                    // Gentle pulse
-                    withAnimation(
-                        .easeInOut(duration: duration * 0.6)
-                        .repeatForever(autoreverses: true)
-                    ) {
-                        scale = CGFloat.random(in: 0.8...1.2)
+                    if jellyfishAnimations {
+                        // Random drift animation
+                        withAnimation(
+                            .easeInOut(duration: duration)
+                            .repeatForever(autoreverses: true)
+                        ) {
+                            offsetX = CGFloat.random(in: -100...100)
+                            offsetY = CGFloat.random(in: -100...100)
+                        }
+                        
+                        // Gentle pulse
+                        withAnimation(
+                            .easeInOut(duration: duration * 0.6)
+                            .repeatForever(autoreverses: true)
+                        ) {
+                            scale = CGFloat.random(in: 0.8...1.2)
+                        }
                     }
                 }
         }
@@ -106,6 +111,8 @@ struct Jellyfish: View {
     struct AmbientBackground: View {
         let accentColor: Color
         @State private var rotation: Double = 0
+        
+        @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = true
         
         var body: some View {
             GeometryReader { geometry in
@@ -136,13 +143,16 @@ struct Jellyfish: View {
                         .opacity(0.75)
                         .position(x: width * 0.6, y: height * 0.8)
                 }
+                .drawingGroup()
                 .rotationEffect(.degrees(rotation))
                 .onAppear {
-                    withAnimation(
-                        .linear(duration: 60)
-                        .repeatForever(autoreverses: false)
-                    ) {
-                        rotation = 360
+                    if jellyfishAnimations{
+                        withAnimation(
+                            .linear(duration: 60)
+                            .repeatForever(autoreverses: false)
+                        ) {
+                            rotation = 360
+                        }
                     }
                 }
                 .allowsHitTesting(false)

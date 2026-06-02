@@ -18,6 +18,7 @@ struct GeneralSettings: View {
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
     #endif
     @AppStorage("ApplyBackgroundBisquidTheme") private var useBisquidBackground: Bool = true
+    @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = true
     @AppStorage("SmartGroundingEnabled") private var smartGroundingEnabled: Bool = true
     @StateObject private var syncedSettings = SyncedSettings.shared
 
@@ -27,6 +28,7 @@ struct GeneralSettings: View {
                 #if os(macOS)
                 Toggle("Add extra padding to the input bar", isOn: $typingBarPaddingMacOS)
                 #endif
+                Toggle("Animate \"Jellyfish\" background when choosing an agent", isOn: $jellyfishAnimations)
                 Toggle("Tint background with Bisquid theme colors", isOn: $useBisquidBackground)
             }
 
