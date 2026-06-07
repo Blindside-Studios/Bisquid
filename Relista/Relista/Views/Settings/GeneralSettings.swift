@@ -19,8 +19,11 @@ struct GeneralSettings: View {
     #endif
     @AppStorage("ApplyBackgroundBisquidTheme") private var useBisquidBackground: Bool = true
     @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = true
+    @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = true
     @AppStorage("SmartGroundingEnabled") private var smartGroundingEnabled: Bool = true
     @StateObject private var syncedSettings = SyncedSettings.shared
+    
+    @AppStorage("EnableUIDebugControls") private var showDebugOptions: Bool = false
 
     var body: some View {
         Form{
@@ -29,6 +32,7 @@ struct GeneralSettings: View {
                 Toggle("Add extra padding to the input bar", isOn: $typingBarPaddingMacOS)
                 #endif
                 Toggle("Animate \"Jellyfish\" background when choosing an agent", isOn: $jellyfishAnimations)
+                Toggle("Play animation during response generation", isOn: $userMessageAnimation)
                 Toggle("Tint background with Bisquid theme colors", isOn: $useBisquidBackground)
             }
 
@@ -55,6 +59,10 @@ struct GeneralSettings: View {
                 }
             }
             #endif
+            
+            Section(header: Text("Debug"), footer: Text("Shows debug options meant to test features and animations without streaming responses. Currently limited to a button in the user message context menu to force the stream message animation")){
+                Toggle("Show debug options", isOn: $showDebugOptions)
+            }
         }
         .formStyle(.grouped)
     }

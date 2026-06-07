@@ -61,7 +61,7 @@ struct ChatWindow: View {
                                     else if (message.role == .user || message.role == .system){
                                         MessageUser(message: message, availableWidth: geo.size.width, onEdit: {
                                             editingMessage = message
-                                        }, primaryAccentColor: $primaryAccentColor)
+                                        }, isLastMessage: message.id == sortedMessages.last(where: { $0.role == .user })?.id ?? nil, isChatGenerating: ChatCache.shared.loadedChats[conversationID]?.isGenerating ?? false, primaryAccentColor: primaryAccentColor, secondaryAccentColor: secondaryAccentColor)
                                         .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height : 0)
                                         .id(message.id)
                                     }

@@ -11,16 +11,29 @@ struct MessageUser: View {
     let message: Message
     let availableWidth: CGFloat
     let onEdit: () -> Void
+    let isLastMessage: Bool
+    let isChatGenerating: Bool
     @State private var isExpanded: Bool = false
     @State private var naturalHeight: CGFloat = 0
 
-    @Binding var primaryAccentColor: Color
+    var primaryAccentColor: Color
+    var secondaryAccentColor: Color
 
     @AppStorage("ShowUserMessageToolbars") private var showUserMessageToolbars: Bool = false
+    @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = true
+    @AppStorage("EnableUIDebugControls") private var showDebugOptions: Bool = false
     
     private var needsTruncation: Bool {
         naturalHeight > 200
     }
+    private var playAnimation: Bool{
+        if userMessageAnimation{
+            return isLastMessage && isChatGenerating
+        } else {
+            return false
+        }
+    }
+    @State private var overrideAndPlayAnimation = false
     
     var body: some View {
         VStack(spacing: 0){
@@ -47,6 +60,16 @@ struct MessageUser: View {
                                     }
                                 )
                         )
+                    
+                        .background{
+                            if playAnimation || overrideAndPlayAnimation{
+                                UserMessageGenerationEffect(message: message.text, primaryColor: primaryAccentColor, secondaryColor: secondaryAccentColor)
+                                    .padding(-40)
+                                    .ignoresSafeArea()
+                            }
+                        }
+                        .animation(.default.speed(0.3), value: playAnimation)
+                    
                         .onPreferenceChange(HeightPreferenceKey.self) { height in
                             naturalHeight = height
                         }
@@ -72,6 +95,13 @@ struct MessageUser: View {
                                 onEdit()
                             } label: {
                                 Label("Edit", systemImage: "pencil")
+                            }
+                            if showDebugOptions{
+                                Button{
+                                    overrideAndPlayAnimation.toggle()
+                                } label: {
+                                    Label("Force animation", systemImage: "livephoto.play")
+                                }
                             }
                         }
                     
