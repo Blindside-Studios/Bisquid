@@ -68,7 +68,7 @@ struct InputUI: View {
                             .transition(
                                 AnyTransition.blurFade.combined(with: .offset(y: 50)).combined(with: .opacity)
                             )
-                            //.shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
+                            .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                     }
 
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)

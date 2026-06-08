@@ -13,7 +13,7 @@ struct NewChatAgentPicker: View {
     @Binding var selectedModel: String
     
     @Environment(\.colorScheme) var colorScheme
-    @ScaledMetric(relativeTo: .body) var size = 20
+    @ScaledMetric(relativeTo: .body) var size = 18
     
     @ObservedObject private var agentManager = AgentManager.shared
     
@@ -28,15 +28,8 @@ struct NewChatAgentPicker: View {
                         .frame(width: 2)
                 }
                 .padding(6)
-                //.glassEffect(.clear.tint(selectedAgent == nil ? .accentColor.opacity(0.5) : .black.opacity(0.1)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
-                //.glassEffect(.regular.tint(selectedAgent == nil ? .accentColor.opacity(0.5) : .clear).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
-                //.background(.bar)
-                //.border(.gray.opacity(0.2), width: 1)
-                //.background(selectedAgent == nil ? Color.accentColor.opacity(0.5) : .clear)
-                .background(.bar)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .tint(selectedAgent == nil ? Color.accentColor.opacity(0.5) : .clear)
-                .glassEffect(.clear.tint(selectedAgent == nil ? .accentColor : .clear).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
+                .glassEffect(.regular.tint(selectedAgent == nil ? .accentColor.opacity(0.5) : nil), in: .rect(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .animation(.default, value: selectedAgent)
                 #if os(iOS)
                 .hoverEffect(.lift)
@@ -66,16 +59,8 @@ struct NewChatAgentPicker: View {
                             .frame(width: 2)
                     }
                     .padding(6)
-                    //.glassEffect(.clear.tint(isCurrentAgent ? primaryAccentColor.opacity(0.5) : .black.opacity(0.1)).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
-                    //.glassEffect(.regular.tint(isCurrentAgent ? primaryAccentColor.opacity(0.5) : .clear).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
-                    //.background(.bar)
-                    //.border(.gray.opacity(0.2), width: 1)
-                    //.background(isCurrentAgent ? primaryAccentColor.opacity(0.5) : .clear)
-                    .background(.bar)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .tint(isCurrentAgent ? primaryAccentColor.opacity(0.5) : .clear)
-                    //.glassEffect(.clear.tint(isCurrentAgent ? primaryAccentColor.opacity(0.5) : .clear).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
-                    .glassEffect(.clear.tint(isCurrentAgent ? primaryAccentColor : .clear).interactive(), in: .rect(cornerRadius: 10, style: .continuous))
+                    .glassEffect(.regular.tint(isCurrentAgent ? primaryAccentColor.opacity(0.5) : nil), in: .rect(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .animation(.default, value: isCurrentAgent)
                     #if os(iOS)
                     .hoverEffect(.lift)
