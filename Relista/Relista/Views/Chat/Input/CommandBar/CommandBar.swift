@@ -17,7 +17,7 @@ struct CommandBar: View {
 
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
-    let sendMessage: () -> Void
+    let sendMessage: () async -> Void
     let sendMessageAsSystem: () -> Void
     let appendDummyMessages: () -> Void
     var inputFieldNamespace: Namespace.ID

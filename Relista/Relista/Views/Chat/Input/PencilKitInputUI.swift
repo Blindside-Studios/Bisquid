@@ -159,47 +159,52 @@ struct PencilKitInputUI: View {
         return PendingAttachment(data: jpeg, fileExtension: "jpg")
     }
 
-    func sendMessage(){
+    func sendMessage() async{
         let apiKey = KeychainHelper.shared.mistralAPIKey
         
         let chat = chatCache.getChat(for: conversationID)
         if !chat.isGenerating {
             placeHolder = ChatPlaceHolders.returnAppropriatePlaceholder(agentUUID: selectedAgent)
-            if (inputMessage != ""){
-                // Dismiss software keyboard while keeping hardware keyboard functional
-                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                
-                if vibrateOnTokensReceived {
-                    let feedbackGenerator = UINotificationFeedbackGenerator()
-                    feedbackGenerator.notificationOccurred(.success)
+            do{
+                let text = try await CanvasOCR.recognize(canvasView.drawing, apiKey: apiKey)
+                if (text != ""){
+                    // Dismiss software keyboard while keeping hardware keyboard functional
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    
+                    if vibrateOnTokensReceived {
+                        let feedbackGenerator = UINotificationFeedbackGenerator()
+                        feedbackGenerator.notificationOccurred(.success)
+                    }
+                    let input = text
+                    inputMessage = ""
+                    DispatchQueue.main.async {
+                        // force render refresh to prevent a bug where the placeholder text isn't showing up and the blinking cursor disappears
+                    }
+                    
+                    // Capture and clear pending attachments before the async send
+                    let attachmentsToSend = pendingAttachments.map { ($0.data, $0.fileExtension) }
+                    pendingAttachments = []
+                    
+                    // If editing, truncate from the edited message onward before sending
+                    if let editing = editingMessage {
+                        chatCache.truncateMessages(for: conversationID, from: editing.id)
+                        editingMessage = nil
+                    }
+                    
+                    // Use ChatCache to send message and handle generation
+                    chatCache.sendMessage(
+                        modelName: selectedModel,
+                        agent: selectedAgent,
+                        inputText: input,
+                        to: conversationID,
+                        apiKey: apiKey,
+                        withHapticFeedback: vibrateOnTokensReceived,
+                        tools: ToolRegistry.enabledTools(for: selectedAgent, conversationID: conversationID),
+                        attachments: attachmentsToSend
+                    )
                 }
-                let input = inputMessage
-                inputMessage = ""
-                DispatchQueue.main.async {
-                    // force render refresh to prevent a bug where the placeholder text isn't showing up and the blinking cursor disappears
-                }
-                
-                // Capture and clear pending attachments before the async send
-                let attachmentsToSend = pendingAttachments.map { ($0.data, $0.fileExtension) }
-                pendingAttachments = []
-
-                // If editing, truncate from the edited message onward before sending
-                if let editing = editingMessage {
-                    chatCache.truncateMessages(for: conversationID, from: editing.id)
-                    editingMessage = nil
-                }
-
-                // Use ChatCache to send message and handle generation
-                chatCache.sendMessage(
-                    modelName: selectedModel,
-                    agent: selectedAgent,
-                    inputText: input,
-                    to: conversationID,
-                    apiKey: apiKey,
-                    withHapticFeedback: vibrateOnTokensReceived,
-                    tools: ToolRegistry.enabledTools(for: selectedAgent, conversationID: conversationID),
-                    attachments: attachmentsToSend
-                )
+            } catch {
+                return
             }
         }
     }

@@ -11,7 +11,7 @@ struct SendMessageButton: View {
     @Binding var conversationID: UUID
     @State var chatCache = ChatCache.shared
     
-    let sendMessage: () -> Void
+    let sendMessage: () async -> Void
     let sendMessageAsSystem: () -> Void
     
     @Binding var accentColor: Color
@@ -23,7 +23,9 @@ struct SendMessageButton: View {
             if chat.isGenerating {
                 chatCache.cancelGeneration(for: conversationID)
             } else {
-                sendMessage()
+                Task{
+                    await sendMessage()
+                }
             }
         } label: {
             // Access chat directly from cache to avoid infinite loop
