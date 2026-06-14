@@ -14,6 +14,9 @@ struct ChatWindow: View {
     @Binding var selectedModel: String
     @Binding var editingMessage: Message?
     @Binding var pendingAttachments: [PendingAttachment]
+    @Binding var useInkingInput: Bool
+    
+    
     @State private var chatCache = ChatCache.shared
 
     @AppStorage("chatFontSize") private var chatFontSize: Double = Font.defaultBodySize
@@ -82,9 +85,20 @@ struct ChatWindow: View {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             #endif
                         })
-                        .safeAreaBar(edge: .bottom, spacing: 0){
-                            InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
+                        .safeAreaBar(edge: useInkingInput ? .top : .bottom, spacing: 0){
+                            InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments, useInkingInput: $useInkingInput)
                         }
+                        /*.safeAreaBar(edge: .top, spacing: 0){
+                            #if os(iOS)
+                            if useInkingInput{
+                                PencilKitInputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
+                                    .transition(
+                                        AnyTransition.blurFade.combined(with: .offset(y: -50)).combined(with: .opacity)
+                                    )
+                            }
+                            #endif
+                        }*/
+                        .animation(.bouncy(duration: 0.6, extraBounce: 0), value: useInkingInput)
                         .onChange(of: conversationID) { _, _ in
                             // scroll to last user/system message when switching conversations
                             if let lastUserMessage = chat.messages.sorted(by: { $0.timeStamp < $1.timeStamp }).last(where: { $0.role == .user || $0.role == .system }) {

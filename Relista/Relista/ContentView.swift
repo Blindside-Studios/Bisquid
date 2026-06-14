@@ -31,6 +31,8 @@ struct ContentView: View {
     // scene-stored per user request — they reset between launches.
     @State private var editingMessage: Message? = nil
     @State private var pendingAttachments: [PendingAttachment] = []
+    
+    @State var showInkingInput = false
 
     @State var chatCache = ChatCache.shared
     let reloadSidebar: () async -> Void
@@ -66,11 +68,16 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Rectangle())
             default:
-                ChatWindow(conversationID: $selectedConversationID, inputMessage: $inputMessage, selectedAgent: selectedAgent, selectedModel: $selectedModel, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
+                ChatWindow(conversationID: $selectedConversationID, inputMessage: $inputMessage, selectedAgent: selectedAgent, selectedModel: $selectedModel, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments, useInkingInput: $showInkingInput)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Rectangle())
                     .toolbar(){
                         ToolbarItemGroup() {
+                            if UIDevice.current.userInterfaceIdiom == .pad{
+                                Button("Use Pencil Input", systemImage: showInkingInput ? "pencil.tip.crop.circle.fill" : "pencil.tip.crop.circle"){
+                                    showInkingInput.toggle()
+                                }
+                            }
                             Button("New chat", systemImage: "square.and.pencil"){
                                 createNewChat()
                             }

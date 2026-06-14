@@ -17,8 +17,10 @@ struct InputUI: View {
     @Binding var secondaryAccentColor: Color
     @Binding var editingMessage: Message?
     @Binding var pendingAttachments: [PendingAttachment]
+    @Binding var useInkingInput: Bool
     
     // own logic
+    @Namespace private var inputFieldNamespace
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #if os(macOS)
     @Environment(\.controlActiveState) private var focused
@@ -71,9 +73,15 @@ struct InputUI: View {
                             .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                     }
 
-                    PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
-                        .layoutPriority(1)
-                        .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
+                    Group{
+                        if (!useInkingInput){
+                            PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments, inputFieldNamespace: inputFieldNamespace)
+                        } else {
+                            PencilKitInputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments, inputFieldNamespace: inputFieldNamespace)
+                        }
+                    }
+                    .layoutPriority(1)
+                    .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
                 }
                 #endif
             } else {
@@ -98,13 +106,23 @@ struct InputUI: View {
                             AnyTransition.blurFade.combined(with: .offset(y: -150)).combined(with: .opacity)
                         )
                     }
+                    #if os(macOS)
                     PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
-                        #if os(macOS)
                         .padding(typingBarPaddingMacOS && !isChatBlank ? 16 : 0)
                         /*.shadow(color: focused == .inactive ? .clear : .black.opacity(isChatBlank ? 0.075 : 0.025), radius: focused == .inactive ? 0 : 12)
                         #else
                         .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)*/
-                        #endif
+                    #elseif os (iOS)
+                    Group{
+                        if (!useInkingInput){
+                            PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments, inputFieldNamespace: inputFieldNamespace)
+                        } else {
+                            PencilKitInputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments, inputFieldNamespace: inputFieldNamespace)
+                        }
+                    }
+                    .layoutPriority(1)
+                    .shadow(color: .black.opacity(isChatBlank ? 0.075 : 0.025), radius: 12)
+                    #endif
                     if isChatBlank {
                         NewChatAgentPicker(conversationID: $conversationID, selectedAgent: $selectedAgent, selectedModel: $selectedModel)
                             .zIndex(-1) // to place it behind the PromptField, otherwise it would just constantly overlap and we couldn't click anything anymore

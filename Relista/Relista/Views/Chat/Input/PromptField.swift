@@ -26,6 +26,7 @@ struct PromptField: View {
     @Binding var secondaryAccentColor: Color
     @Binding var editingMessage: Message?
     @Binding var pendingAttachments: [PendingAttachment]
+    var inputFieldNamespace: Namespace.ID
     #if os(iOS)
     @State private var textFieldFocusRequest: Bool = false
     #endif
@@ -129,7 +130,7 @@ struct PromptField: View {
             }
             #endif
             //.padding(spacing)
-            CommandBar(selectedModel: $selectedModel, conversationID: $conversationID, secondaryAccentColor: $secondaryAccentColor, pendingAttachments: $pendingAttachments, sendMessage: sendMessage, sendMessageAsSystem: sendMessageAsSystem, appendDummyMessages: appendDummyMessages)
+            CommandBar(isVertical: false, selectedModel: $selectedModel, conversationID: $conversationID, secondaryAccentColor: $secondaryAccentColor, pendingAttachments: $pendingAttachments, sendMessage: sendMessage, sendMessageAsSystem: sendMessageAsSystem, appendDummyMessages: appendDummyMessages, inputFieldNamespace: inputFieldNamespace)
                 .padding(.top, 4)
         }
         .animation(.bouncy(duration: 0.3), value: pendingAttachments.isEmpty)
@@ -171,6 +172,8 @@ struct PromptField: View {
         }
         #if os(macOS)
         .animation(.default, value: typingBarPaddingMacOS)
+        #elseif os(iOS)
+        .matchedGeometryEffect(id: "inputField", in: inputFieldNamespace)
         #endif
     }
 
