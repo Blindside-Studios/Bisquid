@@ -10,6 +10,7 @@ import Textual
 
 struct MessageModel: View {
     let message: Message
+    let isUsingPencilView: Bool
     let onRegenerate: () -> Void
 
     @AppStorage("AlwaysShowFullModelMessageToolbar") private var toolbarExpansionPreference: Bool = false
@@ -54,32 +55,58 @@ struct MessageModel: View {
         }
     }
     
+    private let pencilViewFontSize = 24.0
+    
     var body: some View {
         VStack{
             HStack {
                 VStack(alignment: .leading, spacing: 0) {
                     if let blocks = message.contentBlocks {
                         ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-                            switch block {
-                            case .text(let text):
-                                StructuredText(markdown: text,
-                                               patternOptions: .init(mathExpressions: true))
-                                .textual.textSelection(.enabled)
-                                .padding(.top, 8)
-                            case .toolUse(let toolBlock):
-                                ToolUseView(toolBlock: toolBlock)
-                            case .thinking(let thinkingBlock):
-                                ThinkingView(thinkingBlock: thinkingBlock)
+                            if !isUsingPencilView{
+                                switch block {
+                                case .text(let text):
+                                    StructuredText(markdown: text,
+                                                   patternOptions: .init(mathExpressions: true))
+                                    .textual.textSelection(.enabled)
+                                    .padding(.top, 8)
+                                case .toolUse(let toolBlock):
+                                    ToolUseView(toolBlock: toolBlock)
+                                case .thinking(let thinkingBlock):
+                                    ThinkingView(thinkingBlock: thinkingBlock)
+                                }
+                            } else {
+                                switch block {
+                                case .text(let text):
+                                    StructuredText(markdown: text,
+                                                   patternOptions: .init(mathExpressions: true))
+                                    .textual.textSelection(.enabled)
+                                    .font(.custom("Georgia", size: pencilViewFontSize))
+                                    .padding(.top, 8)
+                                case .toolUse(let toolBlock):
+                                    ToolUseView(toolBlock: toolBlock)
+                                        .font(.custom("Georgia", size: pencilViewFontSize))
+                                case .thinking(let thinkingBlock):
+                                    ThinkingView(thinkingBlock: thinkingBlock)
+                                        .font(.custom("Georgia", size: pencilViewFontSize))
+                                }
                             }
                         }
                     } else {
-                        StructuredText(markdown: message.text,
-                                       patternOptions: .init(mathExpressions: true))
-                        .textual.textSelection(.enabled)
+                        if !isUsingPencilView{
+                            StructuredText(markdown: message.text,
+                                           patternOptions: .init(mathExpressions: true))
+                            .textual.textSelection(.enabled)
+                        } else {
+                            StructuredText(markdown: message.text,
+                                           patternOptions: .init(mathExpressions: true))
+                            .textual.textSelection(.enabled)
+                            .font(.custom("Georgia", size: pencilViewFontSize))
+                        }
                     }
                 }
                 .padding(.horizontal)
-                .padding(.vertical, 8)
+                .padding(.vertical, isUsingPencilView ? 24 : 8)
                 
                 Spacer()
             }

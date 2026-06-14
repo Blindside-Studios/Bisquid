@@ -38,35 +38,51 @@ struct ChatWindow: View {
                     let sortedMessages = chat.messages.sorted { $0.timeStamp < $1.timeStamp }
                     ScrollViewReader { proxy in
                         ScrollView(.vertical){
-                            VStack{
-                                ForEach(sortedMessages){ message in
-                                    if(message.role == .assistant){
-                                        MessageModel(message: message, onRegenerate: {
-                                            let model = ModelList.getModelFromSlug(slug: message.modelUsed)
-                                            var apiKey = ""
-                                            switch model.provider {
-                                            case .mistral: apiKey = KeychainHelper.shared.mistralAPIKey
-                                            case .anthropic: apiKey = KeychainHelper.shared.claudeAPIKey
-                                            default: return
-                                            }
-                                            chatCache.regenerateMessage(
-                                                messageID: message.id,
-                                                modelName: message.modelUsed,
-                                                agent: chatCache.getConversation(for: conversationID)?.agentUsed,
-                                                apiKey: apiKey,
-                                                for: conversationID,
-                                                tools: ToolRegistry.enabledTools(for: chatCache.getConversation(for: conversationID)?.agentUsed, conversationID: conversationID)
-                                            )
-                                        })
-                                        .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height * 0.8 : 0, alignment: .top)
-                                        .id(message.id)
+                            Group{
+                                if useInkingInput{
+                                    if let lastMessage = sortedMessages.last{
+                                        if lastMessage.role == .assistant{
+                                            MessageModel(message: lastMessage, isUsingPencilView: useInkingInput, onRegenerate: {
+                                                let model = ModelList.getModelFromSlug(slug: lastMessage.modelUsed)
+                                                var apiKey = KeychainHelper.shared.mistralAPIKey
+                                                chatCache.regenerateMessage(
+                                                    messageID: lastMessage.id,
+                                                    modelName: lastMessage.modelUsed,
+                                                    agent: chatCache.getConversation(for: conversationID)?.agentUsed,
+                                                    apiKey: apiKey,
+                                                    for: conversationID,
+                                                    tools: ToolRegistry.enabledTools(for: chatCache.getConversation(for: conversationID)?.agentUsed, conversationID: conversationID)
+                                                )
+                                            })
+                                        }
                                     }
-                                    else if (message.role == .user || message.role == .system){
-                                        MessageUser(message: message, availableWidth: geo.size.width, onEdit: {
-                                            editingMessage = message
-                                        }, isLastMessage: message.id == sortedMessages.last(where: { $0.role == .user })?.id ?? nil, isChatGenerating: ChatCache.shared.loadedChats[conversationID]?.isGenerating ?? false, primaryAccentColor: primaryAccentColor, secondaryAccentColor: secondaryAccentColor)
-                                        .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height : 0)
-                                        .id(message.id)
+                                } else {
+                                    VStack{
+                                        ForEach(sortedMessages){ message in
+                                            if(message.role == .assistant){
+                                                MessageModel(message: message, isUsingPencilView: useInkingInput, onRegenerate: {
+                                                    let model = ModelList.getModelFromSlug(slug: message.modelUsed)
+                                                    var apiKey = KeychainHelper.shared.mistralAPIKey
+                                                    chatCache.regenerateMessage(
+                                                        messageID: message.id,
+                                                        modelName: message.modelUsed,
+                                                        agent: chatCache.getConversation(for: conversationID)?.agentUsed,
+                                                        apiKey: apiKey,
+                                                        for: conversationID,
+                                                        tools: ToolRegistry.enabledTools(for: chatCache.getConversation(for: conversationID)?.agentUsed, conversationID: conversationID)
+                                                    )
+                                                })
+                                                .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height * 0.8 : 0, alignment: .top)
+                                                .id(message.id)
+                                            }
+                                            else if (message.role == .user || message.role == .system){
+                                                MessageUser(message: message, availableWidth: geo.size.width, onEdit: {
+                                                    editingMessage = message
+                                                }, isLastMessage: message.id == sortedMessages.last(where: { $0.role == .user })?.id ?? nil, isChatGenerating: ChatCache.shared.loadedChats[conversationID]?.isGenerating ?? false, primaryAccentColor: primaryAccentColor, secondaryAccentColor: secondaryAccentColor)
+                                                .frame(minHeight: message.id == sortedMessages.last!.id ? geo.size.height : 0)
+                                                .id(message.id)
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -88,16 +104,6 @@ struct ChatWindow: View {
                         .safeAreaBar(edge: useInkingInput ? .top : .bottom, spacing: 0){
                             InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments, useInkingInput: $useInkingInput)
                         }
-                        /*.safeAreaBar(edge: .top, spacing: 0){
-                            #if os(iOS)
-                            if useInkingInput{
-                                PencilKitInputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
-                                    .transition(
-                                        AnyTransition.blurFade.combined(with: .offset(y: -50)).combined(with: .opacity)
-                                    )
-                            }
-                            #endif
-                        }*/
                         .animation(.bouncy(duration: 0.6, extraBounce: 0), value: useInkingInput)
                         .onChange(of: conversationID) { _, _ in
                             // scroll to last user/system message when switching conversations
