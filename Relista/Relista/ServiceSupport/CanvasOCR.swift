@@ -42,7 +42,7 @@ enum CanvasOCR {
 
         let renderer = UIGraphicsImageRenderer(size: rect.size, format: format)
         let image = renderer.image { ctx in
-            UIColor.white.setFill()
+            UIColor.systemBackground.setFill()
             ctx.fill(CGRect(origin: .zero, size: rect.size))
             drawing.image(from: rect, scale: scale)
                    .draw(in: CGRect(origin: .zero, size: rect.size))

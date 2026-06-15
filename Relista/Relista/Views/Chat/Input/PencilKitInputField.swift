@@ -28,7 +28,7 @@ struct PencilKitInputField: View {
                 case "selection":
                     canvasView.tool = PKLassoTool()
                 default:
-                    canvasView.tool = PKInkingTool(.pen, color: .label, width: 3)
+                    canvasView.tool = PKInkingTool(.pen)
                 }
             }
         }
