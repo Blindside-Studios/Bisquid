@@ -164,6 +164,7 @@ struct PencilKitInputUI: View {
         
         let chat = chatCache.getChat(for: conversationID)
         if !chat.isGenerating {
+            chat.isGenerating = true
             placeHolder = ChatPlaceHolders.returnAppropriatePlaceholder(agentUUID: selectedAgent)
             do{
                 let text = try await CanvasOCR.recognize(canvasView.drawing, apiKey: apiKey)
