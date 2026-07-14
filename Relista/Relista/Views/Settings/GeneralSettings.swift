@@ -25,6 +25,10 @@ struct GeneralSettings: View {
     
     @AppStorage("EnableUIDebugControls") private var showDebugOptions: Bool = false
 
+    @State private var isImportingLegacyChats = false
+    @State private var legacyImportResultMessage: String?
+    @State private var showingLegacyImportResult = false
+
     var body: some View {
         Form{
             Section(header: Text("Interface"), footer: Text("This adds Bisquid's own color to the app background to avoid pure black and white on iOS. This will disable window background tinting on macOS and iPadOS.")){
@@ -61,10 +65,49 @@ struct GeneralSettings: View {
             #endif
             
             Section(header: Text("Debug"), footer: Text("Shows debug options meant to test features and animations without streaming responses. Currently limited to a button in the user message context menu to force the stream message animation")){
+                Button {
+                    importLegacyChats()
+                } label: {
+                    HStack {
+                        Text("Import Legacy iCloud Chats")
+                        if isImportingLegacyChats {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                //.disabled(isImportingLegacyChats)
+                .disabled(true)
+
                 Toggle("Show debug options", isOn: $showDebugOptions)
             }
         }
         .formStyle(.grouped)
+        .alert(
+            "Import Complete",
+            isPresented: $showingLegacyImportResult,
+            presenting: legacyImportResultMessage
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { message in
+            Text(message)
+        }
+    }
+
+    private func importLegacyChats() {
+        isImportingLegacyChats = true
+        Task {
+            do {
+                let result = try LegacyImporter.importIntoDatabase()
+                let conversations = (try? DatabaseManager.loadIndex()) ?? []
+                await ChatCache.shared.updateLoadedConversations(conversations)
+                legacyImportResultMessage = "Imported \(result.conversationsImported) conversation(s) and \(result.messagesImported) message(s)."
+            } catch {
+                legacyImportResultMessage = "Import failed: \(error.localizedDescription)"
+            }
+            isImportingLegacyChats = false
+            showingLegacyImportResult = true
+        }
     }
 }
 

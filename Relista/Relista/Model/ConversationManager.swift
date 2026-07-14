@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 
 /// Mirrors the pre-SwiftData JSON shape of `Conversation`. This exists purely so
 /// `ConversationManager` can still read (and, for round-tripping during migration, write)
@@ -255,5 +256,61 @@ private class ConversationManager {
         ChatCache.shared.setViewing(id: newConvID, isViewing: true)
 
         return (newChatUUID: newConvID, newAgent: agent)
+    }
+}
+
+// MARK: - Legacy Import
+
+/// One-time bridge from the old iCloud Documents JSON storage into the SwiftData store.
+/// Not private, unlike everything above — this is the one thing outside this file that's
+/// meant to reach in here. Additive only: anything whose id already exists in the store is
+/// left untouched, so this is safe to run more than once without duplicating chats.
+enum LegacyImporter {
+    static func importIntoDatabase() throws -> (conversationsImported: Int, messagesImported: Int) {
+        let context = RelistaApp.sharedModelContainer.mainContext
+
+        let existingConversationIDs = Set(try context.fetch(FetchDescriptor<Conversation>()).map(\.id))
+        let existingMessageIDs = Set(try context.fetch(FetchDescriptor<Message>()).map(\.id))
+
+        let legacyConversations = try ConversationManager.loadIndex()
+
+        var importedConversations = 0
+        var importedMessages = 0
+
+        for legacy in legacyConversations {
+            if !existingConversationIDs.contains(legacy.id) {
+                context.insert(Conversation(
+                    id: legacy.id,
+                    title: legacy.title,
+                    lastInteracted: legacy.lastInteracted,
+                    modelUsed: legacy.modelUsed,
+                    agentUsed: legacy.agentUsed,
+                    isArchived: legacy.isArchived,
+                    hasMessages: legacy.hasMessages,
+                    lastModified: legacy.lastModified
+                ))
+                importedConversations += 1
+            }
+
+            let legacyMessages = (try? ConversationManager.loadMessages(for: legacy.id)) ?? []
+            for legacyMessage in legacyMessages where !existingMessageIDs.contains(legacyMessage.id) {
+                context.insert(Message(
+                    id: legacyMessage.id,
+                    text: legacyMessage.text,
+                    role: legacyMessage.role,
+                    modelUsed: legacyMessage.modelUsed,
+                    attachmentLinks: legacyMessage.attachmentLinks,
+                    timeStamp: legacyMessage.timeStamp,
+                    lastModified: legacyMessage.lastModified,
+                    annotations: legacyMessage.annotations,
+                    contentBlocks: legacyMessage.contentBlocks,
+                    conversationID: legacyMessage.conversationID
+                ))
+                importedMessages += 1
+            }
+        }
+
+        try context.save()
+        return (conversationsImported: importedConversations, messagesImported: importedMessages)
     }
 }
