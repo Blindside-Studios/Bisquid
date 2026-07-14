@@ -2,12 +2,12 @@
 //  ConversationManager.swift
 //  Relista
 //
-//  Created by Nicolas Helbig on 03.11.25.
+//  Created by Nicolas Helbig on 14.07.26.
 //
 
 import Foundation
 
-private class ConversationManager {
+class DatabaseManager {
     // MARK: - File System URLs
 
     /// Returns the iCloud Documents container URL, falling back to local Documents if unavailable
