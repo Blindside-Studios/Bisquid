@@ -5,7 +5,7 @@
 //  Created by Nicolas Helbig on 14.06.26.
 //
 
-
+#if os(iOS)
 import Foundation
 import PencilKit
 import UIKit
@@ -124,3 +124,4 @@ extension CanvasOCR {
         return try await extractText(from: data, apiKey: apiKey)
     }
 }
+#endif

@@ -94,8 +94,8 @@ class ChatCache {
     private init() {
         // Load conversations from disk on init
         do {
-            try ConversationManager.initializeStorage()
-            conversations = try ConversationManager.loadIndex()
+            try DatabaseManager.initializeStorage()
+            conversations = try DatabaseManager.loadIndex()
         } catch {
             print("Error loading conversations: \(error)")
         }
@@ -139,7 +139,7 @@ class ChatCache {
 
         // Save index
         do {
-            try ConversationManager.saveIndex(conversations: conversations)
+            try DatabaseManager.saveIndex(conversations: conversations)
         } catch {
             print("Error saving conversation index: \(error)")
         }
@@ -152,7 +152,7 @@ class ChatCache {
         conversation.lastModified = Date.now
 
         do {
-            try ConversationManager.saveIndex(conversations: conversations)
+            try DatabaseManager.saveIndex(conversations: conversations)
         } catch {
             print("Error saving renamed conversation: \(error)")
         }
@@ -164,7 +164,7 @@ class ChatCache {
         conversation.lastModified = Date.now
 
         do {
-            try ConversationManager.saveIndex(conversations: conversations)
+            try DatabaseManager.saveIndex(conversations: conversations)
         } catch {
             print("Error saving (un)archived conversation: \(error)")
         }
@@ -172,8 +172,17 @@ class ChatCache {
 
     /// Deletes a conversation
     func deleteConversation(id: UUID) {
-        // Unload from cache
-        unloadChat(id: id)
+        // Force-remove from the loaded cache, even if it's being viewed or generating — the
+        // conversation is being destroyed either way, and this drops every in-memory
+        // reference to its Message objects *before* they're deleted from the SwiftData
+        // context below. Skipping this (or ordering it after the DB delete) is what caused
+        // the "detached from context without resolving attribute faults" crash: something
+        // was still holding and reading those same Message instances after their backing
+        // rows were gone.
+        loadedChats.removeValue(forKey: id)
+        if activeConversationID == id {
+            activeConversationID = nil
+        }
 
         // Remove from array
         if let index = conversations.firstIndex(where: { $0.id == id }) {
@@ -182,8 +191,8 @@ class ChatCache {
 
         // Delete from disk
         do {
-            try ConversationManager.deleteConversation(id: id)
-            try ConversationManager.saveIndex(conversations: conversations)
+            try DatabaseManager.deleteConversation(id: id)
+            try DatabaseManager.saveIndex(conversations: conversations)
         } catch {
             print("Error deleting conversation: \(error)")
         }
@@ -200,7 +209,7 @@ class ChatCache {
 
         // Try loading from local disk cache first
         do {
-            let messages = try ConversationManager.loadMessages(for: id)
+            let messages = try DatabaseManager.loadMessages(for: id)
             let chat = LoadedChat(id: id, messages: messages)
             loadedChats[id] = chat
 
@@ -294,7 +303,7 @@ class ChatCache {
             chat.isBeingViewed = true
             // Save index immediately so it appears in sidebar
             do {
-                try ConversationManager.saveIndex(conversations: conversations)
+                try DatabaseManager.saveIndex(conversations: conversations)
                 print("  ✓ Index saved (hasMessages now true)")
             } catch {
                 print("  ❌ Error saving conversation index: \(error)")
@@ -335,7 +344,7 @@ class ChatCache {
         print("  ✓ Message saved to disk (now \(chat.messages.count) total messages)")
 
         // Debug: Verify message was actually written to disk
-        if let diskMessages = try? ConversationManager.loadMessages(for: conversationID) {
+        if let diskMessages = try? DatabaseManager.loadMessages(for: conversationID) {
             print("  📁 Verified on disk: \(diskMessages.count) messages")
             if diskMessages.count != chat.messages.count {
                 print("  ⚠️ MISMATCH: Memory has \(chat.messages.count) but disk has \(diskMessages.count)")
@@ -823,7 +832,7 @@ class ChatCache {
                     }
                 }
                 // save again to make sure it saves our chat title
-                try? ConversationManager.saveIndex(conversations: conversations)
+                try? DatabaseManager.saveIndex(conversations: conversations)
 
                 #if os(iOS)
                 // provide haptic feedback that message is done generating
@@ -862,7 +871,7 @@ class ChatCache {
         guard let chat = loadedChats[id] else { return }
 
         do {
-            try ConversationManager.saveMessages(for: id, messages: chat.messages)
+            try DatabaseManager.saveMessages(for: id, messages: chat.messages)
         } catch {
             print("Error saving messages for \(id): \(error)")
         }
@@ -910,5 +919,26 @@ class ChatCache {
         let localIDs = Set(conversations.map { $0.id })
         let newConversations = updatedConversations.filter { !localIDs.contains($0.id) }
         conversations.append(contentsOf: newConversations)
+    }
+
+    /// Re-fetches a loaded chat's messages from the store — `getChat(for:)` only fetches
+    /// once and caches the result, so nothing else picks up messages another device wrote
+    /// while this chat is already open. Skips chats that are actively streaming a response,
+    /// since that in-flight assistant message hasn't been saved yet and a wholesale reload
+    /// would wipe it out from under the UI.
+    @MainActor
+    func refreshMessages(for id: UUID) {
+        guard let chat = loadedChats[id], !chat.isGenerating else { return }
+        guard let freshMessages = try? DatabaseManager.loadMessages(for: id) else { return }
+        chat.messages = freshMessages
+    }
+
+    /// Refreshes every currently loaded chat — called when a remote (CloudKit) change
+    /// notification fires, since we don't know in advance which open chat it touched.
+    @MainActor
+    func refreshLoadedMessages() {
+        for id in loadedChats.keys {
+            refreshMessages(for: id)
+        }
     }
 }

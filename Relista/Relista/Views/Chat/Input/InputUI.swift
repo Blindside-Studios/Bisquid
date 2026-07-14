@@ -107,7 +107,7 @@ struct InputUI: View {
                         )
                     }
                     #if os(macOS)
-                    PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments)
+                    PromptField(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments, inputFieldNamespace: inputFieldNamespace)
                         .padding(typingBarPaddingMacOS && !isChatBlank ? 16 : 0)
                         /*.shadow(color: focused == .inactive ? .clear : .black.opacity(isChatBlank ? 0.075 : 0.025), radius: focused == .inactive ? 0 : 12)
                         #else

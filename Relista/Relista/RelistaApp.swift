@@ -7,6 +7,13 @@
 
 import SwiftUI
 import Foundation
+import SwiftData
+import CoreData
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 #if os(macOS)
 struct TextSizeCommands: Commands {
@@ -31,12 +38,71 @@ struct RelistaApp: App {
     @State private var hasInitialized = false
     @Environment(\.scenePhase) private var scenePhase
 
+    /// The single SwiftData store for the app, mirrored to CloudKit's private database.
+    /// `DatabaseManager` reaches this via `RelistaApp.sharedModelContainer.mainContext` —
+    /// there is deliberately only ever one context in play so every read/write sees the
+    /// same in-memory state without needing to merge across contexts.
+    static let sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            Conversation.self,
+            Message.self
+        ])
+
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            cloudKitDatabase: .automatic
+        )
+
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
+
     init() {
         #if os(iOS)
         // BGTaskScheduler.register(...) must be called exactly once per launch,
         // before the app finishes launching.
         ChatCache.shared.registerBackgroundTasks()
         #endif
+
+        // Without this, CloudKit has no push token to reach this device with, so
+        // NSPersistentCloudKitContainer (which SwiftData uses under the hood) only ever
+        // reconciles remote changes on cold launch instead of while the app is running.
+        // No delegate/payload handling needed — the container listens for these itself.
+        #if os(iOS)
+        UIApplication.shared.registerForRemoteNotifications()
+        #elseif os(macOS)
+        NSApplication.shared.registerForRemoteNotifications()
+        #endif
+
+        RelistaApp.startObservingRemoteChanges()
+    }
+
+    /// Fires whenever CloudKit imports a change into the local store — this is the only
+    /// way ChatCache finds out about an edit made on another device while this one is
+    /// already running, since its `conversations`/`messages` arrays are one-time fetches,
+    /// not a live `@Query`. Debounced because CloudKit can post this many times in a burst
+    /// (a single sync pass, or later our own bulk import).
+    private static var remoteChangeTask: Task<Void, Never>?
+
+    static func startObservingRemoteChanges() {
+        NotificationCenter.default.addObserver(
+            forName: .NSPersistentStoreRemoteChange,
+            object: nil,
+            queue: .main
+        ) { _ in
+            remoteChangeTask?.cancel()
+            remoteChangeTask = Task {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard !Task.isCancelled else { return }
+
+                let conversations = (try? DatabaseManager.loadIndex()) ?? []
+                await ChatCache.shared.updateLoadedConversations(conversations)
+                await ChatCache.shared.refreshLoadedMessages()
+            }
+        }
     }
 
     var body: some Scene {
@@ -58,6 +124,7 @@ struct RelistaApp: App {
                 await RelistaApp.refreshContent()
             }
         }
+        .modelContainer(RelistaApp.sharedModelContainer)
         .commands {
             // Replace default "New Window" with "New Chat" in File menu
             #if os(macOS) || os(iOS)
@@ -111,35 +178,36 @@ struct RelistaApp: App {
         await ensureICloudUpToDate()
         await AgentManager.shared.refreshFromStorage()
         ChatCache.shared.loadingProgress = 0.9
-        await ConversationManager.refreshConversationsFromStorage()
+        // Re-fetch from the local SwiftData store and merge anything new into ChatCache.
+        // Covers the case where a CloudKit-driven change arrived while the app wasn't
+        // actively observing it (e.g. resumed from suspension while offline).
+        let conversations = (try? DatabaseManager.loadIndex()) ?? []
+        await ChatCache.shared.updateLoadedConversations(conversations)
         ChatCache.shared.loadingProgress = 1.0
         ChatCache.shared.isLoading = false
     }
-    
+
+    // Agents still live in iCloud Documents (agents.json) — not migrated to SwiftData yet.
     static func ensureICloudUpToDate() async {
         guard let iCloudURL = FileManager.default.url(forUbiquityContainerIdentifier: "iCloud.Blindside-Studios.Relista") else {
             print("iCloud not available")
             return
         }
-        
+
         let relistaURL = iCloudURL.appendingPathComponent("Documents").appendingPathComponent("Relista")
-        
-        let conversationIndexURL = relistaURL.appendingPathComponent("index.json")
+
         let agentsURL = relistaURL.appendingPathComponent("agents.json")
-        
+
         ChatCache.shared.loadingProgress = 0.1
-        
+
         do {
-            try FileManager.default.startDownloadingUbiquitousItem(at: conversationIndexURL)
             try FileManager.default.startDownloadingUbiquitousItem(at: agentsURL)
-            
+
             ChatCache.shared.loadingProgress = 0.2
-            
-            try await waitForDownload(url: conversationIndexURL)
-            ChatCache.shared.loadingProgress = 0.5
+
             try await waitForDownload(url: agentsURL)
             ChatCache.shared.loadingProgress = 0.8
-            
+
             print("✅ iCloud files are now current")
         } catch {
             print("❌ iCloud sync error: \(error)")

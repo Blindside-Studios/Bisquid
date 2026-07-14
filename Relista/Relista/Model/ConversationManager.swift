@@ -7,6 +7,96 @@
 
 import Foundation
 
+/// Mirrors the pre-SwiftData JSON shape of `Conversation`. This exists purely so
+/// `ConversationManager` can still read (and, for round-tripping during migration, write)
+/// the old iCloud Documents files. The live `Conversation` model no longer conforms to Codable.
+private struct LegacyConversation: Codable {
+    var id: UUID
+    var title: String
+    var lastInteracted: Date
+    var modelUsed: String
+    var agentUsed: UUID?
+    var isArchived: Bool
+    var hasMessages: Bool
+    var lastModified: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, lastInteracted, modelUsed, agentUsed, isArchived, hasMessages, lastModified
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        lastInteracted = try container.decode(Date.self, forKey: .lastInteracted)
+        modelUsed = try container.decode(String.self, forKey: .modelUsed)
+        agentUsed = try container.decode(UUID?.self, forKey: .agentUsed)
+        isArchived = try container.decode(Bool.self, forKey: .isArchived)
+        hasMessages = try container.decodeIfPresent(Bool.self, forKey: .hasMessages) ?? true
+        lastModified = try container.decodeIfPresent(Date.self, forKey: .lastModified) ?? Date.now
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(lastInteracted, forKey: .lastInteracted)
+        try container.encode(modelUsed, forKey: .modelUsed)
+        try container.encode(agentUsed, forKey: .agentUsed)
+        try container.encode(isArchived, forKey: .isArchived)
+        try container.encode(hasMessages, forKey: .hasMessages)
+        try container.encode(lastModified, forKey: .lastModified)
+    }
+}
+
+/// Mirrors the pre-SwiftData JSON shape of `Message`, same reasoning as `LegacyConversation`
+/// above. Reuses `MessageRole`/`MessageAnnotation`/`MessageContentBlock` since those stayed
+/// Codable — they weren't part of the SwiftData conversion.
+private struct LegacyMessage: Codable {
+    var id: UUID
+    var text: String
+    var role: MessageRole
+    var modelUsed: String = "Unspecified Model"
+    var attachmentLinks: [String]
+    var timeStamp: Date
+    var lastModified: Date
+    var annotations: [MessageAnnotation]?
+    var contentBlocks: [MessageContentBlock]?
+    var conversationID: UUID
+
+    enum CodingKeys: String, CodingKey {
+        case id, text, role, modelUsed, attachmentLinks, timeStamp, lastModified, annotations, contentBlocks, conversationID
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        text = try container.decode(String.self, forKey: .text)
+        role = try container.decode(MessageRole.self, forKey: .role)
+        modelUsed = try container.decodeIfPresent(String.self, forKey: .modelUsed) ?? "Unspecified Model"
+        attachmentLinks = try container.decode([String].self, forKey: .attachmentLinks)
+        timeStamp = try container.decode(Date.self, forKey: .timeStamp)
+        lastModified = try container.decodeIfPresent(Date.self, forKey: .lastModified) ?? Date.now
+        annotations = try container.decodeIfPresent([MessageAnnotation].self, forKey: .annotations)
+        contentBlocks = try container.decodeIfPresent([MessageContentBlock].self, forKey: .contentBlocks)
+        conversationID = try container.decodeIfPresent(UUID.self, forKey: .conversationID) ?? UUID()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(text, forKey: .text)
+        try container.encode(role, forKey: .role)
+        try container.encode(modelUsed, forKey: .modelUsed)
+        try container.encode(attachmentLinks, forKey: .attachmentLinks)
+        try container.encode(timeStamp, forKey: .timeStamp)
+        try container.encode(lastModified, forKey: .lastModified)
+        try container.encodeIfPresent(annotations, forKey: .annotations)
+        try container.encodeIfPresent(contentBlocks, forKey: .contentBlocks)
+        try container.encode(conversationID, forKey: .conversationID)
+    }
+}
+
 private class ConversationManager {
     // MARK: - File System URLs
 
@@ -52,7 +142,7 @@ private class ConversationManager {
     
     // save index.json (without messages)
     // Only saves conversations that have messages - filters out empty conversations
-    static func saveIndex(conversations: [Conversation]) throws {
+    static func saveIndex(conversations: [LegacyConversation]) throws {
         // Filter to only include conversations with messages
         let conversationsToSave = conversations.filter { $0.hasMessages }
 
@@ -74,20 +164,20 @@ private class ConversationManager {
     }
     
     // load index.json
-    static func loadIndex() throws -> [Conversation] {
+    static func loadIndex() throws -> [LegacyConversation] {
         guard FileManager.default.fileExists(atPath: indexURL.path) else {
             return []  // No index yet, return empty
         }
-        
+
         let data = try Data(contentsOf: indexURL)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        
-        return try decoder.decode([Conversation].self, from: data)
+
+        return try decoder.decode([LegacyConversation].self, from: data)
     }
-    
+
     // save messages for a specific conversation
-    static func saveMessages(for conversationID: UUID, messages: [Message]) throws {
+    static func saveMessages(for conversationID: UUID, messages: [LegacyMessage]) throws {
         // create conversation folder if needed
         let conversationFolder = conversationsURL.appendingPathComponent(conversationID.uuidString)
 
@@ -106,7 +196,7 @@ private class ConversationManager {
     }
 
     // load messages for a specific conversation
-    static func loadMessages(for conversationID: UUID) throws -> [Message] {
+    static func loadMessages(for conversationID: UUID) throws -> [LegacyMessage] {
         let messagesURL = conversationsURL
             .appendingPathComponent(conversationID.uuidString)
             .appendingPathComponent("messages.json")
@@ -119,7 +209,7 @@ private class ConversationManager {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
-        var messages = try decoder.decode([Message].self, from: data)
+        var messages = try decoder.decode([LegacyMessage].self, from: data)
 
         // Backwards compatibility: Set conversationID for old messages that don't have it
         var needsResave = false
@@ -165,19 +255,5 @@ private class ConversationManager {
         ChatCache.shared.setViewing(id: newConvID, isViewing: true)
 
         return (newChatUUID: newConvID, newAgent: agent)
-    }
-
-    // MARK: - Refresh from Storage
-
-    /// Reload conversations from disk (call after iCloud sync updates files)
-    static func refreshConversationsFromStorage() async {
-        print("🔄 Refreshing conversations from storage...")
-
-        let conversations = (try? loadIndex()) ?? []
-
-        // Update ChatCache with refreshed data
-        await ChatCache.shared.updateLoadedConversations(conversations)
-
-        print("✅ Conversations refreshed: \(conversations.count) total")
     }
 }

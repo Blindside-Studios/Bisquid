@@ -6,8 +6,15 @@
 //
 
 import Foundation
+import SwiftData
 
 class DatabaseManager {
+    /// The one shared context every read/write goes through — see the note on
+    /// `RelistaApp.sharedModelContainer` for why there's only ever one.
+    private static var context: ModelContext {
+        RelistaApp.sharedModelContainer.mainContext
+    }
+
     // MARK: - File System URLs
 
     /// Returns the iCloud Documents container URL, falling back to local Documents if unavailable
@@ -50,103 +57,64 @@ class DatabaseManager {
         }
     }
     
-    // save index.json (without messages)
-    // Only saves conversations that have messages - filters out empty conversations
+    // Only conversations that have messages get inserted into the store — a freshly
+    // created "New Conversation" placeholder stays purely in-memory (ChatCache.conversations)
+    // until the first message flips hasMessages to true, so it never syncs to other devices.
     static func saveIndex(conversations: [Conversation]) throws {
-        // Filter to only include conversations with messages
-        let conversationsToSave = conversations.filter { $0.hasMessages }
-
-        // Clean up folders for conversations that don't have messages
-        let conversationsToRemove = conversations.filter { !$0.hasMessages }
-        for conversation in conversationsToRemove {
-            let conversationFolder = conversationsURL.appendingPathComponent(conversation.id.uuidString)
-            if FileManager.default.fileExists(atPath: conversationFolder.path) {
-                try? FileManager.default.removeItem(at: conversationFolder)
-            }
+        for conversation in conversations where conversation.hasMessages {
+            // Safe to call even if already tracked by this context — existing objects
+            // are just a no-op here, so this only actually does something for new ones.
+            context.insert(conversation)
         }
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = .prettyPrinted
-
-        let data = try encoder.encode(conversationsToSave)
-        try data.write(to: indexURL)
+        try context.save()
     }
     
-    // load index.json
+    // fetch every conversation currently in the local store
     static func loadIndex() throws -> [Conversation] {
-        guard FileManager.default.fileExists(atPath: indexURL.path) else {
-            return []  // No index yet, return empty
-        }
-        
-        let data = try Data(contentsOf: indexURL)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        
-        return try decoder.decode([Conversation].self, from: data)
+        try context.fetch(FetchDescriptor<Conversation>())
     }
     
     // save messages for a specific conversation
     static func saveMessages(for conversationID: UUID, messages: [Message]) throws {
-        // create conversation folder if needed
-        let conversationFolder = conversationsURL.appendingPathComponent(conversationID.uuidString)
-
-        if !FileManager.default.fileExists(atPath: conversationFolder.path) {
-            try FileManager.default.createDirectory(at: conversationFolder, withIntermediateDirectories: true)
+        for message in messages {
+            context.insert(message)
         }
-
-        // save messages.json
-        let messagesURL = conversationFolder.appendingPathComponent("messages.json")
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = .prettyPrinted
-
-        let data = try encoder.encode(messages)
-        try data.write(to: messagesURL)
+        try context.save()
     }
 
     // load messages for a specific conversation
     static func loadMessages(for conversationID: UUID) throws -> [Message] {
-        let messagesURL = conversationsURL
-            .appendingPathComponent(conversationID.uuidString)
-            .appendingPathComponent("messages.json")
-
-        guard FileManager.default.fileExists(atPath: messagesURL.path) else {
-            return []  // no messages yet
-        }
-
-        let data = try Data(contentsOf: messagesURL)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-
-        var messages = try decoder.decode([Message].self, from: data)
-
-        // Backwards compatibility: Set conversationID for old messages that don't have it
-        var needsResave = false
-        for i in 0..<messages.count {
-            if messages[i].conversationID.uuidString == "00000000-0000-0000-0000-000000000000"
-                || messages[i].conversationID != conversationID {
-                messages[i].conversationID = conversationID
-                needsResave = true
-            }
-        }
-
-        // Resave with conversationID if we updated any messages
-        if needsResave {
-            try saveMessages(for: conversationID, messages: messages)
-        }
-
-        return messages
+        // A fetch has no inherent order, unlike the old JSON array where append order was
+        // reading order for free — sort by timeStamp explicitly to keep the chat readable.
+        let descriptor = FetchDescriptor<Message>(
+            predicate: #Predicate { $0.conversationID == conversationID },
+            sortBy: [SortDescriptor(\.timeStamp)]
+        )
+        return try context.fetch(descriptor)
     }
 
     // delete a conversation and all its messages
     static func deleteConversation(id: UUID) throws {
+        // Remove the attachments folder (images are still plain files, not in the store)
         let conversationFolder = conversationsURL.appendingPathComponent(id.uuidString)
-
-        // Remove the entire conversation folder if it exists
         if FileManager.default.fileExists(atPath: conversationFolder.path) {
             try FileManager.default.removeItem(at: conversationFolder)
         }
+
+        // Unlike the old JSON index, simply not referencing a Conversation anymore doesn't
+        // delete it from the store — it has to be removed from the context explicitly, or
+        // it (and its messages) would keep existing and syncing forever.
+        let messageDescriptor = FetchDescriptor<Message>(predicate: #Predicate { $0.conversationID == id })
+        for message in try context.fetch(messageDescriptor) {
+            context.delete(message)
+        }
+
+        let conversationDescriptor = FetchDescriptor<Conversation>(predicate: #Predicate { $0.id == id })
+        for conversation in try context.fetch(conversationDescriptor) {
+            context.delete(conversation)
+        }
+
+        try context.save()
     }
     
     static func createNewConversation(fromID: UUID?, usingAgent: Bool = false, withAgent: UUID? = nil) -> (newChatUUID: UUID, newAgent: UUID?) {

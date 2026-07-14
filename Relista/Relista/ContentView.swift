@@ -73,11 +73,13 @@ struct ContentView: View {
                     .contentShape(Rectangle())
                     .toolbar(){
                         ToolbarItemGroup() {
+                            #if os(iOS)
                             if UIDevice.current.userInterfaceIdiom == .pad{
                                 Button("Use Pencil Input", systemImage: showInkingInput ? "pencil.tip.crop.circle.fill" : "pencil.tip.crop.circle"){
                                     showInkingInput.toggle()
                                 }
                             }
+                            #endif
                             Button("New chat", systemImage: "square.and.pencil"){
                                 createNewChat()
                             }
@@ -101,7 +103,7 @@ struct ContentView: View {
                 // Either no persisted UUID, or the persisted UUID points to a
                 // conversation that was never saved (new-but-unsent chats are
                 // filtered out of index.json by saveIndex). Start fresh.
-                let result = ConversationManager.createNewConversation(fromID: nil)
+                let result = DatabaseManager.createNewConversation(fromID: nil)
                 selectedConversationID = result.newChatUUID
                 persistedConversationIDString = result.newChatUUID.uuidString
             }
@@ -117,7 +119,7 @@ struct ContentView: View {
     private func createNewChat() {
         let prevChat = ChatCache.shared.conversations.first(where: { $0.id == selectedConversationID })
         debugPrint("prevChat != nil: \(prevChat != nil) prevChat.hasMessages: \(prevChat!.hasMessages)")
-        let result = ConversationManager.createNewConversation(fromID: selectedConversationID, usingAgent: prevChat != nil && prevChat!.hasMessages, withAgent: selectedAgent.wrappedValue)
+        let result = DatabaseManager.createNewConversation(fromID: selectedConversationID, usingAgent: prevChat != nil && prevChat!.hasMessages, withAgent: selectedAgent.wrappedValue)
         selectedConversationID = result.newChatUUID
         selectedAgent.wrappedValue = result.newAgent
         if result.newAgent != nil {

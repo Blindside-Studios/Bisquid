@@ -35,7 +35,7 @@ struct NewChatAgentPicker: View {
                 .hoverEffect(.lift)
                 #endif
                 .onTapGesture {
-                    conversationID = ConversationManager.createNewConversation(
+                    conversationID = DatabaseManager.createNewConversation(
                         fromID: conversationID
                     ).newChatUUID
                     selectedAgent = nil
@@ -66,7 +66,7 @@ struct NewChatAgentPicker: View {
                     .hoverEffect(.lift)
                     #endif
                     .onTapGesture {
-                        let result = ConversationManager.createNewConversation(
+                        let result = DatabaseManager.createNewConversation(
                             fromID: conversationID,
                             withAgent: agent.id
                         )

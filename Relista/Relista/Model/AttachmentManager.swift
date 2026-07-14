@@ -23,7 +23,7 @@ enum AttachmentManager {
     // MARK: - Paths
 
     static func attachmentsFolder(for conversationID: UUID) -> URL {
-        ConversationManager.conversationsURL
+        DatabaseManager.conversationsURL
             .appendingPathComponent(conversationID.uuidString)
             .appendingPathComponent("attachments")
     }

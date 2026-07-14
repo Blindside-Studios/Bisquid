@@ -124,7 +124,7 @@ struct Sidebar: View {
         .animation(.default, value: shownContentType)
         .contentShape(Rectangle())
         .onTapGesture {
-            selectedConversationID = ConversationManager.createNewConversation(
+            selectedConversationID = DatabaseManager.createNewConversation(
                 fromID: selectedConversationID
             ).newChatUUID
             selectedAgent = nil
@@ -143,7 +143,7 @@ struct Sidebar: View {
                     isSelected: selectedAgent == agent.id && shownContentType == .chat,
                     isCurrentEmpty: isCurrentEmpty
                 ) {
-                    let result = ConversationManager.createNewConversation(
+                    let result = DatabaseManager.createNewConversation(
                         fromID: selectedConversationID,
                         withAgent: agent.id
                     )
@@ -266,8 +266,6 @@ struct Sidebar: View {
     func performSync() async {
         print("🔄 Manual refresh triggered (Sidebar)")
         await RelistaApp.refreshContent()
-        await AgentManager.shared.refreshFromStorage()
-        await ConversationManager.refreshConversationsFromStorage()
     }
 
     var filteredConversations: [Conversation] {
