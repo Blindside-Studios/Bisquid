@@ -23,8 +23,8 @@ struct MessageUser: View {
     @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = true
     @AppStorage("EnableUIDebugControls") private var showDebugOptions: Bool = false
     
-    private let collapsedHeight: CGFloat = 200
-    private let fadeHeight: CGFloat = 36
+    private let collapsedHeight: CGFloat = 173
+    private let fadeHeight: CGFloat = 50
 
     private var needsTruncation: Bool {
         naturalHeight > collapsedHeight
@@ -47,6 +47,7 @@ struct MessageUser: View {
                         AttachmentThumbnailStrip(message: message)
                     }
                     Text(message.text)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxHeight: isExpanded ? .infinity : collapsedHeight, alignment: .topLeading)
                         .foregroundStyle(message.role == .system ? Color.orange : Color.primary)
                         .mask(
@@ -63,7 +64,8 @@ struct MessageUser: View {
                                 endPoint: .bottom
                             )
                         )
-                        .padding()
+                        .padding(.horizontal)
+                        .padding(needsTruncation && !isExpanded ? .top : .vertical)
                         .glassEffect(.regular.tint(primaryAccentColor.opacity(0.3)), in: .rect(cornerRadius: 25.0, style: .continuous))
                         .contentShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                         .overlay(alignment: .bottom) {
