@@ -23,8 +23,11 @@ struct MessageUser: View {
     @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = true
     @AppStorage("EnableUIDebugControls") private var showDebugOptions: Bool = false
     
+    private let collapsedHeight: CGFloat = 200
+    private let fadeHeight: CGFloat = 36
+
     private var needsTruncation: Bool {
-        naturalHeight > 200
+        naturalHeight > collapsedHeight
     }
     private var playAnimation: Bool{
         if userMessageAnimation{
@@ -44,21 +47,44 @@ struct MessageUser: View {
                         AttachmentThumbnailStrip(message: message)
                     }
                     Text(message.text)
-                        .frame(maxHeight: isExpanded ? .infinity : 200, alignment: .topLeading)
+                        .frame(maxHeight: isExpanded ? .infinity : collapsedHeight, alignment: .topLeading)
                         .foregroundStyle(message.role == .system ? Color.orange : Color.primary)
-                        .clipped()
+                        .mask(
+                            LinearGradient(
+                                stops: needsTruncation && !isExpanded ? [
+                                    .init(color: .black, location: 0),
+                                    .init(color: .black, location: 1 - (fadeHeight / collapsedHeight)),
+                                    .init(color: .clear, location: 1)
+                                ] : [
+                                    .init(color: .black, location: 0),
+                                    .init(color: .black, location: 1)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                         .padding()
                         .glassEffect(.regular.tint(primaryAccentColor.opacity(0.3)), in: .rect(cornerRadius: 25.0, style: .continuous))
+                        .contentShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                        .overlay(alignment: .bottom) {
+                            if needsTruncation && !isExpanded {
+                                Image(systemName: "chevron.down")
+                                    .font(.caption.weight(.bold))
+                                    .frame(width: 28, height: 28)
+                                    .background(.regularMaterial, in: .circle)
+                                    .allowsHitTesting(false)
+                                    .padding(.bottom, 10)
+                            }
+                        }
                         .background(
                             Text(message.text)
-                                .padding()
                                 .foregroundStyle(.clear)
                                 .fixedSize(horizontal: false, vertical: true)
-                                .background(
-                                    GeometryReader { geo in
-                                        Color.clear.preference(key: HeightPreferenceKey.self, value: geo.size.height)
-                                    }
-                                )
+                                .onGeometryChange(for: CGFloat.self) { proxy in
+                                    proxy.size.height
+                                } action: { newHeight in
+                                    naturalHeight = newHeight
+                                }
                         )
                     
                         .background{
@@ -69,10 +95,7 @@ struct MessageUser: View {
                             }
                         }
                         .animation(.default.speed(0.3), value: playAnimation)
-                    
-                        .onPreferenceChange(HeightPreferenceKey.self) { height in
-                            naturalHeight = height
-                        }
+
                         .onTapGesture(){
                             if needsTruncation{
                                 withAnimation(.bouncy(duration: 0.3, extraBounce: 0.05)) {
@@ -142,6 +165,13 @@ struct MessageUser: View {
                         }
                         .opacity(0.5)
                         .padding(.horizontal)
+                    }
+
+                    if showDebugOptions {
+                        Text("h=\(Int(naturalHeight)) cap=\(Int(collapsedHeight)) trunc=\(needsTruncation) exp=\(isExpanded)")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(.red)
+                            .padding(.horizontal)
                     }
                 }
             }
@@ -217,15 +247,6 @@ private struct AttachmentThumb: View {
             return Image(nsImage: ns)
             #endif
         }.value
-    }
-}
-
-// MARK: - Height measurement
-
-struct HeightPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
     }
 }
 
