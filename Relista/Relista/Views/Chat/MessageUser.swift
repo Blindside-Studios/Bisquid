@@ -169,12 +169,12 @@ struct MessageUser: View {
                         .padding(.horizontal)
                     }
 
-                    if showDebugOptions {
+                    /*if showDebugOptions {
                         Text("h=\(Int(naturalHeight)) cap=\(Int(collapsedHeight)) trunc=\(needsTruncation) exp=\(isExpanded)")
                             .font(.system(size: 10, design: .monospaced))
                             .foregroundStyle(.red)
                             .padding(.horizontal)
-                    }
+                    }*/
                 }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
