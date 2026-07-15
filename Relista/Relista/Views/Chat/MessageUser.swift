@@ -24,7 +24,7 @@ struct MessageUser: View {
     @AppStorage("EnableUIDebugControls") private var showDebugOptions: Bool = false
     
     private let collapsedHeight: CGFloat = 173
-    private let fadeHeight: CGFloat = 50
+    private let fadeHeight: CGFloat = 75
 
     private var needsTruncation: Bool {
         naturalHeight > collapsedHeight
@@ -70,12 +70,16 @@ struct MessageUser: View {
                         .contentShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                         .overlay(alignment: .bottom) {
                             if needsTruncation && !isExpanded {
-                                Image(systemName: "chevron.down")
-                                    .font(.caption.weight(.bold))
-                                    .frame(width: 28, height: 28)
-                                    .background(.regularMaterial, in: .circle)
-                                    .allowsHitTesting(false)
-                                    .padding(.bottom, 10)
+                                HStack{
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .font(.caption.weight(.bold))
+                                        .frame(width: 26, height: 26)
+                                        .background(.regularMaterial, in: .circle)
+                                        .allowsHitTesting(false)
+                                        .padding(.bottom, 12)
+                                        .padding(.trailing, 12)
+                                }
                             }
                         }
                         .background(
