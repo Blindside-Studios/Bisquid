@@ -129,7 +129,7 @@ struct AgentSettings: View {
 
                             VStack(alignment: .leading) {
                                 Text(agent.name)
-                                Text(agent.description)
+                                Text(agent.agentDescription)
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
@@ -233,7 +233,28 @@ struct AgentEditorView: View {
 
     init(agent: Agent) {
         self.mode = .edit(agent.id)
-        _agent = State(initialValue: agent)
+        // `agent` here is the live, context-tracked instance from AgentManager.customAgents.
+        // Copy its fields into a fresh, unmanaged Agent rather than storing that reference
+        // directly — an unmanaged (never context.insert()-ed) Agent is inert, so editing it
+        // via the bindings below can't touch the real agent or CloudKit until save() commits
+        // it explicitly. Storing the live reference here would make every keystroke mutate
+        // the real agent immediately, and Cancel wouldn't be able to undo anything.
+        let draft = Agent(
+            id: agent.id,
+            name: agent.name,
+            description: agent.agentDescription,
+            icon: agent.icon,
+            model: agent.model,
+            systemPrompt: agent.systemPrompt,
+            temperature: agent.temperature,
+            shownInSidebar: agent.shownInSidebar,
+            lastModified: agent.lastModified,
+            primaryAccentColor: agent.primaryAccentColor,
+            secondaryAccentColor: agent.secondaryAccentColor,
+            memories: agent.memories,
+            sortOrder: agent.sortOrder
+        )
+        _agent = State(initialValue: draft)
         _draftJSON = SceneStorage(wrappedValue: "", "agentEditor.edit.\(agent.id.uuidString)")
     }
 
@@ -265,14 +286,14 @@ struct AgentEditorView: View {
                 Section{
                     if sizeClass == .regular {
                         HStack(spacing: 16) {
-                            AgentHeader(name: $agent.name, description: $agent.description, icon: $agent.icon)
+                            AgentHeader(name: $agent.name, description: $agent.agentDescription, icon: $agent.icon)
                             AgentColorPicker(primaryHex: $agent.primaryAccentColor, secondaryHex: $agent.secondaryAccentColor)
                         }
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets())
                     } else {
                         VStack(spacing: 16) {
-                            AgentHeader(name: $agent.name, description: $agent.description, icon: $agent.icon)
+                            AgentHeader(name: $agent.name, description: $agent.agentDescription, icon: $agent.icon)
                             AgentColorPicker(primaryHex: $agent.primaryAccentColor, secondaryHex: $agent.secondaryAccentColor)
                         }
                         .listRowBackground(Color.clear)
@@ -355,7 +376,7 @@ struct AgentEditorView: View {
             try? AgentManager.shared.createAgent(agent)
         case .edit(let id):
             try? AgentManager.shared.updateAgent(id) { existing in
-                existing = agent
+                existing.apply(from: agent)
             }
         }
         draftJSON = ""

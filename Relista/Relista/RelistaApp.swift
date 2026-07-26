@@ -45,7 +45,8 @@ struct RelistaApp: App {
     static let sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Conversation.self,
-            Message.self
+            Message.self,
+            Agent.self
         ])
 
         let modelConfiguration = ModelConfiguration(

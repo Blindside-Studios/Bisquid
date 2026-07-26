@@ -77,7 +77,7 @@ struct GeneralSettings: View {
                     }
                 }
                 //.disabled(isImportingLegacyChats)
-                .disabled(true)
+                .disabled(false)
 
                 Toggle("Show debug options", isOn: $showDebugOptions)
             }
@@ -99,9 +99,13 @@ struct GeneralSettings: View {
         Task {
             do {
                 let result = try LegacyImporter.importIntoDatabase()
+                let agentsImported = try LegacyImporter.importAgents()
+
                 let conversations = (try? DatabaseManager.loadIndex()) ?? []
                 await ChatCache.shared.updateLoadedConversations(conversations)
-                legacyImportResultMessage = "Imported \(result.conversationsImported) conversation(s) and \(result.messagesImported) message(s)."
+                await AgentManager.shared.refreshFromStorage()
+
+                legacyImportResultMessage = "Imported \(result.conversationsImported) conversation(s), \(result.messagesImported) message(s), and \(agentsImported) agent(s)."
             } catch {
                 legacyImportResultMessage = "Import failed: \(error.localizedDescription)"
             }
