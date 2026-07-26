@@ -110,6 +110,10 @@ struct AgentSettings: View {
     }
     
     @ScaledMetric(relativeTo: .largeTitle) var size = 20
+    
+    let columns = [
+            GridItem(.adaptive(minimum: 100))
+        ]
 
     var body: some View {
         Group {
@@ -120,25 +124,41 @@ struct AgentSettings: View {
                     description: Text("Create your first custom agent to get started.")
                 )
             } else {
-                List {
-                    ForEach(manager.customAgents) { agent in
-                        HStack {
-                            AgentManager.getAgentImage(fromUUID: agent.id)
-                                .frame(width: size, height: size)
-                                .padding(.trailing, 4)
-
-                            VStack(alignment: .leading) {
-                                Text(agent.name)
-                                Text(agent.agentDescription)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                ScrollView{
+                    LazyVGrid(columns: columns, spacing: 8) {
+                        ForEach(manager.customAgents/*.filter {$0.shownInSidebar}*/) { agent in
+                            VStack (alignment: .center) {
+                                HStack{
+                                    Spacer()
+                                    AgentManager.getAgentImage(fromUUID: agent.id)
+                                        .frame(width: 60, height: 60)
+                                        .padding(.vertical, 8)
+                                        .padding(.top, 8)
+                                    Spacer()
+                                }
+                                
+                                Spacer()
+                                Group{
+                                    Text(agent.name)
+                                        .font(.headline)
+                                        .padding(.bottom, 4)
+                                    Text(agent.agentDescription)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .multilineTextAlignment(.center)
+                                Spacer()
                             }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            openEditor(for: .edit(agent.id))
-                        }
-                        .contextMenu {
+                            .padding()
+                            .background{
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(.thinMaterial)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                openEditor(for: .edit(agent.id))
+                            }
+                            .contextMenu {
                                 Button(role: .destructive) {
                                     // Use new deleteAgent() API for proper sync
                                     try? AgentManager.shared.deleteAgent(agent.id)
@@ -146,11 +166,18 @@ struct AgentSettings: View {
                                     Label("Delete", systemImage: "trash")
                                 }
                             }
+                        }
+                        .onDelete(perform: deleteAgents)
+                        .onMove(perform: moveAgents)
                     }
-                    .onDelete(perform: deleteAgents)
-                    .onMove(perform: moveAgents)
+                    .padding(16)
                 }
             }
+                
+        }
+        .background{
+            AppBackground()
+                .ignoresSafeArea()
         }
         #if os(ioS)
         .onAppear(){
@@ -162,10 +189,12 @@ struct AgentSettings: View {
         .navigationTitle("Squidlets")
         #if os(iOS)
         .toolbar(){
-            ToolbarItemGroup(placement: .automatic) {
+            ToolbarItemGroup(placement: .primaryAction) {
                 Button("New Squidlet", systemImage: "square.and.pencil"){
                     openEditor(for: .create(token: UUID()))
                 }
+                .buttonStyle(.glassProminent)
+                .labelStyle(.titleAndIcon)
             }
         }
         .sheet(item: selectedAgentBinding) { agent in

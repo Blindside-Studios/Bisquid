@@ -46,6 +46,10 @@ struct WikisSettings: View {
                 }
             }
         }
+        .background{
+            AppBackground()
+                .ignoresSafeArea()
+        }
         #if os(ioS)
         .onAppear(){
             if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
