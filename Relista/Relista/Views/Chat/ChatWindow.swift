@@ -148,6 +148,11 @@ struct ChatWindow: View {
             _ = chatCache.getChat(for: conversationID)
         }
         #if os(iOS)
+        .onAppear(){
+            if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                scene.title = chatCache.getConversation(for: conversationID)?.title ?? "New chat"
+            }
+        }
         .onChange(of: chatCache.getConversation(for: conversationID)?.title, initial: true) { _, title in
             if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
                 scene.title = title ?? "New chat"

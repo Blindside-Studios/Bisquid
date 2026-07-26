@@ -16,9 +16,12 @@ struct SidebarToolSelector: View {
 
     var body: some View {
         VStack(spacing: 0){
-            SidebarToolButton(assignedTool: .documentAI, shownContentType: $shownContentType, toolName: "Documents", systemImage: "document.on.document")
-            SidebarToolButton(assignedTool: .audioAI, shownContentType: $shownContentType, toolName: "Audio", systemImage: "waveform")
+            //SidebarToolButton(assignedTool: .documentAI, shownContentType: $shownContentType, toolName: "Documents", systemImage: "document.on.document")
+            //SidebarToolButton(assignedTool: .audioAI, shownContentType: $shownContentType, toolName: "Audio", systemImage: "waveform")
 
+            SidebarToolButton(assignedTool: .agents, shownContentType: $shownContentType, toolName: "Squidlets", systemImage: "person.crop.square")
+            SidebarToolButton(assignedTool: .wikis, shownContentType: $shownContentType, toolName: "Wikis", systemImage: "books.vertical")
+            
             #if os(macOS)
             SettingsLink{
                 HStack {

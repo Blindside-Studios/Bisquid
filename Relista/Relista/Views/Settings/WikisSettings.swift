@@ -46,6 +46,14 @@ struct WikisSettings: View {
                 }
             }
         }
+        #if os(ioS)
+        .onAppear(){
+            if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                scene.title = "Wikis"
+            }
+        }
+        #endif
+        .navigationTitle("Wikis")
         .formStyle(.grouped)
         .sheet(isPresented: $showAdd) {
             AddWikiSheet(category: $draftCategory, content: $draftContent) {

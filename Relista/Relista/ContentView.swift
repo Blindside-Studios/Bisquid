@@ -59,12 +59,20 @@ struct ContentView: View {
             Sidebar(chatCache: $chatCache, selectedConversationID: $selectedConversationID, selectedAgent: selectedAgent, selectedModel: $selectedModel, createNewChat: createNewChat, reloadSidebar: reloadSidebar, shownContentType: shownContentType)
         } content: {
             switch shownContentType.wrappedValue {
-            case .documentAI:
+            /*case .documentAI:
                 DocumentAI()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Rectangle())
             case .audioAI:
                 AudioAI()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())*/
+            case .agents:
+                AgentSettings()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+            case .wikis:
+                WikisSettings()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .contentShape(Rectangle())
             default:
@@ -139,9 +147,11 @@ struct ContentView: View {
 
 public enum ContentType: String, Codable {
     case chat
-    case documentAI
-    case audioAI
-}
+    case agents
+    case wikis
+    //case documentAI
+    //case audioAI
+    }
 
 #Preview {
     //ContentView(selectedConversation: Conversation(from: <#any Decoder#>))

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
-    let totalAvailableItems: [SettingsItem] = [.general, .personalization, .agents, .wikis, .apiProvider]
+    let totalAvailableItems: [SettingsItem] = [.general, .personalization, /*.agents, .wikis,*/ .apiProvider]
     @State var storedSelection: String
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
@@ -102,10 +102,11 @@ struct SettingsView: View {
             APIProvider()
         case .personalization:
             PersonalizationSettings()
-        case .agents:
+        /*case .agents:
             AgentSettings()
         case .wikis:
             WikisSettings()
+        */
         }
     }
 }
@@ -114,8 +115,8 @@ enum SettingsItem: String, CaseIterable, Identifiable {
     case general
     case apiProvider
     case personalization
-    case agents
-    case wikis
+    //case agents
+    //case wikis
 
     var id: String { rawValue }
 
@@ -124,8 +125,8 @@ enum SettingsItem: String, CaseIterable, Identifiable {
         case .general: "General"
         case .apiProvider: "API Provider"
         case .personalization: "Personalization"
-        case .agents: "Squidlets"
-        case .wikis: "Wikis"
+        //case .agents: "Squidlets"
+        //case .wikis: "Wikis"
         }
     }
 
@@ -134,8 +135,8 @@ enum SettingsItem: String, CaseIterable, Identifiable {
         case .general: "gearshape"
         case .apiProvider: "link"
         case .personalization: "paintpalette"
-        case .agents: "person.crop.square"
-        case .wikis: "books.vertical"
+        //case .agents: "person.crop.square"
+        //case .wikis: "books.vertical"
         }
     }
 }

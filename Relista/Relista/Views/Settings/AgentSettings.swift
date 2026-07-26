@@ -152,7 +152,14 @@ struct AgentSettings: View {
                 }
             }
         }
-        .navigationTitle("Agents")
+        #if os(ioS)
+        .onAppear(){
+            if let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                scene.title = "Squidlets"
+            }
+        }
+        #endif
+        .navigationTitle("Squidlets")
         #if os(iOS)
         .toolbar(){
             ToolbarItemGroup(placement: .automatic) {
