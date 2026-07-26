@@ -188,6 +188,9 @@ struct AgentSettings: View {
         #endif
         .navigationTitle("Squidlets")
         #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        #if os(iOS)
         .toolbar(){
             ToolbarItemGroup(placement: .primaryAction) {
                 Button("New Squidlet", systemImage: "square.and.pencil"){

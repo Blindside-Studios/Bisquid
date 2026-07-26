@@ -58,6 +58,9 @@ struct WikisSettings: View {
         }
         #endif
         .navigationTitle("Wikis")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .formStyle(.grouped)
         .sheet(isPresented: $showAdd) {
             AddWikiSheet(category: $draftCategory, content: $draftContent) {
