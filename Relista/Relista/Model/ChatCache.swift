@@ -393,11 +393,20 @@ class ChatCache {
 
     // MARK: - Regenerate & Edit
 
-    /// Removes all messages from the given message ID onward (inclusive) and saves to disk.
+    /// Removes all messages from the given message ID onward (inclusive), deletes them from
+    /// the store, and saves. Deleting from the store (not just the in-memory array) matters
+    /// because `refreshMessages` re-fetches from disk on remote-change notifications — a
+    /// message only removed in memory would still be there to resurrect it.
     func truncateMessages(for conversationID: UUID, from messageID: UUID) {
         let chat = getChat(for: conversationID)
         guard let index = chat.messages.firstIndex(where: { $0.id == messageID }) else { return }
+        let removedIDs = chat.messages[index...].map(\.id)
         chat.messages.removeSubrange(index...)
+        do {
+            try DatabaseManager.deleteMessages(ids: removedIDs)
+        } catch {
+            print("Error deleting truncated messages for \(conversationID): \(error)")
+        }
         saveMessages(for: conversationID)
     }
 
@@ -415,7 +424,13 @@ class ChatCache {
         guard !chat.isGenerating else { return }
         guard let index = chat.messages.firstIndex(where: { $0.id == messageID }),
               chat.messages[index].role == .assistant else { return }
+        let removedIDs = chat.messages[index...].map(\.id)
         chat.messages.removeSubrange(index...)
+        do {
+            try DatabaseManager.deleteMessages(ids: removedIDs)
+        } catch {
+            print("Error deleting regenerated messages for \(conversationID): \(error)")
+        }
         saveMessages(for: conversationID)
         startGeneration(
             chat: chat,

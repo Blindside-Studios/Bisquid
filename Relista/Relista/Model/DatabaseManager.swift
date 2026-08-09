@@ -82,6 +82,18 @@ class DatabaseManager {
         try context.save()
     }
 
+    // delete specific messages by id — used when truncating for edit/regenerate, since
+    // removing a message from `chat.messages` in memory doesn't remove it from the store
+    static func deleteMessages(ids: [UUID]) throws {
+        guard !ids.isEmpty else { return }
+        let idSet = Set(ids)
+        let descriptor = FetchDescriptor<Message>(predicate: #Predicate { idSet.contains($0.id) })
+        for message in try context.fetch(descriptor) {
+            context.delete(message)
+        }
+        try context.save()
+    }
+
     // load messages for a specific conversation
     static func loadMessages(for conversationID: UUID) throws -> [Message] {
         // A fetch has no inherent order, unlike the old JSON array where append order was
