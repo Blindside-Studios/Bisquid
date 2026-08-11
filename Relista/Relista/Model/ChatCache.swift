@@ -198,6 +198,16 @@ class ChatCache {
         }
     }
 
+    /// Drops every in-memory reference to loaded chats/conversations — the bulk version of
+    /// the ordering `deleteConversation` documents above, needed before a full-store wipe
+    /// (e.g. restoring from a backup) so nothing is left holding Message/Conversation
+    /// instances after their backing rows are deleted from the SwiftData context.
+    func resetAllLoadedState() {
+        loadedChats = [:]
+        activeConversationID = nil
+        conversations = []
+    }
+
     // MARK: - Chat Loading/Unloading
 
     /// Loads or retrieves a chat from cache

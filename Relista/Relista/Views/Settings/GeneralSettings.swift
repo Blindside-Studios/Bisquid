@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct GeneralSettings: View {
     #if os(macOS)
@@ -26,8 +27,15 @@ struct GeneralSettings: View {
     @AppStorage("EnableUIDebugControls") private var showDebugOptions: Bool = false
 
     @State private var isImportingLegacyChats = false
-    @State private var legacyImportResultMessage: String?
-    @State private var showingLegacyImportResult = false
+    @State private var operationResultMessage: String?
+    @State private var showingOperationResult = false
+
+    @State private var showingBackupExporter = false
+    @State private var backupExportDocument: BackupDocument?
+    @State private var showingBackupImporter = false
+    @State private var pendingRestoreData: Data?
+    @State private var showingRestoreConfirmation = false
+    @State private var isRestoringBackup = false
 
     var body: some View {
         Form{
@@ -53,6 +61,30 @@ struct GeneralSettings: View {
                 Toggle("Enable Smart Grounding", isOn: $smartGroundingEnabled)
                 Toggle("Let Smart Grounding use web search", isOn: $syncedSettings.smartGroundingUseWebSearch)
                     .disabled(!smartGroundingEnabled)
+            }
+
+            Section(
+                header: Text("Backup"),
+                footer: Text("Export saves every conversation, agent, and synced setting to a single file. Restoring replaces everything currently in Relista with the contents of that file — it does not merge.")
+            ) {
+                Button {
+                    exportBackup()
+                } label: {
+                    Text("Export Backup…")
+                }
+
+                Button {
+                    showingBackupImporter = true
+                } label: {
+                    HStack {
+                        Text("Restore from Backup…")
+                        if isRestoringBackup {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isRestoringBackup)
             }
 
             // haptic feedback only applies to iPhone
@@ -83,10 +115,56 @@ struct GeneralSettings: View {
             }
         }
         .formStyle(.grouped)
+        .fileExporter(
+            isPresented: $showingBackupExporter,
+            document: backupExportDocument,
+            contentType: .json,
+            defaultFilename: "Relista Backup"
+        ) { result in
+            if case .failure(let error) = result {
+                operationResultMessage = "Export failed: \(error.localizedDescription)"
+                showingOperationResult = true
+            }
+            backupExportDocument = nil
+        }
+        .fileImporter(
+            isPresented: $showingBackupImporter,
+            allowedContentTypes: [.json]
+        ) { result in
+            switch result {
+            case .success(let url):
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                guard let data = try? Data(contentsOf: url) else {
+                    operationResultMessage = "Couldn't read that file."
+                    showingOperationResult = true
+                    return
+                }
+                pendingRestoreData = data
+                showingRestoreConfirmation = true
+            case .failure(let error):
+                operationResultMessage = "Restore failed: \(error.localizedDescription)"
+                showingOperationResult = true
+            }
+        }
+        .alert(
+            "Replace Everything?",
+            isPresented: $showingRestoreConfirmation,
+            presenting: pendingRestoreData
+        ) { data in
+            Button("Cancel", role: .cancel) {
+                pendingRestoreData = nil
+            }
+            Button("Restore", role: .destructive) {
+                performRestore(from: data)
+            }
+        } message: { _ in
+            Text("This deletes every conversation, Squidlet, and synced setting currently in Relista and replaces them with the contents of this backup. This can't be undone.")
+        }
         .alert(
             "Import Complete",
-            isPresented: $showingLegacyImportResult,
-            presenting: legacyImportResultMessage
+            isPresented: $showingOperationResult,
+            presenting: operationResultMessage
         ) { _ in
             Button("OK", role: .cancel) {}
         } message: { message in
@@ -105,12 +183,37 @@ struct GeneralSettings: View {
                 await ChatCache.shared.updateLoadedConversations(conversations)
                 await AgentManager.shared.refreshFromStorage()
 
-                legacyImportResultMessage = "Imported \(result.conversationsImported) conversation(s), \(result.messagesImported) message(s), and \(agentsImported) agent(s)."
+                operationResultMessage = "Imported \(result.conversationsImported) conversation(s), \(result.messagesImported) message(s), and \(agentsImported) agent(s)."
             } catch {
-                legacyImportResultMessage = "Import failed: \(error.localizedDescription)"
+                operationResultMessage = "Import failed: \(error.localizedDescription)"
             }
             isImportingLegacyChats = false
-            showingLegacyImportResult = true
+            showingOperationResult = true
+        }
+    }
+
+    private func exportBackup() {
+        do {
+            backupExportDocument = BackupDocument(data: try BackupManager.exportBackup())
+            showingBackupExporter = true
+        } catch {
+            operationResultMessage = "Export failed: \(error.localizedDescription)"
+            showingOperationResult = true
+        }
+    }
+
+    private func performRestore(from data: Data) {
+        pendingRestoreData = nil
+        isRestoringBackup = true
+        Task {
+            do {
+                let result = try await BackupManager.restoreBackup(from: data)
+                operationResultMessage = "Restored \(result.conversations) conversation(s), \(result.messages) message(s), and \(result.agents) agent(s)."
+            } catch {
+                operationResultMessage = "Restore failed: \(error.localizedDescription)"
+            }
+            isRestoringBackup = false
+            showingOperationResult = true
         }
     }
 }

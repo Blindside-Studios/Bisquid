@@ -209,6 +209,13 @@ public class AgentManager: ObservableObject {
         case notFound
     }
 
+    /// Drops every locally-cached Agent reference without touching the store — needed
+    /// before a full-store wipe (e.g. restoring from a backup), same reasoning as
+    /// ChatCache.resetAllLoadedState().
+    func removeAllLocally() {
+        customAgents = []
+    }
+
     // MARK: - Persistence
 
     /// Persists every agent currently in `customAgents`, in its current array order —
