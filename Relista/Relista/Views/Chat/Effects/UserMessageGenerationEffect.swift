@@ -129,7 +129,7 @@ struct UserMessageGenerationEffect: View {
         Toggle("Show effect", isOn: $isShowing)
         Rectangle()
             .fill(.clear)
-            .glassEffect(in: .rect(cornerRadius: 30, style: .continuous))
+            .compatGlassEffect(in: .rect(cornerRadius: 30, style: .continuous))
             .padding(50)
             .background{
                 if isShowing{

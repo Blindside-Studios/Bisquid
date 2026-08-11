@@ -146,10 +146,10 @@ private struct AddWikiSheet: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(role: .cancel) { dismiss() }
+                    compatCancelButton { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(role: .confirm) {
+                    compatConfirmButton {
                         onSave()
                         dismiss()
                     }

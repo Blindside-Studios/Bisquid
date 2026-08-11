@@ -66,7 +66,7 @@ struct MessageUser: View {
                         )
                         .padding(.horizontal)
                         .padding(needsTruncation && !isExpanded ? .top : .vertical)
-                        .glassEffect(.regular.tint(primaryAccentColor.opacity(0.3)), in: .rect(cornerRadius: 25.0, style: .continuous))
+                        .compatGlassEffect(tint: primaryAccentColor.opacity(0.3), in: .rect(cornerRadius: 25.0, style: .continuous))
                         .contentShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                         .overlay(alignment: .bottom) {
                             if needsTruncation && !isExpanded {

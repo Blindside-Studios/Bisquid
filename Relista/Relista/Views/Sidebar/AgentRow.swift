@@ -29,7 +29,7 @@ struct AgentRow: View {
         .background {
             if isCurrentEmpty && isSelected {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .glassEffect(in: .rect(cornerRadius: 16.0))
+                    .compatGlassEffect(in: .rect(cornerRadius: 16.0))
                     .transition(
                         hSizeClass == .compact
                         ? .opacity

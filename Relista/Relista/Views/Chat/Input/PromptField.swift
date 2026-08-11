@@ -137,7 +137,7 @@ struct PromptField: View {
         .animation(.bouncy(duration: 0.3), value: editingMessage == nil)
         .padding(spacing)
         //.glassEffect(.clear.tint(liquidGlassTint).interactive(), in: .rect(cornerRadius: CGFloat(cornerRadius)))
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: CGFloat(cornerRadius)))
+        .compatGlassEffect(interactive: true, in: .rect(cornerRadius: CGFloat(cornerRadius)))
         //.animation(.default, value: liquidGlassTint)
         //.shadow(color: primaryAccentColor.opacity(0.4), radius: 20)
         .padding(8)

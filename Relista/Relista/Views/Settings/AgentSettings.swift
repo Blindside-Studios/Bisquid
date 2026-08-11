@@ -211,7 +211,7 @@ struct AgentSettings: View {
                 .interactiveDismissDisabled()
         }
         #else
-        .safeAreaBar(edge: .bottom) {
+        .compatSafeAreaBar(edge: .bottom) {
             HStack(spacing: 8) {
                 Button {
                     openEditor(for: .create(token: UUID()))
@@ -381,11 +381,11 @@ struct AgentEditorView: View {
                 }
             }
             #else
-            .safeAreaBar(edge: .bottom) {
+            .compatSafeAreaBar(edge: .bottom) {
                 HStack {
-                    Button(role: .cancel) { cancel() }
+                    compatCancelButton { cancel() }
                     Spacer()
-                    Button(role: .confirm) { save() }
+                    compatConfirmButton { save() }
                         .disabled(agent.name.isEmpty)
                         .keyboardShortcut(.defaultAction)
                 }
@@ -597,7 +597,7 @@ struct AgentColorPicker: View {
                                             .lineLimit(2)
                                             .padding(.horizontal, 8)
                                             .padding(.vertical, 6)
-                                            .glassEffect(.regular.tint((preset.primaryColor ?? Color.clear).opacity(0.3)), in: .rect(cornerRadius: 8, style: .continuous))
+                                            .compatGlassEffect(tint: (preset.primaryColor ?? Color.clear).opacity(0.3), in: .rect(cornerRadius: 8, style: .continuous))
                                     }
                                     ZStack{
                                         HStack{
@@ -618,7 +618,7 @@ struct AgentColorPicker: View {
                                                 Rectangle()
                                                     .fill(.clear)
                                                     .frame(height: 24)
-                                                    .glassEffect(in: .rect(cornerRadius: 12, style: .continuous))
+                                                    .compatGlassEffect(in: .rect(cornerRadius: 12, style: .continuous))
                                                 
                                                 HStack{
                                                     Spacer()

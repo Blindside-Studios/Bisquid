@@ -101,7 +101,7 @@ struct ChatWindow: View {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             #endif
                         })
-                        .safeAreaBar(edge: useInkingInput ? .top : .bottom, spacing: 0){
+                        .compatSafeAreaBar(edge: useInkingInput ? .top : .bottom, spacing: 0){
                             InputUI(conversationID: $conversationID, inputMessage: $inputMessage, selectedAgent: $selectedAgent, selectedModel: $selectedModel, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor, editingMessage: $editingMessage, pendingAttachments: $pendingAttachments, useInkingInput: $useInkingInput)
                         }
                         .animation(.bouncy(duration: 0.6, extraBounce: 0), value: useInkingInput)
