@@ -58,7 +58,7 @@ struct Sidebar: View {
                     .padding(.vertical, 4)
                 conversationsList
             }
-            .padding(.top, hSizeClass == .compact ? 0 : -15)
+            //.padding(.top, hSizeClass == .compact ? 0 : -15)
             .animation(.default, value: showChats)
             .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showCustomAgents)
             .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showTools)
