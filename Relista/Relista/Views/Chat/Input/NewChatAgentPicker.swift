@@ -28,7 +28,7 @@ struct NewChatAgentPicker: View {
                         .frame(width: 2)
                 }
                 .padding(6)
-                .compatGlassEffect(tint: selectedAgent == nil ? .accentColor.opacity(0.5) : nil, in: .rect(cornerRadius: 12, style: .continuous))
+                .compatGlassEffect(tint: selectedAgent == nil ? .accentColor.opacity(0.5) : nil, in: RoundedRectangle(cornerRadius: 12.0, style: .continuous))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .animation(.default, value: selectedAgent)
                 #if os(iOS)
@@ -59,7 +59,7 @@ struct NewChatAgentPicker: View {
                             .frame(width: 2)
                     }
                     .padding(6)
-                    .compatGlassEffect(tint: isCurrentAgent ? primaryAccentColor.opacity(0.5) : nil, in: .rect(cornerRadius: 12, style: .continuous))
+                    .compatGlassEffect(tint: isCurrentAgent ? primaryAccentColor.opacity(0.5) : nil, in: RoundedRectangle(cornerRadius: 12.0, style: .continuous))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .animation(.default, value: isCurrentAgent)
                     #if os(iOS)

@@ -110,13 +110,7 @@ struct Sidebar: View {
         .padding(10)
         .background {
             if isCurrentEmpty && selectedAgent == nil && shownContentType == .chat {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .compatGlassEffect(in: .rect(cornerRadius: 16.0))
-                    .transition(
-                        hSizeClass == .compact
-                        ? .opacity
-                        : .opacity.combined(with: .scale(scale: 0.3)).combined(with: .offset(x: -100))
-                    )
+                PanelItemBackground()
             }
         }
         .animation(.default, value: isCurrentEmpty)

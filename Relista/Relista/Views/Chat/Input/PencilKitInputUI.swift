@@ -122,7 +122,7 @@ struct PencilKitInputUI: View {
         .animation(.bouncy(duration: 0.3), value: pendingAttachments.isEmpty)
         .animation(.bouncy(duration: 0.3), value: editingMessage == nil)
         .padding(spacing)
-        .glassEffect(.regular, in: .rect(cornerRadius: CGFloat(cornerRadius)))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: CGFloat(cornerRadius), style: .continuous))
         .padding(8)
         // Drag & drop: pass through the image framework so HEIC and any other
         // OS-decodable format is accepted and normalized to JPEG.

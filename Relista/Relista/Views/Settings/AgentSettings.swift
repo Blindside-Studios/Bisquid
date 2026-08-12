@@ -597,7 +597,7 @@ struct AgentColorPicker: View {
                                             .lineLimit(2)
                                             .padding(.horizontal, 8)
                                             .padding(.vertical, 6)
-                                            .compatGlassEffect(tint: (preset.primaryColor ?? Color.clear).opacity(0.3), in: .rect(cornerRadius: 8, style: .continuous))
+                                            .compatGlassEffect(tint: (preset.primaryColor ?? Color.clear).opacity(0.3), in: RoundedRectangle(cornerRadius: 8.0, style: .continuous))
                                     }
                                     ZStack{
                                         HStack{
@@ -618,7 +618,7 @@ struct AgentColorPicker: View {
                                                 Rectangle()
                                                     .fill(.clear)
                                                     .frame(height: 24)
-                                                    .compatGlassEffect(in: .rect(cornerRadius: 12, style: .continuous))
+                                                    .compatGlassEffect(in: RoundedRectangle(cornerRadius: 12.0, style: .continuous))
                                                 
                                                 HStack{
                                                     Spacer()

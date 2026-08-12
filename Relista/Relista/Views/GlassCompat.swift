@@ -14,7 +14,19 @@ extension View {
             let glass = interactive ? baseGlass.interactive() : baseGlass
             self.glassEffect(glass, in: shape)
         } else {
-            self.background(.bar, in: shape)
+            self.background{
+                ZStack{
+                    Rectangle()
+                        .fill(.clear)
+                        .background(.regularMaterial)
+                    if tint != nil{
+                        Rectangle()
+                            .fill(.clear)
+                            .background(tint.opacity(0.5))
+                    }
+                }
+                .mask(shape)
+            }
         }
     }
 
