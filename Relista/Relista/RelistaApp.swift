@@ -108,7 +108,7 @@ struct RelistaApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(reloadSidebar: RelistaApp.refreshContent)
+            ContentView(/*reloadSidebar: RelistaApp.refreshContent*/)
                 .onAppear {
                     // Only initialize once
                     guard !hasInitialized else { return }

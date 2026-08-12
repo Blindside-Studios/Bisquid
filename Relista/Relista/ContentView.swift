@@ -35,7 +35,7 @@ struct ContentView: View {
     @State var showInkingInput = false
 
     @State var chatCache = ChatCache.shared
-    let reloadSidebar: () async -> Void
+    //let reloadSidebar: () async -> Void = RelistaApp.refreshContent
 
     private var selectedAgent: Binding<UUID?> {
         Binding(
@@ -56,7 +56,7 @@ struct ContentView: View {
 
     var body: some View {
         UnifiedSplitView {
-            Sidebar(chatCache: $chatCache, selectedConversationID: $selectedConversationID, selectedAgent: selectedAgent, selectedModel: $selectedModel, createNewChat: createNewChat, reloadSidebar: reloadSidebar, shownContentType: shownContentType)
+            Sidebar(chatCache: $chatCache, selectedConversationID: $selectedConversationID, selectedAgent: selectedAgent, selectedModel: $selectedModel, createNewChat: createNewChat, /*reloadSidebar: reloadSidebar,*/ shownContentType: shownContentType)
         } content: {
             switch shownContentType.wrappedValue {
             /*case .documentAI:

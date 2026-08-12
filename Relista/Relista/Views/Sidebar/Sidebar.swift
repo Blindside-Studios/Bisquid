@@ -34,7 +34,7 @@ struct Sidebar: View {
     @Environment(\.horizontalSizeClass) private var hSizeClass
     
     let createNewChat: () -> Void
-    let reloadSidebar: () async -> Void
+    //let reloadSidebar: () async -> Void
     
     @Binding var shownContentType: ContentType
     
@@ -178,7 +178,7 @@ struct Sidebar: View {
             #if os(macOS)
             Button {
                 Task {
-                    await reloadSidebar()
+                    await RelistaApp.refreshContent()
                 }
             } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
