@@ -86,6 +86,7 @@ struct ChatWindow: View {
                                     }
                                 }
                             }
+                            .padding(.top, 8)
                             .scrollTargetLayout()
                             .environment(\.font, .system(size: chatFontSize))
                             // to center-align

@@ -106,6 +106,7 @@ struct MessageModel: View {
                     }
                 }
                 .padding(.horizontal)
+                .padding(.top, 8)
                 .padding(.vertical, isUsingPencilView ? 24 : 8)
                 
                 Spacer()
