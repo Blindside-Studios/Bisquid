@@ -11,30 +11,26 @@ struct UserMessageGenerationEffect: View {
     let message: String
     let primaryColor: Color
     let secondaryColor: Color
-    
-    @State private var glowPulse: Bool = false
-    @State private var t: Double = 0
-    
+
     var body: some View {
         if secondaryColor != .clear{
             GeometryReader{ geo in
                 TimelineView(.periodic(from: .now, by: 1.0 / 12.0)) { timeline in
                     let t = timeline.date.timeIntervalSinceReferenceDate
                     let progress = (t * 0.05).truncatingRemainder(dividingBy: 1.0)
-                    
+
+                    let pulsePhase = (t.truncatingRemainder(dividingBy: 5.0)) / 5.0
+                    let pulse = (sin(pulsePhase * 2 * .pi - .pi / 2) + 1) / 2
+                    let scale = 0.9 + pulse * 0.2
+                    let pulseOpacity = 0.5 + pulse * 0.3
+
                     ZStack {
                         RoundedRectangle(cornerRadius: 40, style: .circular)
-                            .fill(secondaryColor)
+                            .fill(secondaryColor.opacity(0.75))
                             .padding(10)
-                        
-                        /*Path(roundedRect: CGRect(
-                         origin: .init(x: geo.size.width / 10, y: geo.size.height / 10),
-                         size: CGSize(width: geo.size.width * 0.8, height: geo.size.height * 0.8)),
-                         cornerRadius: 40, style: .circular)
-                         .stroke(.blue, lineWidth: 10)*/
-                        
+
                         Ellipse()
-                            .fill(secondaryColor)
+                            .fill(secondaryColor.opacity(0.75))
                             .frame(width: geo.size.width / 2.5, height: geo.size.height / 2)
                             .position(pointOnRect(
                                 t: progress,
@@ -43,16 +39,13 @@ struct UserMessageGenerationEffect: View {
                                     size: CGSize(width: geo.size.width * 0.8, height: geo.size.height * 0.8)),
                                 cornerRadius: 40))
                     }
-                    .scaleEffect(glowPulse ? 1.1 : 0.9)
-                    .opacity(glowPulse ? 0.8 : 0.5)
-                    .animation(.easeInOut(duration: 5).repeatForever(autoreverses: true),
-                               value: glowPulse)
-                    .onAppear { glowPulse = true }
+                    .scaleEffect(scale)
+                    .opacity(pulseOpacity)
                 }
             }
             .padding(20)
             .drawingGroup()
-            .blur(radius: 40)
+            .blur(radius: 24)
             .opacity(0.7)
             .transition(.opacity.combined(with: .scale(scale: 0.5)))
         }
