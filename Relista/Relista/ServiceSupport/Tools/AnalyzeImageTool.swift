@@ -17,7 +17,6 @@ struct AnalyzeImageTool: ChatTool {
 
     /// Models that support vision (image content will be included in the request).
     static let visionModels: Set<String> = [
-        "mistral-medium-3.5",
         "mistral-large-latest",
         "mistral-medium-latest",
         "mistral-small-latest"
@@ -36,21 +35,20 @@ struct AnalyzeImageTool: ChatTool {
                 "name": "analyze_image",
                 "description": """
                 Analyze an image attached to the current conversation by sending it to a Mistral AI model.
-                Only call this for images listed in the current message's attachments section.
                 Use the exact filename shown (e.g. "abc123.jpg").
 
                 Model selection guide:
-                - mistral-medium-3.5: Best results. Significantly more expensive — use when accuracy matters most (detailed analysis, reading text in images, complex scenes).
                 - mistral-large-latest: Strong general-purpose model. Use for deep reasoning about an image.
-                - mistral-medium-latest (DEFAULT): Balanced choice. Use for straightforward image questions.
+                - mistral-medium-latest (DEFAULT): Currently best results with Mistral Medium 3.5, Mistral has not yeet released an equivalent or superior Large model.
                 - mistral-small-latest: Fastest and cheapest. Use for very simple visual questions.
 
-                Default to mistral-medium-latest if you are unsure. Step up to mistral-medium-3.5 when the question demands the highest accuracy.
+                Default to mistral-medium-latest if you are unsure.
 
-                To get started, ask the model to describe the image.
-                Prefer targeted, specific questions rather than generic "describe this image" prompts for follow-up calls.
-                Your questions and responses are visible to the user and cached for future turns.
+                To get started, your first call should always be a neutral request to describe the image so you have a general overview.
+                Prefer targeted, specific questions rather than generic "describe this image" prompts for follow-up calls afterwards.
+                Your questions and responses are visible to the user and cached for future turns so you will have access to them later.
                 If a question has already been answered (visible in context above), do not ask it again.
+                You may call this tool multiple subsequent times each chat turn if you need more information.
                 """,
                 "parameters": [
                     "type": "object",
@@ -65,13 +63,11 @@ struct AnalyzeImageTool: ChatTool {
                         ],
                         "model": [
                             "type": "string",
-                            "description": "The model to use. Defaults to mistral-medium-latest if omitted. Mistral Medium 3.5 is significantly more expensive than the other models but provides the best results. Pixtral models are now deprecated.",
+                            "description": "The model to use. Defaults to mistral-medium-latest if omitted. Pixtral models are now deprecated, do not use them! Provide the exact model slugs for these models, arbitrary model slugs, even if the referenced model supports image analysis, is not supported!",
                             "enum": [
-                                "mistral-medium-3.5",
                                 "mistral-large-latest",
                                 "mistral-medium-latest",
-                                "mistral-small-latest"
-                            ]
+                                "mistral-small-latest"                            ]
                         ]
                     ],
                     "required": ["filename", "question"]

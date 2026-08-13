@@ -1,33 +1,10 @@
 [
   {
-    "name": "Mistral Medium 3.1",
-    "modelID": "mistral-medium-2508",
-    "provider": "Mistral",
-    "family": "Mistral",
-    "specifier": "Medium 3.1"
-  },
-  {
-    "name": "Mistral Small Creative (Labs)",
-    "modelID": "labs-mistral-small-creative",
-    "provider": "Mistral",
-    "family": "Mistral Small",
-    "specifier": "Creative (Labs)"
-  },
-  {
-    "name": "Magistral Small",
-    "modelID": "magistral-small-latest",
-    "provider": "Mistral",
-    "family": "Magistral",
-    "specifier": "Small",
-    "supportsReasoning": true
-  },
-  {
-    "name": "Magistral Medium",
-    "modelID": "magistral-medium-latest",
-    "provider": "Mistral",
-    "family": "Magistral",
-    "specifier": "Medium",
-    "supportsReasoning": true
+    "name": "Z.ai GLM 5.2 (served by Mistral)",
+    "modelID": "zai-glm-5-2",
+    "provider": "Z.ai",
+    "family": "Z.ai",
+    "specifier": "GLM 5.2"
   },
   {
     "name": "Mistral NeMo",
@@ -37,17 +14,17 @@
     "specifier": "NeMo"
   },
   {
-    "name": "Ministral 3B",
-    "modelID": "ministral-3b-latest",
-    "provider": "Mistral",
-    "family": "Ministral",
-    "specifier": "3B"
-  },
-  {
     "name": "Mistral 7B Instruct",
     "modelID": "open-mistral-7b",
     "provider": "Mistral",
     "family": "Mistral",
     "specifier": "7B Instruct"
+  },
+  {
+    "name": "Ministral 3B",
+    "modelID": "ministral-3b-latest",
+    "provider": "Mistral",
+    "family": "Ministral",
+    "specifier": "3B"
   }
 ]

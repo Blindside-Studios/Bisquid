@@ -338,9 +338,9 @@ struct Mistral {
         case "[t]mistral-small-latest":
             reasoningEffort = "high"
             modelSlug = "mistral-small-latest"
-        case "[t]mistral-medium-3.5":
+        case "[t]mistral-medium-latest":
             reasoningEffort = "high"
-            modelSlug = "mistral-medium-3.5"
+            modelSlug = "mistral-medium-latest"
         case "[t]mistral-large-latest":
             reasoningEffort = "none" // change when Mistral Large 4 launches
             modelSlug = "mistral-large-latest"
