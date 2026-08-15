@@ -107,6 +107,7 @@ struct ContentView: View {
                let uuid = UUID(uuidString: persistedConversationIDString),
                chatCache.getConversation(for: uuid) != nil {
                 selectedConversationID = uuid
+                chatCache.setViewing(id: uuid, isViewing: true)
             } else {
                 // Either no persisted UUID, or the persisted UUID points to a
                 // conversation that was never saved (new-but-unsent chats are
