@@ -21,6 +21,35 @@ struct ContentView: View {
     @SceneStorage("content.selectedModel") private var selectedModel: String = ModelList.placeHolderModel
     @SceneStorage("content.shownContentType") private var shownContentTypeRaw: String = ContentType.chat.rawValue
 
+    // Sheet-presentation state, shared by key with SidebarToolSelector/AgentSettings
+    // (which merely toggle these). The sheets themselves are presented here, on
+    // UnifiedSplitView's stable parent, rather than from inside the sidebar/content
+    // subtree — that subtree switches between ChatSplitView and NavigationSplitView
+    // on size-class changes (e.g. iPhone rotation), which tears down and rebuilds it,
+    // forcibly dismissing any sheet presented from within it. A sheet presented from
+    // this stable ancestor survives that rebuild untouched.
+    @SceneStorage("sidebar.showingSettings") private var showingSettings: Bool = false
+    @SceneStorage("agents.showCreateSheet") private var showCreateAgentSheet: Bool = false
+    @SceneStorage("agents.editingAgentID") private var editingAgentIDString: String = ""
+    @ObservedObject private var agentManager = AgentManager.shared
+
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var hSizeClass
+    #endif
+
+    private var editingAgentBinding: Binding<Agent?> {
+        Binding(
+            get: {
+                guard !editingAgentIDString.isEmpty,
+                      let uuid = UUID(uuidString: editingAgentIDString) else { return nil }
+                return agentManager.customAgents.first { $0.id == uuid }
+            },
+            set: { newValue in
+                editingAgentIDString = newValue?.id.uuidString ?? ""
+            }
+        )
+    }
+
     // Live state — mirrors persisted conversation ID but is the binding source
     // downstream views consume. Hydrated in .task from the scene store.
     @State private var selectedConversationID: UUID = UUID()
@@ -123,6 +152,22 @@ struct ContentView: View {
             editingMessage = nil
             pendingAttachments = []
         }
+        #if os(iOS)
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(storedSelection: hSizeClass == .compact ? "" : "General", onClose: { showingSettings = false })
+                .presentationSizing(.page)
+        }
+        .sheet(item: editingAgentBinding) { agent in
+            AgentEditorView(agent: agent)
+                .presentationSizing(.page)
+                .interactiveDismissDisabled()
+        }
+        .sheet(isPresented: $showCreateAgentSheet) {
+            AgentEditorView()
+                .presentationSizing(.page)
+                .interactiveDismissDisabled()
+        }
+        #endif
     }
 
     private func createNewChat() {

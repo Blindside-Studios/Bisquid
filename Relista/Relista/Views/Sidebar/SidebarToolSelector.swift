@@ -9,9 +9,10 @@ import SwiftUI
 
 struct SidebarToolSelector: View {
     @Binding var shownContentType: ContentType
-    @Environment(\.horizontalSizeClass) private var sizeClass
     #if os(iOS)
-    @State private var showingSettings: Bool = false
+    // Shared by key with ContentView, which presents the actual sheet — see the
+    // comment there for why the presentation itself doesn't happen in this view.
+    @SceneStorage("sidebar.showingSettings") private var showingSettings: Bool = false
     #endif
 
     var body: some View {
@@ -54,12 +55,6 @@ struct SidebarToolSelector: View {
             .backgroundStyle(.clear)
             #endif
         }
-        #if os(iOS)
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(storedSelection: sizeClass == .compact ? "" : "General", onClose: { showingSettings = false })
-                .presentationSizing(.page)
-        }
-        #endif
     }
 }
  

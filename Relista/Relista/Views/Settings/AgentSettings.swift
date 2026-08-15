@@ -89,6 +89,8 @@ enum AgentEditorLaunch: Hashable, Codable {
 struct AgentSettings: View {
     @StateObject private var manager = AgentManager.shared
 
+    // Shared by key with ContentView, which presents the actual create/edit sheets
+    // — see the comment there for why the presentation itself doesn't happen here.
     @SceneStorage("agents.showCreateSheet") private var showCreateSheet = false
     @SceneStorage("agents.editingAgentID") private var editingAgentID: String = ""
 
@@ -96,19 +98,6 @@ struct AgentSettings: View {
     @Environment(\.openWindow) private var openWindow
     #endif
 
-    private var selectedAgentBinding: Binding<Agent?> {
-        Binding(
-            get: {
-                guard !editingAgentID.isEmpty,
-                      let uuid = UUID(uuidString: editingAgentID) else { return nil }
-                return manager.customAgents.first { $0.id == uuid }
-            },
-            set: { newValue in
-                editingAgentID = newValue?.id.uuidString ?? ""
-            }
-        )
-    }
-    
     @ScaledMetric(relativeTo: .largeTitle) var size = 20
     
     let columns = [
@@ -199,16 +188,6 @@ struct AgentSettings: View {
                 .buttonStyle(.glassProminent)
                 .labelStyle(.titleAndIcon)
             }
-        }
-        .sheet(item: selectedAgentBinding) { agent in
-            AgentEditorView(agent: agent)
-                .presentationSizing(.page)
-                .interactiveDismissDisabled()
-        }
-        .sheet(isPresented: $showCreateSheet) {
-            AgentEditorView()
-                .presentationSizing(.page)
-                .interactiveDismissDisabled()
         }
         #else
         .compatSafeAreaBar(edge: .bottom) {
