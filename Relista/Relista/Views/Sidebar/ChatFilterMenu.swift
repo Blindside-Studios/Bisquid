@@ -33,10 +33,14 @@ struct ChatFilterMenu: View {
                         Button {
                             chatFilter = .agent(agent.id)
                         } label: {
-                            if case .agent(agent.id) = chatFilter {
-                                Label(/*agent.icon + " " + */agent.name, systemImage: "checkmark")
-                            } else {
-                                Text(/*agent.icon + " " + */agent.name)
+                            HStack{
+                                if case .agent(agent.id) = chatFilter {
+                                    Image(systemName: "checkmark")
+                                }
+                                #if os(iOS)
+                                AgentManager.getAgentImage(fromUUID: agent.id)
+                                #endif
+                                Text(agent.name)
                             }
                         }
                     }

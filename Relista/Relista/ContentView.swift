@@ -117,7 +117,7 @@ struct ContentView: View {
                                 }
                             }
                             #endif
-                            Button("New chat", systemImage: "square.and.pencil"){
+                            Button("New Chat", systemImage: "square.and.pencil"){
                                 createNewChat()
                             }
                         }

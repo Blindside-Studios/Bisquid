@@ -281,18 +281,14 @@ public class AgentManager: ObservableObject {
 
     static func getAgentImage(fromUUID: UUID?) -> some View{
         if let fromUUID{
-            var imageName = AgentManager.getAgentImageName(fromUUID: fromUUID) ?? "Default"
-            if imageName == "République" {
-                // fix because this image was renamed in files to fix a bug where it wasn't read
-                imageName = "Republique"
-            }
+            let imageName = AgentManager.getAgentImageName(fromUUID: fromUUID) ?? "Default"
             return Image("AgentIcons/\(imageName)").resizable().scaledToFit()
         } else {
             return Image("AgentIcons/Default").resizable().scaledToFit()
         }
     }
 
-    public static let availableImages: [String] = ["Default", "Twongi", "République", "Meet_The_Squid", "Keep_Calm", "Mechanical", "Bricked_Up", "Ghost", "Headband", "Nadiya"]
+    public static let availableImages: [String] = ["Default", "Twongi", "Republique", "Meet_The_Squid", "Keep_Calm", "Mechanical", "Bricked_Up", "Ghost", "Headband", "Nadiya"]
 }
 
 // MARK: - Legacy Import

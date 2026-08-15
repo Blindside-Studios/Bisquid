@@ -82,10 +82,13 @@ struct SendMessageButton: View {
         #endif
         .padding(.horizontal, -7)
         .contextMenu {
-            Button {
-                sendMessageAsSystem()
-            } label: {
-                Label("Send as system message", systemImage: "exclamationmark.bubble")
+            // true because by default we want to assume it has messages so that it doesn't show
+            if !(chatCache.conversations.first(where: { $0.id == conversationID })?.hasMessages ?? true) {
+                Button {
+                    sendMessageAsSystem()
+                } label: {
+                    Label("Send as system message", systemImage: "exclamationmark.bubble")
+                }
             }
         }
     }

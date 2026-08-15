@@ -46,7 +46,7 @@ struct InputUI: View {
                             Spacer(minLength: 0)
                             AgentManager.getAgentImage(fromUUID: selectedAgent)
                                 .frame(width: 72, height: 72)
-                            Text(displayedGreeting)
+                            Text(displayedGreeting.isEmpty ? " " : displayedGreeting)
                                 .opacity(0.75)
                                 .multilineTextAlignment(.center)
                                 .font(.largeTitle)

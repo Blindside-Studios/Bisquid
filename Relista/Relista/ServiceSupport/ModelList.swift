@@ -15,6 +15,7 @@ enum ModelProvider: String, CaseIterable, Decodable {
     case perplexity = "Perplexity"
     case google = "Google"
     case deepSeek = "DeepSeek"
+    case zAI = "Z.ai"
     case uncategorized = "Uncategorized"
 }
 

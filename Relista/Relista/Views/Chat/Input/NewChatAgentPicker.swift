@@ -17,6 +17,18 @@ struct NewChatAgentPicker: View {
     
     @ObservedObject private var agentManager = AgentManager.shared
     
+    private var othersButtonColor: Color? {
+        guard let selectedAgent,
+              let selectedAgentObj = AgentManager.shared.customAgents.first(where: { $0.id == selectedAgent }),
+              !selectedAgentObj.shownInSidebar,
+              let primaryHex = AgentManager.getUIAgentColors(fromUUID: selectedAgent)[0],
+              let color = Color(hex: primaryHex)
+        else {
+            return nil
+        }
+        return color.opacity(0.5)
+    }
+    
     var body: some View {
         ScrollView(.horizontal) {
             HStack {
@@ -74,6 +86,50 @@ struct NewChatAgentPicker: View {
                         selectedAgent = agent.id
                         if !agent.model.isEmpty { selectedModel = agent.model }
                     }
+                }
+                
+                if (!agentManager.customAgents.filter{!$0.shownInSidebar}.isEmpty) {
+                    Menu {
+                        ForEach(agentManager.customAgents.filter{!$0.shownInSidebar}) { agent in
+                            Button {
+                                let result = DatabaseManager.createNewConversation(
+                                    fromID: conversationID,
+                                    withAgent: agent.id
+                                )
+                                conversationID = result.newChatUUID
+                                selectedAgent = agent.id
+                                if !agent.model.isEmpty { selectedModel = agent.model }
+                            } label: {
+                                HStack{
+                                    if selectedAgent == agent.id {
+                                        Image(systemName: "checkmark")
+                                    }
+                                    #if os(iOS)
+                                    AgentManager.getAgentImage(fromUUID: agent.id)
+                                    #endif
+                                    Text(agent.name)
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "ellipsis")
+                                .frame(width: size, height: size)
+                            Text("Other")
+                            Spacer()
+                                .frame(width: 2)
+                        }
+                        .padding(6)
+                        .compatGlassEffect(tint: othersButtonColor, in: RoundedRectangle(cornerRadius: 12.0, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .animation(.default, value: othersButtonColor)
+                        #if os(iOS)
+                        .hoverEffect(.lift)
+                        #endif
+                    }
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .labelStyle(.titleAndIcon)
                 }
             }
             .font(.callout)

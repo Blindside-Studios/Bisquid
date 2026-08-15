@@ -16,9 +16,6 @@ struct PersonalizationSettings: View {
                 TextField("Name", text: $settings.userName, prompt: Text("Name"))
                     .labelsHidden()
             }
-            Section("Default Model") {
-                ModelPicker(selectedModel: $settings.defaultModel)
-            }
 
             Section("Default instructions") {
                 TextField("Default instructions", text: $settings.defaultInstructions, prompt: Text("Default instructions"), axis: .vertical)
@@ -26,15 +23,21 @@ struct PersonalizationSettings: View {
                     .labelsHidden()
             }
             
-            Section("Memories") {
-                MemoryListEditor(memories: $settings.memories, storageID: "personalization")
+            Section("Default Model") {
+                HStack {
+                    ModelPicker(selectedModel: $settings.defaultModel)
+                    VStack(alignment: .leading) {
+                        Text("Temperature: " +  String(format: "%.2f", settings.temperature))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .contentTransition(.numericText())
+                        Slider(value: $settings.temperature, in: 0...1, step: 0.05)
+                    }
+                }
             }
             
-            Section("Default Temperature") {
-                Slider(value: $settings.temperature, in: 0...1)
-                Text(settings.temperature, format: .number.precision(.fractionLength(2)))
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
+            Section("Memories") {
+                MemoryListEditor(memories: $settings.memories, storageID: "personalization")
             }
             
             Section("Modifications"){

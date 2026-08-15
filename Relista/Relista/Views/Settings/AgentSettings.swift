@@ -97,20 +97,21 @@ struct AgentSettings: View {
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     @ScaledMetric(relativeTo: .largeTitle) var size = 20
     
-    let columns = [
-            GridItem(.adaptive(minimum: 100))
-        ]
+    var columns: [GridItem] {
+        [GridItem(.adaptive(minimum: sizeClass == .compact ? 100 : 180))]
+    }
 
     var body: some View {
         Group {
             if manager.customAgents.isEmpty {
                 ContentUnavailableView(
-                    "No Agents Yet",
+                    "No Squidlets Yet",
                     systemImage: "person.crop.circle.badge.questionmark",
-                    description: Text("Create your first custom agent to get started.")
+                    description: Text("Create your first Squidlet to get started.")
                 )
             } else {
                 ScrollView{
@@ -182,10 +183,10 @@ struct AgentSettings: View {
         #if os(iOS)
         .toolbar(){
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("New Squidlet", systemImage: "square.and.pencil"){
+                Button("New Squidlet", systemImage: "person.badge.plus"){
                     openEditor(for: .create(token: UUID()))
                 }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(.glass)
                 .labelStyle(.titleAndIcon)
             }
         }
@@ -282,9 +283,9 @@ struct AgentEditorView: View {
             name: "",
             description: "",
             icon: AgentManager.availableImages.randomElement()!,
-            model: ModelList.placeHolderModel,
+            model: SyncedSettings.shared.defaultModel,
             systemPrompt: "",
-            temperature: 1.0,
+            temperature: SyncedSettings.shared.temperature,
             shownInSidebar: true,
             primaryAccentColor: nil,
             secondaryAccentColor: nil,
@@ -304,14 +305,14 @@ struct AgentEditorView: View {
                 Section{
                     if sizeClass == .regular {
                         HStack(spacing: 16) {
-                            AgentHeader(name: $agent.name, description: $agent.agentDescription, icon: $agent.icon)
+                            AgentHeader(name: $agent.name, description: $agent.agentDescription, icon: $agent.icon, isPinned: $agent.shownInSidebar)
                             AgentColorPicker(primaryHex: $agent.primaryAccentColor, secondaryHex: $agent.secondaryAccentColor)
                         }
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets())
                     } else {
                         VStack(spacing: 16) {
-                            AgentHeader(name: $agent.name, description: $agent.agentDescription, icon: $agent.icon)
+                            AgentHeader(name: $agent.name, description: $agent.agentDescription, icon: $agent.icon, isPinned: $agent.shownInSidebar)
                             AgentColorPicker(primaryHex: $agent.primaryAccentColor, secondaryHex: $agent.secondaryAccentColor)
                         }
                         .listRowBackground(Color.clear)
@@ -330,16 +331,17 @@ struct AgentEditorView: View {
                         .labelsHidden()
                 }
                 
-                Section("Temperature") {
-                    Slider(value: $agent.temperature, in: 0...2, step: 0.1)
-                }
-                
                 Section("Model") {
-                    ModelPicker(selectedModel: $agent.model)
-                }
-                
-                Section("Sidebar") {
-                    Toggle("Show in Sidebar", isOn: $agent.shownInSidebar)
+                    HStack {
+                        ModelPicker(selectedModel: $agent.model)
+                        VStack(alignment: .leading) {
+                            Text("Temperature: " +  String(format: "%.2f", agent.temperature))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .contentTransition(.numericText())
+                            Slider(value: $agent.temperature, in: 0...1, step: 0.05)
+                        }
+                    }
                 }
                 
                 Section("Memories") {
@@ -441,10 +443,9 @@ struct AgentHeader: View{
     @Binding var name: String
     @Binding var description: String
     @Binding var icon: String
+    @Binding var isPinned: Bool
     @Environment(\.horizontalSizeClass) var sizeClass
     
-    @State private var showingImagePicker: Bool = false
-
     private enum Field: Hashable { case name, description }
     @FocusState private var focusedField: Field?
 
@@ -452,7 +453,41 @@ struct AgentHeader: View{
         VStack{
             HStack{
                 //TextField("Icon (Emoji)", text: $icon)
-                Image("AgentIcons/\(icon)")
+                Menu {
+                    ForEach(AgentManager.availableImages, id: \.self) { image in
+                        let displayText = image.replacingOccurrences(of: "Republique", with: "République").replacingOccurrences(of: "_", with: " ")
+                        Button {
+                            icon = image
+                        } label: {
+                            HStack{
+                                if icon == image {
+                                    Image(systemName: "checkmark")
+                                }
+                                #if os(iOS)
+                                Image("AgentIcons/\(image)")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 20, height: 20)
+                                    .font(.title)
+                                #endif
+                                Text(displayText)
+                            }
+                        }
+                    }
+                } label: {
+                    Image("AgentIcons/\(icon)")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 92, height: 92)
+                        .contentShape(Rectangle())
+                        .font(.system(size: 72))
+                        .padding(.horizontal, 16)
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .labelStyle(.titleAndIcon)
+                
+                /*Image("AgentIcons/\(icon)")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 92, height: 92)
@@ -464,10 +499,19 @@ struct AgentHeader: View{
                     .padding(.horizontal, 16)
                     .popover(isPresented: $showingImagePicker) {
                         List(AgentManager.availableImages, id: \.self) { image in
-                            Text(image)
-                                .onTapGesture { icon = image }
+                            VStack(alignment: .center){
+                                Image("AgentIcons/\(image)")
+                                    .scaledToFit()
+                                    .frame(height: 20, width: 20)
+                                    .font(.title)
+                                Text(image == "Republique" ? "République" : image)
+                                    .onTapGesture {
+                                        icon = image
+                                    }
+                            }
                         }
-                    }
+                        .frame(width: 200, height: 300)
+                    }*/
 
                 VStack{
                     Text("Hello")
@@ -509,6 +553,32 @@ struct AgentHeader: View{
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { focusedField = .description }
+        }
+        .overlay{
+            HStack(spacing:0){
+                Spacer()
+                VStack(spacing:0){
+                    Button{
+                        isPinned.toggle()
+                    } label: {
+                        Label("Pin to sidebar", systemImage: isPinned ? "pin.fill" : "pin")
+                            .rotationEffect(.degrees(30))
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonBorderShape(.circle)
+                    .buttonStyle(.plain)
+                    .padding(4)
+                    #if os(iOS)
+                    .padding(8)
+                    .contentShape(Circle())
+                    .hoverEffect(.highlight)
+                    .padding(-8)
+                    #else
+                    .contentShape(Circle())
+                    #endif
+                    Spacer()
+                }
+            }
         }
         .padding(8)
         .background{
