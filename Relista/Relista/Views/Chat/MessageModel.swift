@@ -128,7 +128,7 @@ struct MessageModel: View {
                         }
                     } label: {
                         Label("Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
-                            .frame(minWidth: 18, minHeight: 18)
+                            .frame(width: 28, height: 28)
                             .padding(3)
                             .contentShape(Rectangle())
                             #if os(iOS)
@@ -144,7 +144,7 @@ struct MessageModel: View {
                         showRegenerateConfirmation.toggle()
                     } label: {
                         Label("Regenerate", systemImage: "arrow.clockwise")
-                            .frame(minWidth: 28, minHeight: 28)
+                            .frame(width: 28, height: 28)
                             .contentShape(Rectangle())
                             #if os(iOS)
                             .hoverEffect(.highlight)
@@ -182,7 +182,7 @@ struct MessageModel: View {
                             else { showGroundingPopover = true }
                         } label: {
                             Label("Show smart grounding context", systemImage: "bolt")
-                                .frame(minWidth: 28, minHeight: 28)
+                                .frame(width: 28, height: 28)
                                 .contentShape(Rectangle())
                                 #if os(iOS)
                                 .hoverEffect(.highlight)
@@ -219,7 +219,7 @@ struct MessageModel: View {
                             showInfoPopOver.toggle()
                         } label: {
                             Label("Show message info", systemImage: "info.circle")
-                                .frame(minWidth: 28, minHeight: 28)
+                                .frame(width: 28, height: 28)
                                 .contentShape(Rectangle())
                                 #if os(iOS)
                                 .hoverEffect(.highlight)
@@ -261,7 +261,7 @@ struct MessageModel: View {
                             }
                         } label: {
                             Label("Expand/Collapse toolbar", systemImage: "chevron.forward")
-                                .frame(minWidth: 28, minHeight: 28)
+                                .frame(width: 28, height: 28)
                                 .contentShape(Rectangle())
                                 #if os(iOS)
                                 .hoverEffect(.highlight)
