@@ -159,14 +159,15 @@ struct Sidebar: View {
                 agentManager: agentManager
             )
             VStack {
-                if !ChatCache.shared.isLoading {
-                    Divider()
-                        .padding(4)
-                } else {
-                    ProgressView(value: ChatCache.shared.loadingProgress)
-                        .progressViewStyle(.linear)
-                        .padding(4)
-                }
+                Divider()
+                    .padding(4)
+                    .overlay{
+                        if ChatCache.shared.isLoading {
+                            ProgressView(value: ChatCache.shared.loadingProgress)
+                                .progressViewStyle(.linear)
+                                .padding(4)
+                        }
+                    }
             }
             .animation(.default, value: ChatCache.shared.isLoading)
             #if os(macOS)
