@@ -29,7 +29,7 @@ struct ChatFilterMenu: View {
 
             if !agentManager.customAgents.isEmpty {
                 Section("By Squidlet") {
-                    ForEach(agentManager.customAgents) { agent in
+                    ForEach(agentManager.customAgents.filter{$0.shownInSidebar}) { agent in
                         Button {
                             chatFilter = .agent(agent.id)
                         } label: {
@@ -41,6 +41,23 @@ struct ChatFilterMenu: View {
                                 AgentManager.getAgentImage(fromUUID: agent.id)
                                 #endif
                                 Text(agent.name)
+                            }
+                        }
+                    }
+                    Menu("Other", systemImage: "ellipsis"){
+                        ForEach(agentManager.customAgents.filter{!$0.shownInSidebar}) { agent in
+                            Button {
+                                chatFilter = .agent(agent.id)
+                            } label: {
+                                HStack{
+                                    if case .agent(agent.id) = chatFilter {
+                                        Image(systemName: "checkmark")
+                                    }
+                                    #if os(iOS)
+                                    AgentManager.getAgentImage(fromUUID: agent.id)
+                                    #endif
+                                    Text(agent.name)
+                                }
                             }
                         }
                     }
