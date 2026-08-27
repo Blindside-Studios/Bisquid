@@ -38,6 +38,10 @@ struct MessageUser: View {
     }
     @State private var overrideAndPlayAnimation = false
     
+    private var showExpandButton: Bool{
+        needsTruncation && !isExpanded
+    }
+    
     var body: some View {
         VStack(spacing: 0){
             HStack(alignment: .top) {
@@ -69,9 +73,9 @@ struct MessageUser: View {
                         .compatGlassEffect(tint: primaryAccentColor.opacity(0.3), in: RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                         .contentShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                         .overlay(alignment: .bottom) {
-                            if needsTruncation && !isExpanded {
-                                HStack{
-                                    Spacer()
+                            HStack{
+                                Spacer()
+                                if showExpandButton {
                                     Image(systemName: "chevron.down")
                                         .font(.caption.weight(.bold))
                                         .frame(width: 26, height: 26)
@@ -79,13 +83,16 @@ struct MessageUser: View {
                                         .allowsHitTesting(false)
                                         .padding(.bottom, 12)
                                         .padding(.trailing, 12)
+                                        .transition(.offset(y: 100).combined(with: .opacity))
                                 }
                             }
+                            .animation(.bouncy(duration: 0.3, extraBounce: 0.05), value: showExpandButton)
                         }
                         .background(
                             Text(message.text)
                                 .foregroundStyle(.clear)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .padding(.horizontal)
                                 .onGeometryChange(for: CGFloat.self) { proxy in
                                     proxy.size.height
                                 } action: { newHeight in
