@@ -18,13 +18,16 @@ struct ChatBackground: View {
     private var isChatEmpty: Bool {
         return ChatCache.shared.loadedChats[selectedChat]?.messages.isEmpty ?? false
     }
+    @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = false
     
     var body: some View {
         ZStack{
             AppBackground()
             
-            Jellyfish(primaryColor: primaryColor, secondaryColor: secondaryColor, showJellyfish: isChatEmpty && selectedAgent != nil)
-                .transition(.opacity.combined(with: .scale(scale: 5)))
+            if jellyfishAnimations {
+                Jellyfish(primaryColor: primaryColor, secondaryColor: secondaryColor, showJellyfish: isChatEmpty && selectedAgent != nil)
+                    .transition(.opacity.combined(with: .scale(scale: 5)))
+            }
         }
         .animation(.default, value: selectedAgent)
         .animation(.default, value: primaryColor)

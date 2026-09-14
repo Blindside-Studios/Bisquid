@@ -28,10 +28,6 @@ struct ChatWindow: View {
 
     var body: some View {
         ZStack{
-            ChatBackground(selectedAgent: $selectedAgent, selectedChat: $conversationID, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor)
-                //.ignoresSafeArea(edges: .top)
-                //.ignoresSafeArea()
-            
             GeometryReader { geo in
                 // Access chat directly from cache - it's loaded in .task
                 if let chat = chatCache.loadedChats[conversationID] {
@@ -86,7 +82,7 @@ struct ChatWindow: View {
                                     }
                                 }
                             }
-                            .padding(.top, 8)
+                            //.padding(.top, 8)
                             .scrollTargetLayout()
                             .environment(\.font, .system(size: chatFontSize))
                             // to center-align
@@ -144,6 +140,11 @@ struct ChatWindow: View {
                 }
             }
         }
+        .background{
+            ChatBackground(selectedAgent: $selectedAgent, selectedChat: $conversationID, primaryAccentColor: $primaryAccentColor, secondaryAccentColor: $secondaryAccentColor)
+                //.ignoresSafeArea(edges: .top)
+                //.ignoresSafeArea()
+        }
         .task(id: conversationID) {
             // Load the chat when the view appears or conversation changes
             _ = chatCache.getChat(for: conversationID)
@@ -160,7 +161,7 @@ struct ChatWindow: View {
             }
         }
         #endif
-        .navigationTitle(chatCache.getConversation(for: conversationID)?.title ?? "New chat")
+        .navigationTitle(chatCache.getConversation(for: conversationID)?.title ?? "New Chat")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif

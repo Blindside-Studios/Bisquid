@@ -186,8 +186,8 @@ struct AgentSettings: View {
                 Button("New Squidlet", systemImage: "person.badge.plus"){
                     openEditor(for: .create(token: UUID()))
                 }
-                .buttonStyle(.glass)
-                .labelStyle(.titleAndIcon)
+                //.buttonStyle(.glass)
+                //.labelStyle(.iconOnly)
             }
         }
         #else

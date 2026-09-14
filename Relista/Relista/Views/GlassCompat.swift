@@ -39,7 +39,8 @@ extension View {
         @ViewBuilder content: () -> V
     ) -> some View {
         if #available(iOS 26.0, macOS 26.0, *) {
-            self.safeAreaBar(edge: edge, alignment: alignment, spacing: spacing, content: content)
+            // used to be safe area bar but these look the same in macOS and iOS 27 anyways, so...
+            self.safeAreaInset(edge: edge, alignment: alignment, spacing: spacing, content: content)
         } else {
             self.safeAreaInset(edge: edge, alignment: alignment, spacing: spacing, content: content)
         }

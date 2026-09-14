@@ -19,8 +19,8 @@ struct GeneralSettings: View {
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
     #endif
     @AppStorage("ApplyBackgroundBisquidTheme") private var useBisquidBackground: Bool = true
-    @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = true
-    @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = true
+    @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = false
+    @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = false
     @AppStorage("SmartGroundingEnabled") private var smartGroundingEnabled: Bool = true
     @StateObject private var syncedSettings = SyncedSettings.shared
     
@@ -39,11 +39,11 @@ struct GeneralSettings: View {
 
     var body: some View {
         Form{
-            Section(header: Text("Interface"), footer: Text("This adds Bisquid's own color to the app background to avoid pure black and white on iOS. This will disable window background tinting on macOS and iPadOS.")){
+            Section(header: Text("Interface"), footer: Text("This adds Bisquid's own color to the app background to avoid pure black and white on iOS. This will disable window background tinting on macOS and iPadOS. ")){
                 #if os(macOS)
                 Toggle("Add extra padding to the input bar", isOn: $typingBarPaddingMacOS)
                 #endif
-                Toggle("Animate \"Jellyfish\" background when choosing an agent", isOn: $jellyfishAnimations)
+                Toggle("Show \"Jellyfish\" background when choosing an agent", isOn: $jellyfishAnimations)
                 Toggle("Play animation during response generation", isOn: $userMessageAnimation)
                 Toggle("Tint background with Bisquid theme colors", isOn: $useBisquidBackground)
             }

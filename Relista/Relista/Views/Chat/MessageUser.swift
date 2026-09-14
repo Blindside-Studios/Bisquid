@@ -20,7 +20,7 @@ struct MessageUser: View {
     var secondaryAccentColor: Color
 
     @AppStorage("ShowUserMessageToolbars") private var showUserMessageToolbars: Bool = false
-    @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = true
+    @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = false
     @AppStorage("EnableUIDebugControls") private var showDebugOptions: Bool = false
     
     private let collapsedHeight: CGFloat = 173
@@ -191,6 +191,7 @@ struct MessageUser: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.horizontal)
             .fixedSize(horizontal: false, vertical: true)
+            .padding(.top, 8)
             
             Spacer(minLength: 0)
         }

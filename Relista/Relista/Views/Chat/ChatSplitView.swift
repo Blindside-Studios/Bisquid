@@ -294,7 +294,8 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                         Color.gray.opacity((currentOffset / drawerWidth) * 0.25)
                     }
                     .mask{
-                        UnevenRoundedRectangle(
+                        // this looked good on 26 but it looks crap on 27 because 27 looks... crap
+                        /*UnevenRoundedRectangle(
                             cornerRadii: RectangleCornerRadii(
                                 topLeading: isMaskActive ? 56 : 0,
                                 bottomLeading: isMaskActive ? 56 : 0,
@@ -302,7 +303,8 @@ struct ChatSplitView<Sidebar: View, Content: View>: View {
                                 topTrailing: 0
                             ),
                             style: .continuous
-                        )
+                        )*/
+                        Rectangle()
                         .ignoresSafeArea()
                     }
                     .overlay{

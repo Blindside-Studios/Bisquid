@@ -74,11 +74,12 @@ struct SendMessageButton: View {
         #if os(iOS)
         .hoverEffect(.lift)
         #endif
-        // weirdly these seem to be interpreted differently across platforms
+        // weirdly these seem to be interpreted differently across platforms AND OS generations...
+        // this was updated for iOS 27 and will look crap on 26
         #if os(macOS)
         .offset(x: 0, y: 2)
         #else
-        .offset(x: 8, y: 1)
+        .offset(x: 2, y: 0)
         #endif
         .padding(.horizontal, -7)
         .contextMenu {
