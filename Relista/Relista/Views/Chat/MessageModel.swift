@@ -41,15 +41,15 @@ struct MessageModel: View {
         case "mistral-small-latest":
             return "Mistral Small"
         case "[t]mistral-small-latest":
-            return "Mistral Small Thinking"
-        case "mistral-medium-3.5":
-            return "Mistral Medium 3.5"
-        case "[t]mistral-medium-3.5":
-            return "Mistral Medium 3.5 Thinking"
+            return "Mistral Small (Thinking)"
+        case "mistral-medium-latest":
+            return "Mistral Medium"
+        case "[t]mistral-medium-latest":
+            return "Mistral Medium (Thinking)"
         case "mistral-large-latest":
             return "Mistral Large"
         case "[t]mistral-large-latest":
-            return "Mistral Large Thinking"
+            return "Mistral Large (Thinking)"
         default:
             return ModelList.getModelFromSlug(slug: message.modelUsed).name
         }
@@ -247,16 +247,28 @@ struct MessageModel: View {
                         if (isToolbarExpanded){
                             Divider()
                                 .frame(height:12)
+                                .opacity(0.7)
+                                .padding(.horizontal, 4)
+                                .transition(.offset(x: -10).combined(with: .opacity).combined(with: .scale(0.7)))
                             Text(formatMessageTimestamp(message.timeStamp))
                                 .help(message.timeStamp.formatted())
+                                .opacity(0.7)
+                                .padding(.horizontal, 4)
+                                .transition(.offset(x: -20).combined(with: .opacity).combined(with: .scale(0.7)))
                             Divider()
                                 .frame(height:12)
+                                .opacity(0.7)
+                                .padding(.horizontal, 4)
+                                .transition(.offset(x: -60).combined(with: .opacity).combined(with: .scale(0.7)))
                             Text(modelDisplayName)
                                 .help(modelDisplayName)
+                                .opacity(0.7)
+                                .padding(.horizontal, 4)
+                                .transition(.offset(x: -70).combined(with: .opacity).combined(with: .scale(0.7)))
                         }
                         
                         Button {
-                            withAnimation(.bouncy(duration: 0.3, extraBounce: 0.05)) {
+                            withAnimation(.bouncy(duration: 0.35, extraBounce: 0.05)) {
                                 isToolbarExpanded.toggle()
                             }
                         } label: {
