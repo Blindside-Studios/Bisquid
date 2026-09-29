@@ -719,9 +719,11 @@ class ChatCache {
                             onProgressUpdate?(progressMade, "\(agentName) is thinking…")
 
                         case .content(let rawText):
-                            let text = SyncedSettings.shared.suppressEmDashes
-                                ? rawText.replacingOccurrences(of: "—", with: "–")
-                                : rawText
+                            // we do this on render-time now to prevet complications
+                            // let text = SyncedSettings.shared.suppressEmDashes
+                            //     ? rawText.replacingOccurrences(of: "—", with: "–")
+                            //     : rawText
+                            let text = rawText
                             updatedMessage.text += text
                             updatedMessage.lastModified = Date.now
 
