@@ -66,7 +66,7 @@ struct MessageModel: View {
                             if !isUsingPencilView{
                                 switch block {
                                 case .text(let text):
-                                    StructuredText(markdown: text,
+                                    StructuredText(markdown: text.escapingEmptyListMarkers(),
                                                    patternOptions: .init(mathExpressions: true))
                                     .textual.textSelection(.enabled)
                                     .padding(.top, 8)
@@ -78,7 +78,7 @@ struct MessageModel: View {
                             } else {
                                 switch block {
                                 case .text(let text):
-                                    StructuredText(markdown: text,
+                                    StructuredText(markdown: text.escapingEmptyListMarkers(),
                                                    patternOptions: .init(mathExpressions: true))
                                     .textual.textSelection(.enabled)
                                     .font(.custom("Georgia", size: pencilViewFontSize))
@@ -94,11 +94,11 @@ struct MessageModel: View {
                         }
                     } else {
                         if !isUsingPencilView{
-                            StructuredText(markdown: message.text,
+                            StructuredText(markdown: message.text.escapingEmptyListMarkers(),
                                            patternOptions: .init(mathExpressions: true))
                             .textual.textSelection(.enabled)
                         } else {
-                            StructuredText(markdown: message.text,
+                            StructuredText(markdown: message.text.escapingEmptyListMarkers(),
                                            patternOptions: .init(mathExpressions: true))
                             .textual.textSelection(.enabled)
                             .font(.custom("Georgia", size: pencilViewFontSize))
@@ -317,6 +317,34 @@ struct MessageModel: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter.string(from: date)
+    }
+}
+
+private extension String {
+    /// A line that is only a list marker ("5.", "3)", "-") parses as an empty list item,
+    /// which Foundation's Markdown parser drops entirely, so short answers like "5." render
+    /// as nothing. Escape the marker so it stays literal text.
+    func escapingEmptyListMarkers() -> String {
+        guard contains(where: { ".)-*+".contains($0) }) else { return self }
+        var lines = components(separatedBy: "\n")
+        var inCodeFence = false
+        for i in lines.indices {
+            let trimmed = lines[i].trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") {
+                inCodeFence.toggle()
+                continue
+            }
+            // Empty list items can't interrupt a paragraph, so only lines after a blank line matter
+            let previousIsBlank = i == 0 || lines[i - 1].trimmingCharacters(in: .whitespaces).isEmpty
+            guard !inCodeFence, previousIsBlank, let marker = trimmed.last else { continue }
+            let body = trimmed.dropLast()
+            let isOrdered = (marker == "." || marker == ")") && !body.isEmpty && body.count <= 9 && body.allSatisfy(\.isASCII) && body.allSatisfy(\.isNumber)
+            let isBullet = body.isEmpty && "-*+".contains(marker)
+            if isOrdered || isBullet {
+                lines[i] = String(body) + "\\" + String(marker)
+            }
+        }
+        return lines.joined(separator: "\n")
     }
 }
 
