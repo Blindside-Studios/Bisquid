@@ -5,7 +5,15 @@
 //  Created by Nicolas Helbig on 01.03.26.
 //
 
-import Foundation
+import SwiftUI
+
+extension View {
+    /// Opens Quick Look on tap. On iOS the preview zooms out of this view and can be swiped
+    /// or pinched back into it — without a source view, iOS 27 offers no dismiss gesture at all.
+    func quickLookOnTap(url: @escaping () -> URL) -> some View {
+        modifier(QuickLookOnTap(url: url))
+    }
+}
 
 #if os(iOS)
 import UIKit
@@ -14,10 +22,12 @@ import QuickLook
 enum QuickLookHelper {
     /// Opens the system Quick Look viewer for a file URL — the same full-screen
     /// viewer used by Files app, with share sheet, markup, etc.
-    static func open(url: URL) {
+    /// `sourceView` is what the preview zooms out of and back into when dismissed.
+    static func open(url: URL, from sourceView: UIView? = nil) {
         let controller = QLPreviewController()
-        let dataSource = QLDataSource(url: url)
+        let dataSource = QLDataSource(url: url, sourceView: sourceView)
         controller.dataSource = dataSource
+        controller.delegate = dataSource
         // Keep the data source alive for the controller's lifetime
         objc_setAssociatedObject(controller, "qlDataSource", dataSource, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
 
@@ -37,21 +47,60 @@ enum QuickLookHelper {
     /// Writes image data to a temp file and opens Quick Look on it.
     /// The temp file is overwritten on each call; it is not cleaned up automatically.
     static func open(data: Data, fileExtension: String) {
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("relista_preview")
-            .appendingPathExtension(fileExtension)
-        try? data.write(to: url)
-        open(url: url)
+        open(url: tempURL(for: data, fileExtension: fileExtension))
     }
 
-    private class QLDataSource: NSObject, QLPreviewControllerDataSource {
+    private class QLDataSource: NSObject, QLPreviewControllerDataSource, QLPreviewControllerDelegate {
         let url: URL
-        init(url: URL) { self.url = url }
+        weak var sourceView: UIView?
+        init(url: URL, sourceView: UIView?) {
+            self.url = url
+            self.sourceView = sourceView
+        }
 
         func numberOfPreviewItems(in controller: QLPreviewController) -> Int { 1 }
         func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
             url as QLPreviewItem
         }
+
+        func previewController(_ controller: QLPreviewController, transitionViewFor item: QLPreviewItem) -> UIView? {
+            // Gone if the thumbnail scrolled out of a lazy stack meanwhile; QL falls back to a plain fade
+            sourceView?.window != nil ? sourceView : nil
+        }
+    }
+}
+
+private struct QuickLookOnTap: ViewModifier {
+    let url: () -> URL
+    @State private var anchor = QuickLookAnchor.Box()
+
+    func body(content: Content) -> some View {
+        content
+            .background(QuickLookAnchor(box: anchor))
+            .onTapGesture {
+                QuickLookHelper.open(url: url(), from: anchor.view)
+            }
+    }
+}
+
+/// An invisible UIView sitting exactly behind the SwiftUI content, so Quick Look has a real
+/// view (and frame) to zoom from. SwiftUI views have no UIView of their own to hand over.
+private struct QuickLookAnchor: UIViewRepresentable {
+    final class Box {
+        weak var view: UIView?
+    }
+
+    let box: Box
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.isUserInteractionEnabled = false
+        box.view = view
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        box.view = uiView
     }
 }
 
@@ -67,11 +116,15 @@ enum QuickLookHelper {
 
     /// Writes image data to a temp file and opens Quick Look on it.
     static func open(data: Data, fileExtension: String) {
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("relista_preview")
-            .appendingPathExtension(fileExtension)
-        try? data.write(to: url)
-        open(url: url)
+        open(url: tempURL(for: data, fileExtension: fileExtension))
+    }
+}
+
+private struct QuickLookOnTap: ViewModifier {
+    let url: () -> URL
+
+    func body(content: Content) -> some View {
+        content.onTapGesture { QuickLookHelper.open(url: url()) }
     }
 }
 
@@ -101,3 +154,14 @@ final class QLPanelManager: NSObject, QLPreviewPanelDataSource, QLPreviewPanelDe
 }
 
 #endif
+
+extension QuickLookHelper {
+    /// Writes data to a temp file Quick Look can open. Overwritten on each call; not cleaned up automatically.
+    static func tempURL(for data: Data, fileExtension: String) -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("relista_preview")
+            .appendingPathExtension(fileExtension)
+        try? data.write(to: url)
+        return url
+    }
+}

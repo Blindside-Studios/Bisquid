@@ -213,9 +213,7 @@ private struct AttachmentThumbnailStrip: View {
                             .frame(width: 128, height: 128)
                             .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                             .padding(.horizontal, 4)
-                            .onTapGesture {
-                                QuickLookHelper.open(url: url)
-                            }
+                            .quickLookOnTap { url }
                     }
                 }
                 .padding(.horizontal, 2)
