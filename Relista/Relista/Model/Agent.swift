@@ -196,13 +196,14 @@ public class AgentManager: ObservableObject {
     func refreshFromStorage() async {
         print("🔄 Refreshing agents from storage...")
 
-        let agents = (try? loadAgents()) ?? []
-
-        await MainActor.run {
-            customAgents = agents
+        // Fetch on the main actor too, not just the assignment — `context` is the
+        // container's mainContext, which isn't safe to touch from another thread.
+        let count = await MainActor.run {
+            customAgents = (try? loadAgents()) ?? []
+            return customAgents.count
         }
 
-        print("✅ Agents refreshed: \(agents.count) total")
+        print("✅ Agents refreshed: \(count) total")
     }
 
     enum AgentError: Error {
@@ -221,9 +222,10 @@ public class AgentManager: ObservableObject {
     /// Persists every agent currently in `customAgents`, in its current array order —
     /// sortOrder is re-stamped from position so drag-to-reorder (moveAgents) sticks.
     func saveToDisk() throws {
+        // Only touch what actually changed, so one edit doesn't mark (and export) every agent
         for (index, agent) in customAgents.enumerated() {
-            agent.sortOrder = index
-            context.insert(agent)
+            if agent.sortOrder != index { agent.sortOrder = index }
+            if agent.modelContext == nil { context.insert(agent) }
         }
         try context.save()
     }

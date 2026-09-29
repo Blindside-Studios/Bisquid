@@ -99,6 +99,7 @@ struct RelistaApp: App {
                 try? await Task.sleep(for: .milliseconds(500))
                 guard !Task.isCancelled else { return }
 
+                await AgentManager.shared.refreshFromStorage()
                 let conversations = (try? DatabaseManager.loadIndex()) ?? []
                 await ChatCache.shared.updateLoadedConversations(conversations)
                 await ChatCache.shared.refreshLoadedMessages()
