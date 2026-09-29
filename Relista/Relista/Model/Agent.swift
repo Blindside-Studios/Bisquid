@@ -194,16 +194,17 @@ public class AgentManager: ObservableObject {
 
     /// Reload agents from the store (call after a remote CloudKit change)
     func refreshFromStorage() async {
-        print("🔄 Refreshing agents from storage...")
-
         // Fetch on the main actor too, not just the assignment — `context` is the
         // container's mainContext, which isn't safe to touch from another thread.
-        let count = await MainActor.run {
-            customAgents = (try? loadAgents()) ?? []
-            return customAgents.count
+        await MainActor.run {
+            let agents = (try? loadAgents()) ?? []
+            // The fetch hands back the same instances already in customAgents, whose edited
+            // fields reach views through @Model observation on their own. Only republish (and
+            // redraw everything observing AgentManager) when agents were added, removed or reordered.
+            guard agents.map(\.id) != customAgents.map(\.id) else { return }
+            customAgents = agents
+            print("✅ Agents refreshed: \(agents.count) total")
         }
-
-        print("✅ Agents refreshed: \(count) total")
     }
 
     enum AgentError: Error {
