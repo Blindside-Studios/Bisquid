@@ -30,6 +30,21 @@ extension View {
         }
     }
 
+    /// Soft scroll edge effect (instead of the OS 26+ default hard edge under a glass bar), no-op pre-26.
+    /// iOS only — on macOS the hard edge still reads fine as a windowing grab-area cue, so it's left alone there.
+    @ViewBuilder
+    func compatSoftScrollEdgeEffect(for edges: Edge.Set = .all) -> some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            self.scrollEdgeEffectStyle(.soft, for: edges)
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+
     /// `safeAreaBar` (auto-glass safe area inset), falling back to plain `safeAreaInset` pre-26.
     @ViewBuilder
     func compatSafeAreaBar<V: View>(

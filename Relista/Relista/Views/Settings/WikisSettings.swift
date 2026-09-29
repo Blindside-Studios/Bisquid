@@ -46,6 +46,7 @@ struct WikisSettings: View {
                 }
             }
         }
+        .compatSoftScrollEdgeEffect(for: .all)
         .background{
             AppBackground()
                 .ignoresSafeArea()
@@ -140,6 +141,7 @@ private struct AddWikiSheet: View {
                         .frame(minHeight: 100)
                 }
             }
+            .compatSoftScrollEdgeEffect(for: .all)
             .navigationTitle("New Knowledge")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

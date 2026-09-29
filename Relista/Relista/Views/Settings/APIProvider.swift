@@ -36,6 +36,7 @@ struct APIProvider: View {
             }
             .padding()
         }
+        .compatSoftScrollEdgeEffect(for: .all)
         .formStyle(.grouped)
     }
 }

@@ -44,6 +44,7 @@ struct PersonalizationSettings: View {
                 Toggle("Replace em-dashes with en-dashes", isOn: $settings.suppressEmDashes)
             }
         }
+        .compatSoftScrollEdgeEffect(for: .all)
         .formStyle(.grouped)
     }
 }

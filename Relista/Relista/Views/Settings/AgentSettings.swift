@@ -162,8 +162,9 @@ struct AgentSettings: View {
                     }
                     .padding(16)
                 }
+                .compatSoftScrollEdgeEffect(for: .all)
             }
-                
+
         }
         .background{
             AppBackground()
@@ -348,6 +349,7 @@ struct AgentEditorView: View {
                     MemoryListEditor(memories: $agent.memories, storageID: "agent")
                 }
             }
+            .compatSoftScrollEdgeEffect(for: .all)
             .formStyle(.grouped)
             .navigationTitle(agent.name.isEmpty ? "New Squidlet" : agent.name)
             #if os(iOS)

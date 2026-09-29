@@ -19,8 +19,8 @@ struct GeneralSettings: View {
     @AppStorage("HapticFeedbackForMessageGeneration") private var vibrateOnTokensReceived: Bool = true
     #endif
     @AppStorage("ApplyBackgroundBisquidTheme") private var useBisquidBackground: Bool = true
-    @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = false
-    @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = false
+    @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = true
+    @AppStorage("AnimateUserMessageBackdropOnGeneration") private var userMessageAnimation: Bool = true
     @AppStorage("SmartGroundingEnabled") private var smartGroundingEnabled: Bool = true
     @StateObject private var syncedSettings = SyncedSettings.shared
     
@@ -114,6 +114,7 @@ struct GeneralSettings: View {
                 Toggle("Show debug options", isOn: $showDebugOptions)
             }
         }
+        .compatSoftScrollEdgeEffect(for: .all)
         .formStyle(.grouped)
         .fileExporter(
             isPresented: $showingBackupExporter,

@@ -90,6 +90,7 @@ struct ChatWindow: View {
                             .frame(maxWidth: 740 + max(0, (chatFontSize - 13) / (24 - 13)) * (geo.size.width - 740))
                             .frame(maxWidth: .infinity)
                         }
+                        .compatSoftScrollEdgeEffect(for: .all)
                         .scrollPosition(id: $topMessageID, anchor: .top)
                         .scrollDismissesKeyboard(.interactively)
                         .contentShape(Rectangle())

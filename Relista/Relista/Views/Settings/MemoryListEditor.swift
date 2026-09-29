@@ -99,6 +99,7 @@ private struct MemoryEditSheet: View {
                         .frame(minHeight: 100)
                 }
             }
+            .compatSoftScrollEdgeEffect(for: .all)
             .navigationTitle(title)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)

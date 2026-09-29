@@ -18,7 +18,7 @@ struct ChatBackground: View {
     private var isChatEmpty: Bool {
         return ChatCache.shared.loadedChats[selectedChat]?.messages.isEmpty ?? false
     }
-    @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = false
+    @AppStorage("AnimateAgentJellyfishBackgtround") private var jellyfishAnimations: Bool = true
     
     var body: some View {
         ZStack{

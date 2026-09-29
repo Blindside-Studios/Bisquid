@@ -90,6 +90,7 @@ struct Sidebar: View {
             }
             .padding(8)
         }
+        .compatSoftScrollEdgeEffect(for: .all)
         .refreshable {
             await performSync()
         }

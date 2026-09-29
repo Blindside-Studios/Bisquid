@@ -40,6 +40,7 @@ struct SettingsView: View {
                     Label(view.title, systemImage: view.systemImage)
                 }
             }
+            .compatSoftScrollEdgeEffect(for: .all)
             .navigationTitle("Settings")
             .toolbar {
                 if let onClose {
