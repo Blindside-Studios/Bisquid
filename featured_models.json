@@ -1,10 +1,10 @@
 [
   {
-    "name": "Z.ai GLM 5.2 (served by Mistral)",
-    "modelID": "zai-glm-5-2",
+    "name": "Z.ai GLM 5.3 (served by Mistral)",
+    "modelID": "zai-glm-5-3",
     "provider": "Z.ai",
     "family": "Z.ai",
-    "specifier": "GLM 5.2"
+    "specifier": "GLM 5.3"
   },
   {
     "name": "Mistral NeMo",
