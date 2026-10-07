@@ -22,9 +22,9 @@ struct TextSizeCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .sidebar) {
             Divider()
-            Button("Make Text Bigger", systemImage: "textformat.size.larger") { fontSize = min(fontSize + 1, 24) }
+            Button("Make Text Bigger", systemImage: "textformat.size.larger") { fontSize = min(fontSize + 2, 43) }
                 .keyboardShortcut("+", modifiers: .command)
-            Button("Make Text Smaller", systemImage: "textformat.size.smaller") { fontSize = max(fontSize - 1, 9) }
+            Button("Make Text Smaller", systemImage: "textformat.size.smaller") { fontSize = max(fontSize - 2, 9) }
                 .keyboardShortcut("-", modifiers: .command)
             Button("Make Text Normal Size", systemImage: "textformat.size") { fontSize = Font.defaultBodySize }
                 .keyboardShortcut("0", modifiers: .command)

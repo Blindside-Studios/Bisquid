@@ -48,7 +48,7 @@ struct ThinkingView: View {
             
             if expandCOT{
                 Text(thinkingBlock.text)
-                    .font(.body)
+                    //.font(.body)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
                     .frame(alignment: .leading)
