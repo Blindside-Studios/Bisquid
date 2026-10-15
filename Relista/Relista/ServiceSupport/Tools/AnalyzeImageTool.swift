@@ -17,6 +17,7 @@ struct AnalyzeImageTool: ChatTool {
 
     /// Models that support vision (image content will be included in the request).
     static let visionModels: Set<String> = [
+        "mistral-large-4",
         "mistral-large-latest",
         "mistral-medium-latest",
         "mistral-small-latest"
@@ -38,7 +39,8 @@ struct AnalyzeImageTool: ChatTool {
                 Use the exact filename shown (e.g. "abc123.jpg").
 
                 Model selection guide:
-                - mistral-large-latest: Strong general-purpose model. Use for deep reasoning about an image.
+                - mistral-large-4: Mistral's flagship model, in public preview as of writing this description, thus latest does not redirect here, use if you need the strongest-available model.
+                - mistral-large-latest: Strong general-purpose model. Not currently necessary since large 4 exists and large 3 is a year old.
                 - mistral-medium-latest (DEFAULT): Currently best results with Mistral Medium 3.5, Mistral has not yeet released an equivalent or superior Large model.
                 - mistral-small-latest: Fastest and cheapest. Use for very simple visual questions.
 
@@ -63,11 +65,13 @@ struct AnalyzeImageTool: ChatTool {
                         ],
                         "model": [
                             "type": "string",
-                            "description": "The model to use. Defaults to mistral-medium-latest if omitted. Pixtral models are now deprecated, do not use them! Provide the exact model slugs for these models, arbitrary model slugs, even if the referenced model supports image analysis, is not supported!",
+                            "description": "The model to use. Defaults to mistral-medium-latest if omitted. Pixtral models are now deprecated, do not use them! Provide the exact model slugs for these models; arbitrary model slugs, even if the referenced model supports image analysis, are not supported!",
                             "enum": [
+                                "mistral-large-4",
                                 "mistral-large-latest",
                                 "mistral-medium-latest",
-                                "mistral-small-latest"                            ]
+                                "mistral-small-latest"
+                            ]
                         ]
                     ],
                     "required": ["filename", "question"]

@@ -18,8 +18,14 @@ struct ThinkingView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
+                Image(systemName: "fossil.shell")
+                    .imageScale(.small)
                 Text("Thinking")
                     .fontWeight(.medium)
+                /*Text("Summary may be displayed here in the future")
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)*/
                 if thinkingBlock.isLoading {
                     ProgressView()
                         .controlSize(.mini)
@@ -32,14 +38,14 @@ struct ThinkingView: View {
             .opacity(0.7)
             .animation(.default, value: thinkingBlock.isLoading)
             .matchedTransitionSource(id: "thinking", in: ThinkingTransition)
-            #if os(iOS)
+            
             .padding(8)
             .contentShape(Rectangle())
+            #if os(iOS)
             .hoverEffect(.highlight)
-            .padding(-8)
-            #else
-            .contentShape(Rectangle())
             #endif
+            .padding(.vertical, -4)
+            .padding(.horizontal, -8)
             .onTapGesture {
                 withAnimation{
                     expandCOT.toggle()
@@ -52,7 +58,7 @@ struct ThinkingView: View {
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
                     .frame(alignment: .leading)
-                    .padding(.top, 4)
+                    .padding(.vertical, 8)
             }
         }
         .onAppear{
