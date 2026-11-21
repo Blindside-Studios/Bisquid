@@ -677,10 +677,11 @@ struct AgentColorPicker: View {
                                                         Label("Mock send button", systemImage: "arrow.up")
                                                     }
                                                     .scaleEffect(0.5)
-                                                    .offset(x: 12)
-                                                    #if os(macOS)
+                                                    #if os(iOS)
+                                                    .offset(x: 8)
+                                                    #elseif os(macOS)
+                                                    .offset(x: 2)
                                                     .scaleEffect(1.5)
-                                                    .offset(x: -16)
                                                     #endif
                                                     .buttonBorderShape(.circle)
                                                     .buttonStyle(.borderedProminent)
